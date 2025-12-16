@@ -2,51 +2,48 @@ import { FeatureLdg, InfoLdg, TestimonialType } from "types";
 
 export const infos: InfoLdg[] = [
   {
-    title: "Empower your projects",
+    title: "AI-Powered Content That Grows Your Audience",
     description:
-      "Unlock the full potential of your projects with our open-source SaaS platform. Collaborate seamlessly, innovate effortlessly, and scale limitlessly.",
+      "Stop guessing what to post. Progressly analyzes trends across Instagram, TikTok, and YouTube to give Muslim creators actionable content ideas that actually work.",
     image: "/_static/illustrations/work-from-home.jpg",
     list: [
       {
-        title: "Collaborative",
-        description: "Work together with your team members in real-time.",
-        icon: "laptop",
+        title: "Trend Analysis",
+        description: "Real-time trending topics in your niche across all platforms.",
+        icon: "trendingUp",
       },
       {
-        title: "Innovative",
-        description: "Stay ahead of the curve with access constant updates.",
-        icon: "settings",
+        title: "AI Suggestions",
+        description: "Personalized video ideas, captions, and hashtags powered by AI.",
+        icon: "sparkles",
       },
       {
-        title: "Scalable",
-        description:
-          "Our platform offers the scalability needed to adapt to your needs.",
-        icon: "search",
+        title: "Performance Insights",
+        description: "Track what works and optimize your content strategy.",
+        icon: "lineChart",
       },
     ],
   },
   {
-    title: "Seamless Integration",
+    title: "Built for Muslim Content Creators",
     description:
-      "Integrate our open-source SaaS seamlessly into your existing workflows. Effortlessly connect with your favorite tools and services for a streamlined experience.",
+      "Whether you're sharing hijab tutorials, deen reminders, halal food content, or cultural stories — Progressly helps you create content that resonates with your audience.",
     image: "/_static/illustrations/work-from-home.jpg",
     list: [
       {
-        title: "Flexible",
-        description:
-          "Customize your integrations to fit your unique requirements.",
-        icon: "laptop",
+        title: "Multi-Platform",
+        description: "Track trends across Instagram, TikTok, YouTube, and more.",
+        icon: "instagram",
       },
       {
-        title: "Efficient",
-        description: "Streamline your processes and reducing manual effort.",
-        icon: "search",
+        title: "Smart Scheduling",
+        description: "Know the best times to post for maximum engagement.",
+        icon: "calendar",
       },
       {
-        title: "Reliable",
-        description:
-          "Rely on our robust infrastructure and comprehensive documentation.",
-        icon: "settings",
+        title: "Niche Insights",
+        description: "Learn from top Muslim creators in your specific niche.",
+        icon: "target",
       },
     ],
   },
@@ -54,97 +51,98 @@ export const infos: InfoLdg[] = [
 
 export const features: FeatureLdg[] = [
   {
-    title: "Feature 1",
+    title: "Trending Topics",
     description:
-      "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
+      "Discover what's trending in your niche right now. Get ahead of the curve with real-time trend analysis across all major platforms.",
     link: "/",
-    icon: "nextjs",
+    icon: "trendingUp",
   },
   {
-    title: "Feature 2",
+    title: "AI Content Ideas",
     description:
-      "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
+      "Never run out of content ideas. Our AI generates video concepts, captions, and hooks tailored to your niche and audience.",
     link: "/",
-    icon: "google",
+    icon: "sparkles",
   },
   {
-    title: "Feature 3",
+    title: "Smart Hashtags",
     description:
-      "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
+      "Optimized hashtag sets that maximize your reach. We analyze what's working and avoid shadowbanned tags.",
     link: "/",
-    icon: "gitHub",
+    icon: "hash",
   },
   {
-    title: "Feature 4",
+    title: "Performance Analytics",
     description:
-      "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
+      "Track your content performance across platforms. Understand what works and double down on winning strategies.",
     link: "/",
-    icon: "laptop",
+    icon: "lineChart",
   },
   {
-    title: "Feature 5",
+    title: "Best Time to Post",
     description:
-      "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
+      "Know exactly when your audience is most active. Post at optimal times for maximum engagement.",
     link: "/",
-    icon: "user",
+    icon: "calendar",
   },
   {
-    title: "Feature 6",
+    title: "Content Alerts",
     description:
-      "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
+      "Get notified about trending topics, engagement spikes, and potential content risks in real-time.",
     link: "/",
-    icon: "copy",
+    icon: "bell",
   },
 ];
 
 export const testimonials: TestimonialType[] = [
   {
-    name: "John Doe",
-    job: "Full Stack Developer",
-    image: "https://randomuser.me/api/portraits/men/1.jpg",
+    name: "Amina Hassan",
+    job: "Hijab & Fashion Creator • 150K Followers",
+    image: "https://randomuser.me/api/portraits/women/1.jpg",
     review:
-      "The next-saas-stripe-starter repo has truly revolutionized my development workflow. With its comprehensive features and seamless integration with Stripe, I've been able to build and deploy projects faster than ever before. The documentation is clear and concise, making it easy to navigate through the setup process. I highly recommend next-saas-stripe-starter to any developer.",
+      "Progressly completely changed my content game. I went from posting randomly to strategically creating hijab tutorials that actually trend. My engagement rate doubled in just 2 months!",
   },
   {
-    name: "Alice Smith",
-    job: "UI/UX Designer",
-    image: "https://randomuser.me/api/portraits/women/2.jpg",
+    name: "Yusuf Rahman",
+    job: "Islamic Reminder Creator • 80K Subscribers",
+    image: "https://randomuser.me/api/portraits/men/2.jpg",
     review:
-      "Thanks to next-saas-stripe-starter, I've been able to create modern and attractive user interfaces in record time. The starter kit provides a solid foundation for building sleek and intuitive designs, allowing me to focus more on the creative aspects of my work.",
+      "The AI suggestions are surprisingly good. It's like having a creative partner that knows exactly what my audience wants to see. The hashtag optimization alone is worth the subscription.",
   },
   {
-    name: "David Johnson",
-    job: "DevOps Engineer",
-    image: "https://randomuser.me/api/portraits/men/3.jpg",
+    name: "Fatima Malik",
+    job: "Modest Fitness Creator • 200K Followers",
+    image: "https://randomuser.me/api/portraits/women/3.jpg",
     review:
-      "Thanks to next-saas-stripe-starter, I was able to streamline the entire process and get payments up and running in no time. ",
+      "I used to spend hours researching trends manually. Now Progressly does it for me and I can focus on creating content. Best investment I've made for my brand.",
   },
   {
-    name: "Michael Wilson",
-    job: "Project Manager",
-    image: "https://randomuser.me/api/portraits/men/5.jpg",
+    name: "Omar Khalil",
+    job: "Halal Food Blogger • 50K Followers",
+    image: "https://randomuser.me/api/portraits/men/4.jpg",
     review:
-      "I'm impressed by the quality of code and clear documentation of next-saas-stripe-starter. Kudos to the team!",
+      "The trending alerts are incredible. I was one of the first to jump on a viral iftar recipe trend and got my first video with 1M+ views. Game changer!",
   },
   {
-    name: "Sophia Garcia",
-    job: "Data Analyst",
-    image: "https://randomuser.me/api/portraits/women/6.jpg",
+    name: "Zahra Ahmed",
+    job: "Cultural Storyteller • 300K Followers",
+    image: "https://randomuser.me/api/portraits/women/5.jpg",
     review:
-      "next-saas-stripe-starter provided me with the tools I needed to efficiently manage user data. Thank you so much!",
+      "As someone who posts across multiple platforms, having all my insights in one dashboard saves me so much time. The AI knows my niche better than I expected.",
   },
   {
-    name: "Emily Brown",
-    job: "Marketing Manager",
-    image: "https://randomuser.me/api/portraits/women/4.jpg",
+    name: "Ibrahim Ali",
+    job: "Deen & Lifestyle Creator • 100K Followers",
+    image: "https://randomuser.me/api/portraits/men/6.jpg",
     review:
-      "next-saas-stripe-starter has been an invaluable asset in my role as a marketing manager. With its seamless integration with Stripe, I've been able to launch targeted marketing campaigns with built-in payment functionality, allowing us to monetize our products and services more effectively.",
+      "Progressly helped me understand what actually drives engagement in Islamic content. The content ideas are actionable and the posting time suggestions are spot on.",
   },
   {
-    name: "Jason Stan",
-    job: "Web Designer",
-    image: "https://randomuser.me/api/portraits/men/9.jpg",
+    name: "Khadijah Nur",
+    job: "Muslim Mom Creator • 75K Followers",
+    image: "https://randomuser.me/api/portraits/women/7.jpg",
     review:
-      "Thanks to next-saas-stripe-starter, I've been able to create modern and attractive user interfaces in record time. The starter kit provides a solid foundation for building sleek and intuitive designs, allowing me to focus more on the creative aspects of my work.",
+      "Finally, an AI tool that gets our community. The video ideas it generates are creative, relevant, and halal. My content planning went from stressful to exciting.",
   },
 ];
+

@@ -20,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import ProjectSwitcher from "@/components/dashboard/project-switcher";
+import { PlanBadge } from "@/components/dashboard/plan-badge";
 import { UpgradeCard } from "@/components/dashboard/upgrade-card";
 import { Icons } from "@/components/shared/icons";
 
@@ -72,7 +73,12 @@ export function DashboardSidebar({ links }: DashboardSidebarProps) {
           >
             <div className="flex h-full max-h-screen flex-1 flex-col gap-2">
               <div className="flex h-14 items-center p-4 lg:h-[60px]">
-                {isSidebarExpanded ? <ProjectSwitcher /> : null}
+                {isSidebarExpanded ? (
+                  <Link href="/dashboard" className="flex items-center gap-2">
+                    <Icons.logo className="size-6" />
+                    <span className="font-urban text-xl font-bold">{siteConfig.name}</span>
+                  </Link>
+                ) : null}
 
                 <Button
                   variant="ghost"
@@ -93,6 +99,11 @@ export function DashboardSidebar({ links }: DashboardSidebarProps) {
                   )}
                   <span className="sr-only">Toggle Sidebar</span>
                 </Button>
+              </div>
+
+              {/* Plan Badge - below project switcher */}
+              <div className="px-4">
+                <PlanBadge plan="free" expanded={isSidebarExpanded} />
               </div>
 
               <nav className="flex flex-1 flex-col gap-8 px-4 pt-4">
@@ -123,7 +134,7 @@ export function DashboardSidebar({ links }: DashboardSidebarProps) {
                                     ? "bg-muted"
                                     : "text-muted-foreground hover:text-accent-foreground",
                                   item.disabled &&
-                                    "cursor-not-allowed opacity-80 hover:bg-transparent hover:text-muted-foreground",
+                                  "cursor-not-allowed opacity-80 hover:bg-transparent hover:text-muted-foreground",
                                 )}
                               >
                                 <Icon className="size-5" />
@@ -146,7 +157,7 @@ export function DashboardSidebar({ links }: DashboardSidebarProps) {
                                         ? "bg-muted"
                                         : "text-muted-foreground hover:text-accent-foreground",
                                       item.disabled &&
-                                        "cursor-not-allowed opacity-80 hover:bg-transparent hover:text-muted-foreground",
+                                      "cursor-not-allowed opacity-80 hover:bg-transparent hover:text-muted-foreground",
                                     )}
                                   >
                                     <span className="flex size-full items-center justify-center">
@@ -167,9 +178,7 @@ export function DashboardSidebar({ links }: DashboardSidebarProps) {
                 ))}
               </nav>
 
-              <div className="mt-auto xl:p-4">
-                {isSidebarExpanded ? <UpgradeCard /> : null}
-              </div>
+              <div className="mt-auto" />
             </div>
           </aside>
         </ScrollArea>
@@ -201,7 +210,7 @@ export function MobileSheetSidebar({ links }: DashboardSidebarProps) {
             <div className="flex h-screen flex-col">
               <nav className="flex flex-1 flex-col gap-y-8 p-6 text-lg font-medium">
                 <Link
-                  href="#"
+                  href="/dashboard"
                   className="flex items-center gap-2 text-lg font-semibold"
                 >
                   <Icons.logo className="size-6" />
@@ -209,8 +218,6 @@ export function MobileSheetSidebar({ links }: DashboardSidebarProps) {
                     {siteConfig.name}
                   </span>
                 </Link>
-
-                <ProjectSwitcher large />
 
                 {links.map((section) => (
                   <section
@@ -238,7 +245,7 @@ export function MobileSheetSidebar({ links }: DashboardSidebarProps) {
                                   ? "bg-muted"
                                   : "text-muted-foreground hover:text-accent-foreground",
                                 item.disabled &&
-                                  "cursor-not-allowed opacity-80 hover:bg-transparent hover:text-muted-foreground",
+                                "cursor-not-allowed opacity-80 hover:bg-transparent hover:text-muted-foreground",
                               )}
                             >
                               <Icon className="size-5" />
@@ -256,9 +263,7 @@ export function MobileSheetSidebar({ links }: DashboardSidebarProps) {
                   </section>
                 ))}
 
-                <div className="mt-auto">
-                  <UpgradeCard />
-                </div>
+
               </nav>
             </div>
           </ScrollArea>

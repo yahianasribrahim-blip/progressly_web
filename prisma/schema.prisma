@@ -61,6 +61,7 @@ model User {
 
   accounts Account[]
   sessions Session[]
+  profile  UserProfile?
 
   stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
   stripeSubscriptionId   String?   @unique @map(name: "stripe_subscription_id")
@@ -77,4 +78,188 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map(name: "verification_tokens")
+}
+
+// ============================================
+// PROGRESSLY - Content Creator Platform Models
+// ============================================
+
+enum ContentPlatform {
+  INSTAGRAM
+  TIKTOK
+  YOUTUBE
+  TWITTER
+  LINKEDIN
+  FACEBOOK
+}
+
+enum ContentNiche {
+  HIJAB
+  DEEN
+  CULTURAL
+  FOOD
+  GYM
+  PETS
+  STORYTELLING
+  OTHER
+}
+
+enum NotificationType {
+  TRENDING_TOPIC
+  ENGAGEMENT_CHANGE
+  CONTENT_RISK
+  AI_INSIGHT
+  SYSTEM
+}
+
+enum SubscriptionTier {
+  FREE
+  CREATOR
+  PRO
+}
+
+// Extended user profile for content creators
+model UserProfile {
+  id            String           @id @default(cuid())
+  userId        String           @unique
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  username      String?          @unique
+  bio           String?
+  niche         ContentNiche     @default(OTHER)
+  platforms     ContentPlatform[]
+  
+  // Notification preferences
+  emailNotifications    Boolean  @default(true)
+  trendingAlerts        Boolean  @default(true)
+  engagementAlerts      Boolean  @default(true)
+  riskAlerts            Boolean  @default(true)
+  
+  // Usage tracking for free tier
+  dailyRecommendations  Int      @default(0)
+  lastRecommendationDate DateTime?
+  
+  onboardingCompleted   Boolean  @default(false)
+  
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  socialConnections  SocialConnection[]
+  savedInsights      SavedInsight[]
+  notifications      Notification[]
+  recommendations    ContentRecommendation[]
+
+  @@map(name: "user_profiles")
+}
+
+// Connected social media accounts
+model SocialConnection {
+  id            String          @id @default(cuid())
+  profileId     String
+  profile       UserProfile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  platform      ContentPlatform
+  accountId     String?
+  username      String?
+  accessToken   String?         @db.Text
+  refreshToken  String?         @db.Text
+  tokenExpiry   DateTime?
+  
+  followerCount Int?
+  followingCount Int?
+  postCount     Int?
+  engagementRate Float?
+  
+  lastSynced    DateTime?
+  isActive      Boolean         @default(true)
+  
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@unique([profileId, platform])
+  @@map(name: "social_connections")
+}
+
+// Saved/bookmarked insights and recommendations
+model SavedInsight {
+  id            String          @id @default(cuid())
+  profileId     String
+  profile       UserProfile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  type          String          // 'trend', 'suggestion', 'hashtag', 'caption'
+  title         String
+  content       String          @db.Text
+  metadata      Json?           // Additional structured data
+  
+  platform      ContentPlatform?
+  
+  createdAt     DateTime        @default(now())
+  
+  @@index([profileId])
+  @@map(name: "saved_insights")
+}
+
+// User notifications
+model Notification {
+  id            String           @id @default(cuid())
+  profileId     String
+  profile       UserProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  type          NotificationType
+  title         String
+  message       String           @db.Text
+  metadata      Json?
+  
+  isRead        Boolean          @default(false)
+  isEmailSent   Boolean          @default(false)
+  
+  createdAt     DateTime         @default(now())
+  
+  @@index([profileId, isRead])
+  @@map(name: "notifications")
+}
+
+// AI-generated content recommendations
+model ContentRecommendation {
+  id            String          @id @default(cuid())
+  profileId     String
+  profile       UserProfile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  type          String          // 'video_idea', 'caption', 'hashtag_set', 'posting_time'
+  title         String
+  content       String          @db.Text
+  hashtags      String[]
+  
+  platform      ContentPlatform?
+  score         Float?          // Relevance/quality score
+  
+  isUsed        Boolean         @default(false)
+  isSaved       Boolean         @default(false)
+  
+  expiresAt     DateTime?
+  createdAt     DateTime        @default(now())
+  
+  @@index([profileId])
+  @@map(name: "content_recommendations")
+}
+
+// Global trending topics (cached)
+model TrendingTopic {
+  id            String          @id @default(cuid())
+  
+  platform      ContentPlatform
+  niche         ContentNiche
+  
+  topic         String
+  description   String?         @db.Text
+  hashtags      String[]
+  score         Float           // Trending score
+  
+  metadata      Json?           // Additional data like engagement stats
+  
+  expiresAt     DateTime
+  createdAt     DateTime        @default(now())
+  
+  @@index([platform, niche])
+  @@map(name: "trending_topics")
 }

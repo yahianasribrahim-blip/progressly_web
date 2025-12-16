@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/components/layout/mode-toggle";
 
 import { NewsletterForm } from "../forms/newsletter-form";
-import { Icons } from "../shared/icons";
 
 export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
   return (
@@ -38,47 +37,20 @@ export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
 
       <div className="border-t py-4">
         <div className="container flex max-w-6xl items-center justify-between">
-          {/* <span className="text-muted-foreground text-sm">
-            Copyright &copy; 2024. All rights reserved.
-          </span> */}
           <p className="text-left text-sm text-muted-foreground">
-            Built by{" "}
-            <Link
-              href={siteConfig.links.twitter}
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium underline underline-offset-4"
-            >
-              mickasmt
-            </Link>
-            . Hosted on{" "}
-            <Link
-              href="https://vercel.com"
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium underline underline-offset-4"
-            >
-              Vercel
-            </Link>
-            . Illustrations by{" "}
-            <Link
-              href="https://popsy.co"
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium underline underline-offset-4"
-            >
-              Popsy
-            </Link>
+            © {new Date().getFullYear()} {siteConfig.name}. All rights reserved.
           </p>
 
           <div className="flex items-center gap-3">
             <Link
-              href={siteConfig.links.github}
+              href={siteConfig.links.twitter}
               target="_blank"
               rel="noreferrer"
-              className="font-medium underline underline-offset-4"
+              className="text-muted-foreground hover:text-foreground"
             >
-              <Icons.gitHub className="size-5" />
+              <svg className="size-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
             </Link>
             <ModeToggle />
           </div>

@@ -1,7 +1,4 @@
-import Link from "next/link";
-
 import { features } from "@/config/landing";
-import { Button } from "@/components/ui/button";
 import { HeaderSection } from "@/components/shared/header-section";
 import { Icons } from "@/components/shared/icons";
 import MaxWidthWrapper from "@/components/shared/max-width-wrapper";
@@ -13,9 +10,8 @@ export default function Features() {
         <MaxWidthWrapper>
           <HeaderSection
             label="Features"
-            title="Discover all features."
-            subtitle="Harum quae dolore inventore repudiandae? orrupti aut temporibus
-          ariatur."
+            title="What You Get To Grow Your Account"
+            subtitle="Everything you need to create content that actually performs."
           />
 
           <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -35,23 +31,13 @@ export default function Features() {
                       <Icon />
                     </div>
 
-                    <p className="mt-6 pb-6 text-muted-foreground">
+                    <h3 className="mt-4 font-semibold text-foreground">
+                      {feature.title}
+                    </h3>
+
+                    <p className="mt-2 text-muted-foreground">
                       {feature.description}
                     </p>
-
-                    <div className="-mb-5 flex gap-3 border-t border-muted py-4 md:-mb-7">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        rounded="xl"
-                        className="px-4"
-                      >
-                        <Link href="/" className="flex items-center gap-2">
-                          <span>Visit the site</span>
-                          <Icons.arrowUpRight className="size-4" />
-                        </Link>
-                      </Button>
-                    </div>
                   </div>
                 </div>
               );

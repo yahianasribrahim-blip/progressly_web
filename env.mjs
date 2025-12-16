@@ -15,6 +15,8 @@ export const env = createEnv({
     EMAIL_FROM: z.string().min(1),
     STRIPE_API_KEY: z.string().min(1),
     STRIPE_WEBHOOK_SECRET: z.string().min(1),
+    // TikTok API (RapidAPI)
+    RAPIDAPI_KEY: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_APP_URL: z.string().min(1),
@@ -44,5 +46,7 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_STRIPE_BUSINESS_MONTHLY_PLAN_ID,
     NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PLAN_ID:
       process.env.NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PLAN_ID,
+    // TikTok API
+    RAPIDAPI_KEY: process.env.RAPIDAPI_KEY,
   },
 });

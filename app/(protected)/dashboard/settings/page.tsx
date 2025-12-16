@@ -2,14 +2,12 @@ import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/session";
 import { constructMetadata } from "@/lib/utils";
-import { DeleteAccountSection } from "@/components/dashboard/delete-account";
 import { DashboardHeader } from "@/components/dashboard/header";
-import { UserNameForm } from "@/components/forms/user-name-form";
-import { UserRoleForm } from "@/components/forms/user-role-form";
+import { AccountSettingsTabs } from "@/components/dashboard/account-settings-tabs";
 
 export const metadata = constructMetadata({
-  title: "Settings – SaaS Starter",
-  description: "Configure your account and website settings.",
+  title: "Account Settings – Progressly",
+  description: "Manage your account settings.",
 });
 
 export default async function SettingsPage() {
@@ -18,16 +16,18 @@ export default async function SettingsPage() {
   if (!user?.id) redirect("/login");
 
   return (
-    <>
+    <div className="space-y-6">
       <DashboardHeader
-        heading="Settings"
-        text="Manage account and website settings."
+        heading="Account Settings"
+        text="Manage your account preferences and security."
       />
-      <div className="divide-y divide-muted pb-10">
-        <UserNameForm user={{ id: user.id, name: user.name || "" }} />
-        <UserRoleForm user={{ id: user.id, role: user.role }} />
-        <DeleteAccountSection />
-      </div>
-    </>
+      <AccountSettingsTabs
+        user={{
+          id: user.id,
+          name: user.name || null,
+          email: user.email || null
+        }}
+      />
+    </div>
   );
 }
