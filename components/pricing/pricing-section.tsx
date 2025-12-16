@@ -22,6 +22,7 @@ const PLANS = [
         description: "For creators just getting started",
         monthlyPrice: 0,
         yearlyPrice: 0,
+        originalYearlyPrice: 0,
         icon: Sparkles,
         color: "from-gray-500 to-gray-600",
         cta: "Try Free",
@@ -41,6 +42,7 @@ const PLANS = [
         description: "Perfect for growing creators",
         monthlyPrice: 29,
         yearlyPrice: 290,
+        originalYearlyPrice: 350, // Shows the "original" price crossed out
         icon: Zap,
         color: "from-blue-500 to-indigo-600",
         cta: "Start Posting With Confidence",
@@ -61,6 +63,7 @@ const PLANS = [
         description: "For serious content creators",
         monthlyPrice: 79,
         yearlyPrice: 790,
+        originalYearlyPrice: 950, // Shows the "original" price crossed out
         icon: Crown,
         color: "from-violet-500 to-purple-600",
         cta: "Remove Guesswork Completely",
@@ -164,7 +167,13 @@ export function PricingSection({ userId, subscriptionPlan }: PricingSectionProps
                                 <CardDescription>{plan.description}</CardDescription>
 
                                 {/* Price */}
-                                <div className="pt-4">
+                                <div className="pt-4 flex items-baseline justify-center gap-2">
+                                    {/* Show original price crossed out for yearly paid plans */}
+                                    {isAnnual && plan.originalYearlyPrice > 0 && (
+                                        <span className="text-2xl font-medium text-muted-foreground/50 line-through">
+                                            ${plan.originalYearlyPrice}
+                                        </span>
+                                    )}
                                     <span className="text-5xl font-bold">
                                         ${price}
                                     </span>
