@@ -309,6 +309,14 @@ export async function analyzeNiche(niche: string): Promise<{
     const nicheKey = niche.toLowerCase();
     const hashtags = NICHE_HASHTAGS[nicheKey] || NICHE_HASHTAGS.deen;
 
+    // USE MOCK DATA - set to true to bypass API issues
+    const USE_MOCK_DATA = true;
+
+    if (USE_MOCK_DATA) {
+        console.log("Using mock data for niche:", nicheKey);
+        return getMockDataForNiche(nicheKey, hashtags);
+    }
+
     // Collect all videos and hashtag info
     const allVideos: TikTokVideo[] = [];
     const hashtagStats: TrendingHashtag[] = [];
@@ -476,4 +484,91 @@ function getDefaultHooks(niche: string): TrendingHook[] {
     };
 
     return defaultHooks[niche] || defaultHooks.default;
+}
+
+// Mock data for when API is unavailable
+function getMockDataForNiche(niche: string, nicheHashtags: string[]): {
+    hooks: TrendingHook[];
+    hashtags: TrendingHashtag[];
+    formats: VideoFormat[];
+    examples: VideoExample[];
+    benchmark: { viewRange: string; timeframe: string };
+} {
+    const mockHooks: Record<string, TrendingHook[]> = {
+        hijab: [
+            { id: "h1", text: "This hijab style changed my whole look", engagement: "High", platform: "TikTok", views: 2400000, likes: 189000 },
+            { id: "h2", text: "3 easy styles for beginners", engagement: "High", platform: "TikTok", views: 1800000, likes: 145000 },
+            { id: "h3", text: "POV: You finally found the perfect wrap", engagement: "Medium", platform: "TikTok", views: 950000, likes: 78000 },
+            { id: "h4", text: "Wait til the end for the best one", engagement: "High", platform: "TikTok", views: 3100000, likes: 265000 },
+            { id: "h5", text: "Tutorial you didn't know you needed", engagement: "Medium", platform: "TikTok", views: 720000, likes: 54000 },
+        ],
+        deen: [
+            { id: "h1", text: "This verse changed my perspective on everything", engagement: "High", platform: "TikTok", views: 3200000, likes: 289000 },
+            { id: "h2", text: "A reminder for those who need it today", engagement: "High", platform: "TikTok", views: 2100000, likes: 178000 },
+            { id: "h3", text: "The Prophet ﷺ said something beautiful", engagement: "Medium", platform: "TikTok", views: 1500000, likes: 134000 },
+            { id: "h4", text: "Story time: How Islam found me", engagement: "High", platform: "TikTok", views: 4500000, likes: 356000 },
+            { id: "h5", text: "This dua works every time", engagement: "High", platform: "TikTok", views: 2800000, likes: 223000 },
+        ],
+        food: [
+            { id: "h1", text: "This recipe will change your life", engagement: "High", platform: "TikTok", views: 5200000, likes: 412000 },
+            { id: "h2", text: "POV: You're making halal comfort food", engagement: "High", platform: "TikTok", views: 3100000, likes: 267000 },
+            { id: "h3", text: "Wait for the cheese pull", engagement: "Medium", platform: "TikTok", views: 1900000, likes: 156000 },
+            { id: "h4", text: "Secret ingredient no one talks about", engagement: "High", platform: "TikTok", views: 2700000, likes: 198000 },
+            { id: "h5", text: "Making this for iftar tonight", engagement: "Medium", platform: "TikTok", views: 890000, likes: 72000 },
+        ],
+        gym: [
+            { id: "h1", text: "This workout transformed my body in 30 days", engagement: "High", platform: "TikTok", views: 4100000, likes: 334000 },
+            { id: "h2", text: "Modest gym fit check", engagement: "Medium", platform: "TikTok", views: 1200000, likes: 98000 },
+            { id: "h3", text: "Ramadan workout routine that actually works", engagement: "High", platform: "TikTok", views: 2800000, likes: 245000 },
+            { id: "h4", text: "Form check: Are you doing this wrong?", engagement: "Medium", platform: "TikTok", views: 980000, likes: 67000 },
+            { id: "h5", text: "POV: You're finally consistent", engagement: "High", platform: "TikTok", views: 1600000, likes: 134000 },
+        ],
+        cultural: [
+            { id: "h1", text: "Ramadan traditions you need to try", engagement: "High", platform: "TikTok", views: 3800000, likes: 312000 },
+            { id: "h2", text: "POV: It's Eid morning", engagement: "High", platform: "TikTok", views: 5600000, likes: 467000 },
+            { id: "h3", text: "Things only Muslims understand", engagement: "Medium", platform: "TikTok", views: 2100000, likes: 178000 },
+            { id: "h4", text: "Get ready with me for Eid", engagement: "High", platform: "TikTok", views: 4200000, likes: 356000 },
+            { id: "h5", text: "Our family iftar tradition", engagement: "Medium", platform: "TikTok", views: 1400000, likes: 112000 },
+        ],
+        pets: [
+            { id: "h1", text: "My cat doing the most Muslim thing ever", engagement: "High", platform: "TikTok", views: 6200000, likes: 523000 },
+            { id: "h2", text: "POV: Your cat heard the adhan", engagement: "High", platform: "TikTok", views: 4100000, likes: 378000 },
+            { id: "h3", text: "Cat vs prayer mat compilation", engagement: "Medium", platform: "TikTok", views: 2300000, likes: 189000 },
+            { id: "h4", text: "The Prophet ﷺ loved cats and now I see why", engagement: "High", platform: "TikTok", views: 3500000, likes: 298000 },
+            { id: "h5", text: "My cat's reaction to Quran", engagement: "High", platform: "TikTok", views: 5800000, likes: 489000 },
+        ],
+        storytelling: [
+            { id: "h1", text: "Story time: How I became Muslim", engagement: "High", platform: "TikTok", views: 7200000, likes: 612000 },
+            { id: "h2", text: "The day everything changed for me", engagement: "High", platform: "TikTok", views: 4500000, likes: 389000 },
+            { id: "h3", text: "POV: You're about to hear something beautiful", engagement: "Medium", platform: "TikTok", views: 2100000, likes: 178000 },
+            { id: "h4", text: "My journey wasn't easy but worth it", engagement: "High", platform: "TikTok", views: 3800000, likes: 334000 },
+            { id: "h5", text: "This story will make you cry", engagement: "High", platform: "TikTok", views: 5100000, likes: 445000 },
+        ],
+    };
+
+    const hooks = mockHooks[niche] || mockHooks.deen;
+
+    const hashtags: TrendingHashtag[] = nicheHashtags.map((tag, i) => ({
+        tag,
+        viewCount: [2500000000, 890000000, 450000000, 120000000, 45000000][i] || 45000000,
+        videoCount: [1200000, 450000, 230000, 89000, 34000][i] || 34000,
+        category: i === 0 ? "Broad" : i < 3 ? "Medium" : "Niche",
+    }));
+
+    const formats: VideoFormat[] = [
+        { id: "f1", name: "Quick Hook (0-15 seconds)", averageLength: "7-15 seconds", whyItWorks: "Captures attention immediately. Perfect for single tips, quick tutorials, or punchy reminders.", popularity: 45 },
+        { id: "f2", name: "Short Form (15-30 seconds)", averageLength: "15-30 seconds", whyItWorks: "Sweet spot for storytelling with a hook. Enough time to deliver value without losing viewers.", popularity: 35 },
+        { id: "f3", name: "Standard (30-60 seconds)", averageLength: "30-60 seconds", whyItWorks: "Ideal for step-by-step content, detailed explanations, or mini vlogs.", popularity: 20 },
+    ];
+
+    return {
+        hooks,
+        hashtags,
+        formats,
+        examples: [], // No examples in mock mode
+        benchmark: {
+            viewRange: "50K–500K",
+            timeframe: "48–72 hours",
+        },
+    };
 }
