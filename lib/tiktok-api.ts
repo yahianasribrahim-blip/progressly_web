@@ -2,7 +2,7 @@
 
 // TEMPORARY: Hardcoded for testing - move back to env var later
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "f278804a40mshe80b9aa07df21a1p1f6e3ejsn89a14ca0342c";
-const RAPIDAPI_HOST = "tiktok-scraper7.p.rapidapi.com";
+const RAPIDAPI_HOST = "tiktok-scraper2.p.rapidapi.com";
 
 // Hashtags to query for each niche
 export const NICHE_HASHTAGS: Record<string, string[]> = {
@@ -96,10 +96,12 @@ async function fetchHashtagInfo(hashtag: string): Promise<HashtagInfo | null> {
 
         const response = await fetch(url, {
             method: "GET",
+            cache: "no-store",
             headers: {
                 "x-rapidapi-host": RAPIDAPI_HOST,
                 "x-rapidapi-key": RAPIDAPI_KEY,
                 "Accept": "application/json",
+                "Content-Type": "application/json",
             },
         });
 
