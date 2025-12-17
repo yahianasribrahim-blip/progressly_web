@@ -141,37 +141,63 @@ function generateTemplateInsights(data: AnalysisData): AIInsights {
         hookPatterns.push(`Keep hooks around ${avgWordCount} words or less`);
     }
 
-    // Generate content ideas based on niche
+    // Generate content ideas based on niche AND actual data patterns
     const nicheIdeas: Record<string, string[]> = {
         cultural: [
-            "Share a Ramadan preparation routine",
-            "Document Eid family traditions",
-            "Show cultural recipes with modern twists",
+            `📍 Film a "Day in My Life" during Ramadan from suhoor to iftar`,
+            `🕌 Create "Things My Non-Muslim Friends Ask About Eid" with genuine Q&A`,
+            `👨‍👩‍👧‍👦 Film your family's unique Ramadan tradition that others might not know`,
+            `🍽️ Show your iftar spread and share the stories behind each dish`,
+            `✨ POV: You're explaining Eid to someone for the first time`,
         ],
         deen: [
-            "Share a powerful Quran verse with context",
-            "Create a series on Sunnah practices",
-            "Answer common questions about Islam",
+            `📖 Pick ONE verse that changed your perspective - explain why in 60 seconds`,
+            `🤲 Share a dua you made that was answered (storytime format)`,
+            `💡 "Things I Wish I Knew Earlier About..." [specific Islamic topic]`,
+            `🎯 Film yourself doing one Sunnah practice and explain its benefits`,
+            `❓ Answer the #1 question you get asked about being Muslim`,
         ],
         hijab: [
-            "Create a 'Get Ready With Me' hijab tutorial",
-            "Share modest fashion for different occasions",
-            "Review hijab-friendly products",
+            `⏱️ "5-Second Hijab Style" for when you're running late - show your fastest wrap`,
+            `💰 "Hijab Haul Under $20" - budget-friendly finds with real styling`,
+            `🏋️ Film a workout with your hijab on - show it stays in place`,
+            `👓 "Hijab Styles That Work With Glasses" - solve this common problem`,
+            `🌡️ Create "Hijab Fabrics for [Season]" with side-by-side comparisons`,
         ],
         food: [
-            "Make a halal version of a trending recipe",
-            "Share iftar/suhoor meal prep tips",
-            "Document eating at halal restaurants",
+            `🧪 "I Made the Viral [Trend] HALAL" - pick a trending recipe and adapt it`,
+            `⏰ Film a complete iftar prep from start to table (time-lapse)`,
+            `🏪 "Halal Food Review: [Restaurant Name]" - honest taste test`,
+            `📝 Share your grandma's recipe with exact measurements`,
+            `🆚 "Homemade vs Store-Bought" halal taste test comparison`,
         ],
         gym: [
-            "Share modest workout outfit ideas",
-            "Create a Ramadan-friendly workout routine",
-            "Show gym-friendly hijab styles",
+            `💪 Film your actual gym routine with exercises + reps`,
+            `👗 "Modest Gym Fit Check" - show the outfit from all angles during workout`,
+            `📅 Create a realistic "Week of Workouts" vlog during Ramadan`,
+            `🔄 "Before & After 30 Days of [Specific Exercise]" transformation`,
+            `🥊 Show how to modify popular exercises for modest dress`,
+        ],
+        pets: [
+            `🐱 Film your cat's reaction to the adhan (call to prayer)`,
+            `📿 "My Cat vs My Prayer Mat" compilation`,
+            `🎵 Create "Cat Reacts to Quran Recitation" (authentic reaction)`,
+            `😂 "POV: Your Cat When It's Fajr Time"`,
+            `❤️ Share the Islamic perspective on treating animals kindly`,
+        ],
+        storytelling: [
+            `🎬 Tell YOUR story: "The Moment Islam Clicked For Me"`,
+            `💔 Share a hardship and how faith helped you through`,
+            `🌟 "Before & After Becoming More Practicing" - real transformation`,
+            `🤔 "Unpopular Opinion About [Topic]" - share your genuine take`,
+            `📚 Story time about a prophet or sahabi that inspired you`,
         ],
         default: [
-            "Create content around current trending sounds",
-            "Share your unique perspective on trending topics",
-            "Make a series that keeps viewers coming back",
+            `📹 Film a "Day in My Life" that shows your authentic routine`,
+            `💬 Answer the #1 question your audience asks you`,
+            `🎯 Create a tutorial solving a specific problem in your niche`,
+            `📊 Share "X Things I Learned After [Timeframe]" in your space`,
+            `⚡ React to or recreate a trending video in your unique style`,
         ],
     };
 
