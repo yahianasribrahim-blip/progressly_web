@@ -83,6 +83,8 @@ export interface VideoFormat {
 
 // Fetch info about a hashtag (returns ID and stats)
 async function fetchHashtagInfo(hashtag: string): Promise<HashtagInfo | null> {
+    console.log("Using RAPIDAPI_KEY starting with:", RAPIDAPI_KEY?.substring(0, 10) + "...");
+
     if (!RAPIDAPI_KEY) {
         console.error("RAPIDAPI_KEY is not set");
         return null;
@@ -97,16 +99,26 @@ async function fetchHashtagInfo(hashtag: string): Promise<HashtagInfo | null> {
             headers: {
                 "x-rapidapi-host": RAPIDAPI_HOST,
                 "x-rapidapi-key": RAPIDAPI_KEY,
+                "Accept": "application/json",
             },
         });
 
         if (!response.ok) {
-            console.error(`Failed to fetch hashtag info: ${response.status}`);
+            const errorText = await response.text().catch(() => "");
+            console.error(`Failed to fetch hashtag info: ${response.status} - ${errorText}`);
+
+            // If rate limited, wait and retry once
+            if (response.status === 429) {
+                console.log("Rate limited, waiting 2 seconds...");
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                return fetchHashtagInfo(hashtag);
+            }
             return null;
         }
 
         const data = await response.json();
         console.log("Hashtag info response:", JSON.stringify(data).substring(0, 300));
+
 
         // Extract hashtag info from response
         const challengeInfo = data.data?.challenge || data.challengeInfo?.challenge || data.data || data;
