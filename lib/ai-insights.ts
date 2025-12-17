@@ -177,8 +177,16 @@ function generateTemplateInsights(data: AnalysisData): AIInsights {
 
     const contentIdeas = nicheIdeas[data.niche.toLowerCase()] || nicheIdeas.default;
 
+    const videoCountText = data.videoCount > 0
+        ? `Based on ${data.videoCount} trending videos in ${nicheCapitalized}`
+        : `Based on current ${nicheCapitalized} trends`;
+
+    const viewsText = data.topViewCount > 10000
+        ? ` Top videos average ${Math.round(data.topViewCount / 1000)}K+ views with`
+        : ` The best content features`;
+
     return {
-        summary: `Based on ${data.videoCount} trending videos in ${nicheCapitalized}, we found that authentic, relatable content performs best. Top videos average ${Math.round(data.topViewCount / 1000)}K+ views with strong hooks that immediately grab attention.`,
+        summary: `${videoCountText}, we found that authentic, relatable content performs best.${viewsText} strong hooks that immediately grab attention.`,
         contentIdeas,
         bestPostingStrategy: "Post consistently 4-7 times per week. Best times are typically 7-9 AM and 7-10 PM in your target timezone. Ramadan season shows higher engagement for Islamic content.",
         hookRecommendations: hookPatterns.length > 0 ? hookPatterns : [
