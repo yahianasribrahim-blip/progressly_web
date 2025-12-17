@@ -300,7 +300,9 @@ function analyzeVideoFormats(videos: TikTokVideo[]): VideoFormat[] {
 
 // Main function to analyze a niche
 export async function analyzeNiche(niche: string): Promise<{
-    hooks: TrendingHook[];
+    hooks: TrendingHook[]; // For backwards compatibility - will be merged
+    captions: TrendingHook[]; // Viral captions from video descriptions
+    spokenHooks: TrendingHook[]; // Actual spoken hooks from transcription
     hashtags: TrendingHashtag[];
     formats: VideoFormat[];
     examples: VideoExample[];
@@ -383,16 +385,33 @@ export async function analyzeNiche(niche: string): Promise<{
     // Import transcription service dynamically to avoid circular deps
     const { getSpokenHooksFromVideos } = await import("./deepgram-transcription");
 
-    // Try to get SPOKEN hooks from video transcription (try more videos to get at least 3-5 hooks)
-    console.log("Attempting to transcribe spoken hooks...");
-    let hooks: TrendingHook[] = [];
+    // ALWAYS get caption-based hooks from video descriptions (these are "Viral Captions")
+    console.log("Extracting viral captions from video descriptions...");
+    const captions: TrendingHook[] = sortedVideos
+        .slice(0, 15) // Get top 15 performing videos
+        .filter((v) => v.desc && v.desc.length > 10)
+        .map((video, index) => ({
+            id: `c${index + 1}`,
+            text: extractHook(video.desc),
+            engagement: getEngagementLevel(video),
+            platform: "TikTok" as const,
+            views: video.stats.playCount,
+            likes: video.stats.diggCount,
+        }))
+        .filter(c => c.text.length > 15); // Filter out very short captions
+
+    console.log(`Got ${captions.length} viral captions`);
+
+    // Try HARDER to get SPOKEN hooks - process up to 20 videos to find ones with actual speech
+    console.log("Attempting to transcribe spoken hooks from up to 20 videos...");
+    let spokenHooks: TrendingHook[] = [];
 
     try {
-        const spokenHooks = await getSpokenHooksFromVideos(sortedVideos, 10); // Try 10 videos to get more hooks
+        const rawSpokenHooks = await getSpokenHooksFromVideos(sortedVideos, 20); // Try 20 videos!
 
-        if (spokenHooks.length > 0) {
-            console.log(`Got ${spokenHooks.length} spoken hooks from transcription!`);
-            hooks = spokenHooks.map(h => ({
+        if (rawSpokenHooks.length > 0) {
+            console.log(`Got ${rawSpokenHooks.length} spoken hooks from transcription!`);
+            spokenHooks = rawSpokenHooks.map(h => ({
                 id: h.id,
                 text: h.text,
                 engagement: h.engagement,
@@ -402,29 +421,15 @@ export async function analyzeNiche(niche: string): Promise<{
             }));
         }
     } catch (error) {
-        console.error("Transcription failed, falling back to caption hooks:", error);
+        console.error("Transcription failed:", error);
     }
 
-    // If transcription didn't work, fall back to caption-based hooks
-    if (hooks.length === 0) {
-        console.log("Using caption-based hooks as fallback");
-        hooks = sortedVideos
-            .slice(0, 10)
-            .filter((v) => v.desc && v.desc.length > 5)
-            .map((video, index) => ({
-                id: `h${index + 1}`,
-                text: extractHook(video.desc),
-                engagement: getEngagementLevel(video),
-                platform: "TikTok" as const,
-                views: video.stats.playCount,
-                likes: video.stats.diggCount,
-            }));
-    }
+    console.log(`Final: ${captions.length} captions, ${spokenHooks.length} spoken hooks`);
 
-    console.log("Final hooks count:", hooks.length);
-    if (hooks.length > 0) {
-        console.log("First hook text:", hooks[0].text);
-    }
+    // Merged hooks for backwards compatibility (spoken hooks first, then captions as fallback)
+    const mergedHooks = spokenHooks.length > 0
+        ? [...spokenHooks, ...captions.slice(0, 5 - spokenHooks.length)]
+        : captions;
 
     // Create video examples
     const examples: VideoExample[] = sortedVideos.slice(0, 4).map((video) => ({
@@ -452,7 +457,9 @@ export async function analyzeNiche(niche: string): Promise<{
     const highRange = Math.floor(medianViews * 1.5);
 
     return {
-        hooks: hooks.length > 0 ? hooks : getDefaultHooks(nicheKey),
+        hooks: mergedHooks.length > 0 ? mergedHooks : getDefaultHooks(nicheKey),
+        captions: captions.slice(0, 10), // Top 10 viral captions
+        spokenHooks: spokenHooks.slice(0, 5), // Top 5 spoken hooks (if any)
         hashtags: hashtagStats,
         formats: formats.slice(0, 3), // Top 3 formats
         examples,
@@ -489,6 +496,8 @@ function getDefaultHooks(niche: string): TrendingHook[] {
 // Mock data for when API is unavailable
 function getMockDataForNiche(niche: string, nicheHashtags: string[]): {
     hooks: TrendingHook[];
+    captions: TrendingHook[];
+    spokenHooks: TrendingHook[];
     hashtags: TrendingHashtag[];
     formats: VideoFormat[];
     examples: VideoExample[];
@@ -563,6 +572,8 @@ function getMockDataForNiche(niche: string, nicheHashtags: string[]): {
 
     return {
         hooks,
+        captions: hooks, // In mock mode, use same data for captions
+        spokenHooks: hooks.slice(0, 3), // Use first 3 as "spoken hooks"
         hashtags,
         formats,
         examples: [], // No examples in mock mode

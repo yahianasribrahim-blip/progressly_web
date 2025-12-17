@@ -241,11 +241,26 @@ export function AnalyzeNicheSection({
                         plan={plan}
                     />
 
-                    {/* 3. Hooks Card */}
+                    {/* 3. Spoken Hooks Card - Actual hooks from video audio */}
+                    {analysisResult.spokenHooks && analysisResult.spokenHooks.length > 0 && (
+                        <HooksCard
+                            hooks={analysisResult.spokenHooks}
+                            isPremium={isPremium}
+                            plan={plan}
+                            title="🎤 Spoken Hooks"
+                            type="spoken"
+                            emptyMessage="No spoken hooks found - videos in this niche may use music/text instead"
+                        />
+                    )}
+
+                    {/* 4. Viral Captions Card - Trending captions from descriptions */}
                     <HooksCard
-                        hooks={analysisResult.hooks}
+                        hooks={analysisResult.captions || analysisResult.hooks}
                         isPremium={isPremium}
                         plan={plan}
+                        title="📝 Viral Captions"
+                        type="caption"
+                        emptyMessage="No viral captions found"
                     />
 
                     {/* 4. Hashtags Card */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check, Lock, Zap } from "lucide-react";
+import { Copy, Check, Lock, Zap, Mic, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,9 +14,19 @@ interface HooksCardProps {
     hooks: Hook[];
     isPremium: boolean;
     plan: "free" | "starter" | "pro";
+    title?: string;
+    type?: "spoken" | "caption";
+    emptyMessage?: string;
 }
 
-export function HooksCard({ hooks, isPremium, plan }: HooksCardProps) {
+export function HooksCard({
+    hooks,
+    isPremium,
+    plan,
+    title = "Hooks That Are Working",
+    type = "spoken",
+    emptyMessage = "No hooks found for this niche"
+}: HooksCardProps) {
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
     const handleCopy = (hook: Hook) => {
@@ -54,16 +64,39 @@ export function HooksCard({ hooks, isPremium, plan }: HooksCardProps) {
         }
     };
 
+    const getTypeIcon = () => {
+        if (type === "spoken") {
+            return <Mic className="h-5 w-5 text-violet-500" />;
+        }
+        return <MessageSquare className="h-5 w-5 text-blue-500" />;
+    };
+
+    if (hooks.length === 0) {
+        return (
+            <Card>
+                <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                        {getTypeIcon()}
+                        {title}
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground text-sm">{emptyMessage}</p>
+                </CardContent>
+            </Card>
+        );
+    }
+
     return (
         <Card>
             <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2 text-xl">
-                        <span className="text-2xl">🎣</span>
-                        Hooks That Are Working
+                        {getTypeIcon()}
+                        {title}
                     </CardTitle>
                     <Badge variant="secondary" className="font-normal">
-                        {hooks.length} hooks
+                        {hooks.length} {type === "spoken" ? "hooks" : "captions"}
                     </Badge>
                 </div>
             </CardHeader>

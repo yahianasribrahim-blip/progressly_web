@@ -40,6 +40,8 @@ export interface Benchmark {
 export interface AnalysisResult {
     niche: string;
     hooks: Hook[];
+    captions?: Hook[]; // Viral captions from video descriptions
+    spokenHooks?: Hook[]; // Actual spoken hooks from transcription
     formats: Format[];
     exampleVideos: ExampleVideo[];
     hashtags: Hashtag[];
