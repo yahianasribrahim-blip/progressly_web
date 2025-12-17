@@ -232,19 +232,10 @@ function generateVideoIdea(niche: string, hooks: Array<{ text: string }>, hashta
     const ideas = nicheIdeas[niche.toLowerCase()] || nicheIdeas.default;
     const randomIdea = ideas[Math.floor(Math.random() * ideas.length)];
 
-    // Customize with actual hooks and hashtags if available
-    // Only use hooks that look complete (not truncated)
-    const validHooks = hooks.filter(h => {
-        const text = h.text.trim();
-        // Must be at least 20 chars and either end with punctuation or not end with "..."
-        return text.length >= 20 &&
-            (text.endsWith('.') || text.endsWith('!') || text.endsWith('?') || text.endsWith('...') || !text.endsWith('"'));
-    });
+    // DON'T replace the hook with random analyzed hooks - they won't match the video concept
+    // Each video template has its own curated hook that matches the content
 
-    if (validHooks.length > 0 && Math.random() > 0.3) {
-        randomIdea.hook = validHooks[Math.floor(Math.random() * validHooks.length)].text;
-    }
-
+    // BUT do customize hashtags based on what's trending
     if (hashtags.length > 0) {
         randomIdea.hashtags = hashtags.slice(0, 4).map(h => h.tag);
     }
