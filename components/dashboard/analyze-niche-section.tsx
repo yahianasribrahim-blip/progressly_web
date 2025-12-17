@@ -85,6 +85,8 @@ export function AnalyzeNicheSection({
             // Debug: Log what we received
             console.log("Received data from API:", {
                 hooksCount: data.hooks?.length,
+                captionsCount: data.captions?.length,
+                spokenHooksCount: data.spokenHooks?.length,
                 hashtagsCount: data.hashtags?.length,
                 examplesCount: data.examples?.length,
                 firstHook: data.hooks?.[0]?.text,
@@ -97,6 +99,14 @@ export function AnalyzeNicheSection({
                     ...hook,
                     platform: hook.platform || "TikTok",
                 })),
+                captions: data.captions?.map((caption: { id: string; text: string; engagement: string; platform: string; views?: number; likes?: number }) => ({
+                    ...caption,
+                    platform: caption.platform || "TikTok",
+                })) || [],
+                spokenHooks: data.spokenHooks?.map((hook: { id: string; text: string; engagement: string; platform: string; views?: number; likes?: number }) => ({
+                    ...hook,
+                    platform: hook.platform || "TikTok",
+                })) || [],
                 formats: data.formats.map((format: { id: string; name: string; averageLength: string; whyItWorks: string; popularity?: number }, index: number) => ({
                     id: format.id || `f${index + 1}`,
                     name: format.name,
