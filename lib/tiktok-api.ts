@@ -310,7 +310,7 @@ export async function analyzeNiche(niche: string): Promise<{
     const hashtags = NICHE_HASHTAGS[nicheKey] || NICHE_HASHTAGS.deen;
 
     // USE MOCK DATA - set to true to bypass API issues
-    const USE_MOCK_DATA = false;
+    const USE_MOCK_DATA = true;
 
     if (USE_MOCK_DATA) {
         console.log("Using mock data for niche:", nicheKey);
