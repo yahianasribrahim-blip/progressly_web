@@ -129,30 +129,96 @@ function generateVideoIdea(niche: string, hooks: Array<{ text: string }>, hashta
         ],
         food: [
             {
-                title: "Halal Version of [Trending Food] That Tastes Better",
-                hook: "Everyone's been making this but with [haram ingredient]... here's the halal version that tastes even better",
+                title: "Halal Version of This Trending Recipe",
+                hook: "Everyone's making this but here's the halal version that tastes even better...",
                 script: "Show the ingredients, quick cooking process, and final result. Focus on the substitution that makes it halal. Taste test at the end.",
                 duration: "30-60 seconds",
                 format: "Recipe / Cooking Tutorial",
                 hashtags: ["halalfood", "halaleats", "muslimfoodie", "foodtok"],
-                sound: "Trending sound or cooking ASMR",
+                sound: "Search 'cooking ASMR' or 'recipe time' on TikTok - sizzling sounds and upbeat music work best",
                 tips: [
                     "Use good lighting for food shots",
                     "Show the textures and steam",
                     "Keep ingredient list visible",
                     "Do a genuine taste reaction"
                 ]
+            },
+            {
+                title: "What I Eat in a Day as a Muslim Foodie",
+                hook: "POV: You're curious what halal eating actually looks like...",
+                script: "Document your meals throughout the day. Show breakfast, lunch, snacks, and dinner. Include where you got the food or quick prep shots.",
+                duration: "45-90 seconds",
+                format: "What I Eat in a Day",
+                hashtags: ["halalfood", "whatieatinaday", "halaleats", "foodtok"],
+                sound: "Search 'what I eat in a day' on TikTok and use a trending audio from those videos",
+                tips: [
+                    "Show variety in your meals",
+                    "Include some homemade and some restaurant food",
+                    "Add text overlays with meal names",
+                    "End with your favorite meal of the day"
+                ]
+            }
+        ],
+        gym: [
+            {
+                title: "Modest Gym Fit That Actually Works",
+                hook: "Finally found gym clothes that are modest AND functional...",
+                script: "Show your outfit from different angles. Demonstrate that it stays in place during exercises. Share where you got each piece.",
+                duration: "15-30 seconds",
+                format: "Outfit Check / Review",
+                hashtags: ["muslimfitness", "modestworkout", "hijabifitness", "gymtok"],
+                sound: "Search 'gym motivation' or 'workout music' - use upbeat, energetic audio",
+                tips: [
+                    "Show the outfit in action, not just standing",
+                    "Include price and where to buy",
+                    "Show it doesn't ride up or move around",
+                    "Film in good gym lighting"
+                ]
+            }
+        ],
+        pets: [
+            {
+                title: "My Cat's Reaction to Quran Recitation",
+                hook: "I started playing Quran and my cat did this...",
+                script: "Set up your phone to record your pet. Play Quran recitation and capture their genuine reaction. Keep it authentic.",
+                duration: "15-45 seconds",
+                format: "Pet Reaction / Cute Animals",
+                hashtags: ["muslimswithcats", "catsofislam", "quran", "cattok"],
+                sound: "Use the actual Quran recitation audio - no additional music needed",
+                tips: [
+                    "Make sure the audio is clear",
+                    "Capture the cat's natural behavior",
+                    "Don't force a reaction",
+                    "Good lighting on the cat"
+                ]
+            }
+        ],
+        storytelling: [
+            {
+                title: "The Moment I Knew Islam Was True",
+                hook: "This one experience changed everything I believed...",
+                script: "Share a personal story about your journey. Build up the tension, share the turning point, and end with the lesson. Be vulnerable and authentic.",
+                duration: "60-180 seconds",
+                format: "Storytime / Personal Journey",
+                hashtags: ["storytime", "muslimstory", "revertmuslim", "myjourney"],
+                sound: "Search 'storytime' or 'emotional' on TikTok - soft, reflective background music",
+                tips: [
+                    "Speak from the heart",
+                    "Make eye contact with the camera",
+                    "Build up to the emotional moment",
+                    "End with something viewers can relate to"
+                ]
             }
         ],
         default: [
             {
-                title: "POV: You're a [Your Niche] Creator in 2024",
-                hook: "Nobody told me this about creating content in [niche]...",
+                title: "A Day in My Life as a Content Creator",
+                hook: "Nobody told me this about creating content...",
                 script: "Share your unique perspective on your niche. What surprised you? What do people not know? Make it personal and relatable.",
                 duration: "30-60 seconds",
                 format: "POV / Storytime",
                 hashtags: ["contentcreator", "creatorlife", "tiktokgrowth"],
-                sound: "Trending sound",
+                sound: "Search 'day in my life' on TikTok and use a currently trending audio",
                 tips: [
                     "Be authentic and genuine",
                     "Share real experiences",
@@ -167,8 +233,16 @@ function generateVideoIdea(niche: string, hooks: Array<{ text: string }>, hashta
     const randomIdea = ideas[Math.floor(Math.random() * ideas.length)];
 
     // Customize with actual hooks and hashtags if available
-    if (hooks.length > 0 && Math.random() > 0.5) {
-        randomIdea.hook = hooks[Math.floor(Math.random() * hooks.length)].text;
+    // Only use hooks that look complete (not truncated)
+    const validHooks = hooks.filter(h => {
+        const text = h.text.trim();
+        // Must be at least 20 chars and either end with punctuation or not end with "..."
+        return text.length >= 20 &&
+            (text.endsWith('.') || text.endsWith('!') || text.endsWith('?') || text.endsWith('...') || !text.endsWith('"'));
+    });
+
+    if (validHooks.length > 0 && Math.random() > 0.3) {
+        randomIdea.hook = validHooks[Math.floor(Math.random() * validHooks.length)].text;
     }
 
     if (hashtags.length > 0) {

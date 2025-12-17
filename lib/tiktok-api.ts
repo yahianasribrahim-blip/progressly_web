@@ -1,7 +1,7 @@
 // TikTok API Integration using RapidAPI TikTok Scraper
 
 // TEMPORARY: Hardcoded for testing - move back to env var later
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "f278804a40mshe80b9aa07df21a1p1f6e3ejsn89a14ca0342c";
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "b3277b1e5amsh2b4133d3f8c9368p16998bjsnd0bfd0467eeb";
 const RAPIDAPI_HOST = "tiktok-scraper2.p.rapidapi.com";
 
 // Hashtags to query for each niche
@@ -310,7 +310,7 @@ export async function analyzeNiche(niche: string): Promise<{
     const hashtags = NICHE_HASHTAGS[nicheKey] || NICHE_HASHTAGS.deen;
 
     // USE MOCK DATA - set to true to bypass API issues
-    const USE_MOCK_DATA = true;
+    const USE_MOCK_DATA = false;
 
     if (USE_MOCK_DATA) {
         console.log("Using mock data for niche:", nicheKey);
