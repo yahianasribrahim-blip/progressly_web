@@ -101,10 +101,7 @@ export function DashboardSidebar({ links }: DashboardSidebarProps) {
                 </Button>
               </div>
 
-              {/* Plan Badge - below project switcher */}
-              <div className="px-4">
-                <PlanBadge plan="free" expanded={isSidebarExpanded} />
-              </div>
+              {/* Plan Badge removed - subscription info is on billing page */}
 
               <nav className="flex flex-1 flex-col gap-8 px-4 pt-4">
                 {links.map((section) => (
