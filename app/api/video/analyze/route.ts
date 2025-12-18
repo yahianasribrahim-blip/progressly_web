@@ -20,6 +20,9 @@ export async function POST(request: Request) {
             );
         }
 
+        console.log("=== VIDEO ANALYSIS REQUEST ===");
+        console.log("URL:", videoUrl);
+
         // Extract video ID from TikTok URL - multiple patterns
         let videoId: string | null = null;
 
@@ -31,7 +34,6 @@ export async function POST(request: Request) {
 
         // Pattern 2: Short TikTok URL (vm.tiktok.com or vt.tiktok.com)
         if (!videoId && videoUrl.includes('tiktok.com')) {
-            // Try to extract from the end of URL
             const urlParts = videoUrl.split('/');
             const lastPart = urlParts[urlParts.length - 1].split('?')[0];
             if (/^\d+$/.test(lastPart)) {
@@ -46,12 +48,13 @@ export async function POST(request: Request) {
             );
         }
 
-        console.log("Analyzing video ID:", videoId);
+        console.log("Video ID extracted:", videoId);
 
         // Fetch video details from TikTok API
         const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
         const RAPIDAPI_HOST = "tiktok-scraper2.p.rapidapi.com";
 
+        // Try the video info endpoint
         const videoResponse = await fetch(
             `https://${RAPIDAPI_HOST}/video/info?video_id=${videoId}`,
             {
@@ -63,64 +66,89 @@ export async function POST(request: Request) {
             }
         );
 
+        console.log("API Response status:", videoResponse.status);
+
         if (!videoResponse.ok) {
-            console.error("Failed to fetch video info:", videoResponse.status);
             const errorText = await videoResponse.text();
-            console.error("Error response:", errorText);
+            console.error("API Error:", errorText);
             return NextResponse.json(
-                { error: `Failed to fetch video details (${videoResponse.status}). The video might be private or deleted.` },
+                { error: `Failed to fetch video details (${videoResponse.status}). The video might be private, deleted, or the URL format is not supported.` },
                 { status: 400 }
             );
         }
 
         const videoData = await videoResponse.json();
-        console.log("Video data keys:", Object.keys(videoData));
-        console.log("Full video data:", JSON.stringify(videoData).substring(0, 500));
+        console.log("API Response keys:", Object.keys(videoData));
+        console.log("Raw response (first 1000 chars):", JSON.stringify(videoData).substring(0, 1000));
 
-        // Try multiple paths to extract video info (API response format varies)
-        const videoInfo =
-            videoData.itemInfo?.itemStruct ||
-            videoData.aweme_detail ||
-            videoData.item ||
-            videoData.data ||
-            videoData;
+        // Navigate through the response - the API returns nested structure
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let videoInfo: any = null;
 
-        // Extract stats from various possible paths
+        // Check various paths where data might be
+        if (videoData.itemInfo?.itemStruct) {
+            videoInfo = videoData.itemInfo.itemStruct;
+            console.log("Found data at: itemInfo.itemStruct");
+        } else if (videoData.aweme_detail) {
+            videoInfo = videoData.aweme_detail;
+            console.log("Found data at: aweme_detail");
+        } else if (videoData.item) {
+            videoInfo = videoData.item;
+            console.log("Found data at: item");
+        } else if (videoData.data) {
+            videoInfo = videoData.data;
+            console.log("Found data at: data");
+        } else if (videoData.id || videoData.desc) {
+            videoInfo = videoData;
+            console.log("Using root level data");
+        }
+
+        if (!videoInfo) {
+            console.error("Could not find video info in response");
+            return NextResponse.json(
+                { error: "Video data could not be parsed. The TikTok API response format may have changed." },
+                { status: 400 }
+            );
+        }
+
+        console.log("VideoInfo keys:", Object.keys(videoInfo));
+
+        // Extract data with fallbacks
         const stats = videoInfo.stats || videoInfo.statistics || {};
-        const author = videoInfo.author || videoInfo.author_info || {};
-        const desc = videoInfo.desc || videoInfo.description || videoInfo.title || "";
+        const author = videoInfo.author || {};
+        const desc = videoInfo.desc || videoInfo.description || "";
         const duration = videoInfo.video?.duration || videoInfo.duration || 0;
 
-        // Map stats to consistent format
-        const mappedStats = {
-            playCount: stats.playCount || stats.play_count || stats.view_count || 0,
-            diggCount: stats.diggCount || stats.digg_count || stats.like_count || 0,
-            commentCount: stats.commentCount || stats.comment_count || 0,
-            shareCount: stats.shareCount || stats.share_count || 0,
-        };
+        // Map to consistent format for display
+        const views = stats.playCount || stats.play_count || 0;
+        const likes = stats.diggCount || stats.digg_count || 0;
+        const comments = stats.commentCount || stats.comment_count || 0;
+        const shares = stats.shareCount || stats.share_count || 0;
+        const creatorName = author.uniqueId || author.unique_id || author.nickname || "Unknown";
 
-        console.log("Extracted - Author:", author.uniqueId || author.unique_id || author.nickname);
-        console.log("Extracted - Stats:", mappedStats);
-        console.log("Extracted - Description:", desc.substring(0, 100));
+        console.log("=== EXTRACTED DATA ===");
+        console.log("Creator:", creatorName);
+        console.log("Views:", views, "Likes:", likes, "Comments:", comments, "Shares:", shares);
+        console.log("Description:", desc.substring(0, 100));
+        console.log("Duration:", duration);
 
-        // Analyze the video content
-        const analysis = analyzeVideoContent(desc, mappedStats, duration);
+        // Generate analysis with REAL data - pass in the expected format
+        const analysis = analyzeVideoContent(desc, { playCount: views, diggCount: likes, commentCount: comments, shareCount: shares }, duration);
 
         return NextResponse.json({
             success: true,
             video: {
                 id: videoId,
                 description: desc,
-                creator: author.uniqueId || author.unique_id || author.nickname || "Unknown",
+                creator: creatorName,
                 duration: duration,
-                stats: {
-                    views: mappedStats.playCount,
-                    likes: mappedStats.diggCount,
-                    comments: mappedStats.commentCount,
-                    shares: mappedStats.shareCount,
-                },
+                stats: { views, likes, comments, shares },
             },
             analysis: analysis,
+            debug: {
+                hasStats: Boolean(stats.playCount || stats.play_count),
+                apiResponseKeys: Object.keys(videoData),
+            }
         });
     } catch (error) {
         console.error("Error analyzing video:", error);
