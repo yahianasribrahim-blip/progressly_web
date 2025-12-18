@@ -15,6 +15,7 @@ import { BenchmarkCard } from "@/components/dashboard/analysis/benchmark-card";
 import { AIInsightsCard } from "@/components/dashboard/analysis/ai-insights-card";
 import { VideoIdeaGenerator } from "@/components/dashboard/analysis/video-idea-generator";
 import { NicheSelector } from "@/components/dashboard/niche-selector";
+import { AnalyzeMyVideo } from "@/components/dashboard/analyze-my-video";
 import { AnalysisResult } from "@/lib/mock-analysis";
 
 interface AIInsights {
@@ -352,6 +353,9 @@ export function AnalyzeNicheSection({
                     <BenchmarkCard
                         benchmark={analysisResult.benchmark}
                     />
+
+                    {/* 7. Analyze My Video Section */}
+                    <AnalyzeMyVideo />
 
                     {/* Single Upgrade CTA at the very bottom - only for free users */}
                     {plan === "free" && (
