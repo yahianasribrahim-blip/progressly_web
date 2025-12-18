@@ -132,8 +132,21 @@ export async function POST(request: Request) {
         console.log("Description:", desc.substring(0, 100));
         console.log("Duration:", duration);
 
+        // Check if stats are actually populated
+        const hasRealStats = views > 0 || likes > 0;
+        if (!hasRealStats) {
+            console.warn("WARNING: No stats found in response - API may not be returning full data");
+            console.log("Stats object:", JSON.stringify(stats));
+            console.log("VideoInfo object keys:", Object.keys(videoInfo));
+        }
+
         // Generate analysis with REAL data - pass in the expected format
         const analysis = analyzeVideoContent(desc, { playCount: views, diggCount: likes, commentCount: comments, shareCount: shares }, duration);
+
+        // Add warning if stats are all zero
+        if (!hasRealStats) {
+            analysis.feedback = ["⚠️ Could not retrieve full video statistics. The TikTok API may be experiencing issues or the video may have restricted data access."];
+        }
 
         return NextResponse.json({
             success: true,
@@ -146,8 +159,10 @@ export async function POST(request: Request) {
             },
             analysis: analysis,
             debug: {
-                hasStats: Boolean(stats.playCount || stats.play_count),
+                hasStats: hasRealStats,
                 apiResponseKeys: Object.keys(videoData),
+                statsKeys: Object.keys(stats),
+                rawStatsObject: stats,
             }
         });
     } catch (error) {
