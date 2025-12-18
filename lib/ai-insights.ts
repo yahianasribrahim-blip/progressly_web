@@ -124,106 +124,148 @@ What patterns do you see? What should they do this week?
 
 /**
  * Generate template-based insights when AI is not available
+ * Now derives content ideas from ACTUAL video patterns, not static templates
  */
 function generateTemplateInsights(data: AnalysisData): AIInsights {
     const nicheCapitalized = data.niche.charAt(0).toUpperCase() + data.niche.slice(1);
 
-    // Extract patterns from hooks
+    // Extract patterns from actual hooks/captions
     const hookPatterns: string[] = [];
-    if (data.hooks.some(h => h.text.toLowerCase().includes("how"))) {
-        hookPatterns.push("Use 'how-to' style openings - they grab attention");
+    const actualPatterns: string[] = [];
+
+    // Analyze what's actually in the videos
+    data.hooks.forEach(h => {
+        const text = h.text.toLowerCase();
+
+        // Detect video types from descriptions
+        if (text.includes("quran") || text.includes("recit") || text.includes("tilawa")) {
+            actualPatterns.push("quran_recitation");
+        }
+        if (text.includes("kaaba") || text.includes("mecca") || text.includes("umrah") || text.includes("hajj")) {
+            actualPatterns.push("kaaba_footage");
+        }
+        if (text.includes("prayer") || text.includes("salah") || text.includes("rakaa") || text.includes("sujood")) {
+            actualPatterns.push("prayer_content");
+        }
+        if (text.includes("pov") || text.includes("when you") || text.includes("me when")) {
+            actualPatterns.push("relatable_meme");
+        }
+        if (text.includes("hijab") || text.includes("modest")) {
+            actualPatterns.push("hijab_fashion");
+        }
+        if (text.includes("recipe") || text.includes("cook") || text.includes("food")) {
+            actualPatterns.push("food_content");
+        }
+        if (text.includes("dua") || text.includes("dhikr") || text.includes("allah")) {
+            actualPatterns.push("spiritual_reminder");
+        }
+        if (text.includes("story") || text.includes("revert") || text.includes("journey")) {
+            actualPatterns.push("personal_story");
+        }
+    });
+
+    // Get unique patterns
+    const uniquePatterns = Array.from(new Set(actualPatterns));
+
+    // Generate content ideas based on WHAT'S ACTUALLY PERFORMING
+    const contentIdeas: string[] = [];
+
+    if (uniquePatterns.includes("quran_recitation")) {
+        contentIdeas.push("🎧 Record yourself reciting a short surah with English subtitles");
+        contentIdeas.push("📖 Share a verse that hits different with your personal reflection");
+    }
+    if (uniquePatterns.includes("kaaba_footage")) {
+        contentIdeas.push("🕋 Create a 'Umrah/Hajj vlog' style video if you've been");
+        contentIdeas.push("✨ Share the emotional moment you saw the Kaaba for the first time");
+    }
+    if (uniquePatterns.includes("prayer_content")) {
+        contentIdeas.push("😂 \"When you forget which rakaa you're on\" - relatable prayer moments");
+        contentIdeas.push("🙏 Film a peaceful Fajr routine that inspires others");
+    }
+    if (uniquePatterns.includes("relatable_meme")) {
+        contentIdeas.push("🤣 Create a \"POV: Muslim problems\" that everyone relates to");
+        contentIdeas.push("😅 Film \"Me trying to explain Eid to my coworkers\"");
+    }
+    if (uniquePatterns.includes("hijab_fashion")) {
+        contentIdeas.push("👗 Film a modest GRWM (Get Ready With Me)");
+        contentIdeas.push("💫 Create \"3 ways to style the same hijab\"");
+    }
+    if (uniquePatterns.includes("food_content")) {
+        contentIdeas.push("🍽️ Film your best iftar recipe step-by-step");
+        contentIdeas.push("🧑‍🍳 Share your secret family recipe");
+    }
+    if (uniquePatterns.includes("spiritual_reminder")) {
+        contentIdeas.push("💭 Share a dua that was answered for you");
+        contentIdeas.push("✨ Create a dhikr morning routine video");
+    }
+    if (uniquePatterns.includes("personal_story")) {
+        contentIdeas.push("📖 Share your journey - what brought you closer to deen");
+        contentIdeas.push("💪 Tell a story of when faith helped you through hardship");
+    }
+
+    // If no patterns detected, give generic but useful ideas based on niche
+    if (contentIdeas.length < 3) {
+        contentIdeas.push(`📹 Recreate the top performing video style in your own way`);
+        contentIdeas.push(`💬 Film a reaction to a trending topic in ${nicheCapitalized}`);
+        contentIdeas.push(`🎯 Answer a common question your audience has`);
+    }
+
+    // Limit to 5 ideas
+    const finalIdeas = contentIdeas.slice(0, 5);
+
+    // Hook pattern analysis
+    if (data.hooks.some(h => h.text.toLowerCase().includes("pov"))) {
+        hookPatterns.push("\"POV:\" format is performing well - use it!");
+    }
+    if (data.hooks.some(h => h.text.toLowerCase().includes("when you") || h.text.toLowerCase().includes("me when"))) {
+        hookPatterns.push("Relatable \"when you/me when\" hooks are trending");
     }
     if (data.hooks.some(h => h.text.toLowerCase().includes("this"))) {
-        hookPatterns.push("Start with 'This is...' or 'This changed...' for curiosity");
+        hookPatterns.push("Start with 'This...' to create curiosity");
     }
     if (data.hooks.length > 0) {
         const avgWordCount = Math.round(data.hooks.reduce((sum, h) => sum + h.text.split(' ').length, 0) / data.hooks.length);
-        hookPatterns.push(`Keep hooks around ${avgWordCount} words or less`);
+        hookPatterns.push(`Keep hooks around ${avgWordCount} words (based on top videos)`);
     }
-
-    // Generate content ideas based on niche AND actual data patterns
-    const nicheIdeas: Record<string, string[]> = {
-        cultural: [
-            `📍 Film a "Day in My Life" during Ramadan from suhoor to iftar`,
-            `🕌 Create "Things My Non-Muslim Friends Ask About Eid" with genuine Q&A`,
-            `👨‍👩‍👧‍👦 Film your family's unique Ramadan tradition that others might not know`,
-            `🍽️ Show your iftar spread and share the stories behind each dish`,
-            `✨ POV: You're explaining Eid to someone for the first time`,
-        ],
-        deen: [
-            `📖 Pick ONE verse that changed your perspective - explain why in 60 seconds`,
-            `🤲 Share a dua you made that was answered (storytime format)`,
-            `💡 "Things I Wish I Knew Earlier About..." [specific Islamic topic]`,
-            `🎯 Film yourself doing one Sunnah practice and explain its benefits`,
-            `❓ Answer the #1 question you get asked about being Muslim`,
-        ],
-        hijab: [
-            `⏱️ "5-Second Hijab Style" for when you're running late - show your fastest wrap`,
-            `💰 "Hijab Haul Under $20" - budget-friendly finds with real styling`,
-            `🏋️ Film a workout with your hijab on - show it stays in place`,
-            `👓 "Hijab Styles That Work With Glasses" - solve this common problem`,
-            `🌡️ Create "Hijab Fabrics for [Season]" with side-by-side comparisons`,
-        ],
-        food: [
-            `🧪 "I Made the Viral [Trend] HALAL" - pick a trending recipe and adapt it`,
-            `⏰ Film a complete iftar prep from start to table (time-lapse)`,
-            `🏪 "Halal Food Review: [Restaurant Name]" - honest taste test`,
-            `📝 Share your grandma's recipe with exact measurements`,
-            `🆚 "Homemade vs Store-Bought" halal taste test comparison`,
-        ],
-        gym: [
-            `💪 Film your actual gym routine with exercises + reps`,
-            `👗 "Modest Gym Fit Check" - show the outfit from all angles during workout`,
-            `📅 Create a realistic "Week of Workouts" vlog during Ramadan`,
-            `🔄 "Before & After 30 Days of [Specific Exercise]" transformation`,
-            `🥊 Show how to modify popular exercises for modest dress`,
-        ],
-        pets: [
-            `🐱 Film your cat's reaction to the adhan (call to prayer)`,
-            `📿 "My Cat vs My Prayer Mat" compilation`,
-            `🎵 Create "Cat Reacts to Quran Recitation" (authentic reaction)`,
-            `😂 "POV: Your Cat When It's Fajr Time"`,
-            `❤️ Share the Islamic perspective on treating animals kindly`,
-        ],
-        storytelling: [
-            `🎬 Tell YOUR story: "The Moment Islam Clicked For Me"`,
-            `💔 Share a hardship and how faith helped you through`,
-            `🌟 "Before & After Becoming More Practicing" - real transformation`,
-            `🤔 "Unpopular Opinion About [Topic]" - share your genuine take`,
-            `📚 Story time about a prophet or sahabi that inspired you`,
-        ],
-        default: [
-            `📹 Film a "Day in My Life" that shows your authentic routine`,
-            `💬 Answer the #1 question your audience asks you`,
-            `🎯 Create a tutorial solving a specific problem in your niche`,
-            `📊 Share "X Things I Learned After [Timeframe]" in your space`,
-            `⚡ React to or recreate a trending video in your unique style`,
-        ],
-    };
-
-    const contentIdeas = nicheIdeas[data.niche.toLowerCase()] || nicheIdeas.default;
 
     const videoCountText = data.videoCount > 0
         ? `Based on ${data.videoCount} trending videos in ${nicheCapitalized}`
         : `Based on current ${nicheCapitalized} trends`;
 
     const viewsText = data.topViewCount > 10000
-        ? ` Top videos average ${Math.round(data.topViewCount / 1000)}K+ views with`
-        : ` The best content features`;
+        ? ` Top videos average ${Math.round(data.topViewCount / 1000)}K+ views.`
+        : ` Focus on authentic content.`;
+
+    // Generate pattern-based summary
+    let patternSummary = "";
+    if (uniquePatterns.length > 0) {
+        const patternNames: Record<string, string> = {
+            "quran_recitation": "Quran recitations",
+            "kaaba_footage": "Kaaba/Umrah footage",
+            "prayer_content": "prayer-related content",
+            "relatable_meme": "relatable memes",
+            "hijab_fashion": "hijab/modest fashion",
+            "food_content": "halal food videos",
+            "spiritual_reminder": "spiritual reminders",
+            "personal_story": "personal journey stories",
+        };
+        const topPatterns = uniquePatterns.slice(0, 3).map(p => patternNames[p] || p).join(", ");
+        patternSummary = ` We're seeing strong performance from: ${topPatterns}.`;
+    }
 
     return {
-        summary: `${videoCountText}, we found that authentic, relatable content performs best.${viewsText} strong hooks that immediately grab attention.`,
-        contentIdeas,
-        bestPostingStrategy: "Post consistently 4-7 times per week. Best times are typically 7-9 AM and 7-10 PM in your target timezone. Ramadan season shows higher engagement for Islamic content.",
+        summary: `${videoCountText}.${viewsText}${patternSummary} Create content similar to what's working but add your unique perspective.`,
+        contentIdeas: finalIdeas,
+        bestPostingStrategy: "Post consistently 4-7 times per week. Best times are typically 7-9 AM and 7-10 PM in your target timezone.",
         hookRecommendations: hookPatterns.length > 0 ? hookPatterns : [
             "Start with a question or bold statement",
             "Use 'POV:' format for relatable content",
             "Open with action, not context",
         ],
         warnings: [
-            "Avoid overusing trending sounds if they don't fit your niche",
-            "Don't copy hooks word-for-word - add your unique voice",
-            "Be mindful of respectful representation in cultural content",
+            "Don't just copy - add your unique voice and perspective",
+            "Be authentic - audiences can tell when content is forced",
+            "Stay consistent with posting to build momentum",
         ],
     };
 }
