@@ -391,17 +391,35 @@ export async function analyzeNiche(niche: string): Promise<{
         });
     });
 
-    // Sort videos by views and FILTER OUT inappropriate content
+    // Calculate the timestamp for 7 days ago
+    const sevenDaysAgo = Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60);
+    console.log("Filtering videos from last 7 days (timestamp >=", sevenDaysAgo, ")");
+
+    // Sort videos by views and FILTER OUT inappropriate content AND old content
     const sortedVideos = allVideos
         .filter((v) => v.stats?.playCount)
         .filter((v) => isContentAppropriate(v.desc)) // Filter out inappropriate content
+        .filter((v) => {
+            // Filter for recent videos (within last 7 days)
+            const createTime = v.createTime || 0;
+            if (createTime > 0 && createTime < sevenDaysAgo) {
+                return false; // Video is too old
+            }
+            return true;
+        })
         .sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
 
-    const filteredCount = allVideos.length - sortedVideos.length;
+    const oldVideoCount = allVideos.filter(v => v.createTime && v.createTime < sevenDaysAgo).length;
+    const filteredCount = allVideos.length - sortedVideos.length - oldVideoCount;
+
     console.log("Total videos found:", allVideos.length);
+    console.log("Videos from last 7 days:", allVideos.length - oldVideoCount);
     console.log("Videos after content filter:", sortedVideos.length);
     if (filteredCount > 0) {
         console.log(`Filtered out ${filteredCount} videos with inappropriate content`);
+    }
+    if (oldVideoCount > 0) {
+        console.log(`Filtered out ${oldVideoCount} videos older than 7 days`);
     }
 
     // Log first few video descriptions
