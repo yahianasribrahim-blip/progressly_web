@@ -20,17 +20,18 @@ export const footerLinks: SidebarNavItem[] = [
     title: "Product",
     items: [
       { title: "Features", href: "/#features" },
-      { title: "Pricing", href: "/pricing" },
-      { title: "Dashboard", href: "/dashboard" },
+      { title: "How It Works", href: "/#how-it-works" },
+      { title: "Pricing", href: "/#pricing" },
+      { title: "FAQ", href: "/#faq" },
     ],
   },
   {
     title: "Company",
     items: [
       { title: "About", href: "/about" },
+      { title: "Contact", href: "/contact" },
       { title: "Terms", href: "/terms" },
       { title: "Privacy", href: "/privacy" },
-      { title: "Contact", href: "mailto:support@progressly.ai" },
     ],
   },
 ];
