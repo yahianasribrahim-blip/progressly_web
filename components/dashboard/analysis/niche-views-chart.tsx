@@ -10,9 +10,23 @@ interface NicheViewsChartProps {
 
 // Generate data based on niche with more variety - realistic inconsistent spikes
 function generateViewsData(niche: string) {
-    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    // Generate actual last 7 days
+    const today = new Date();
+    const days: string[] = [];
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        if (i === 0) {
+            days.push("Today");
+        } else if (i === 1) {
+            days.push("Yest");
+        } else {
+            days.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        }
+    }
 
     // Different base views and growth patterns per niche
+    // NOTE: These are ESTIMATES based on niche popularity trends
     const nicheConfig: Record<string, { base: number; growth: number; volatility: number }> = {
         cultural: { base: 85000, growth: 8, volatility: 0.35 },
         deen: { base: 72000, growth: 15, volatility: 0.25 },
@@ -25,36 +39,37 @@ function generateViewsData(niche: string) {
 
     const config = nicheConfig[niche.toLowerCase()] || { base: 65000, growth: 7, volatility: 0.3 };
 
-    // Use a seed based on niche for consistent results per niche
-    const seed = niche.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+    // Use a seed based on niche AND today's date for variation
+    const dateStr = today.toISOString().split('T')[0];
+    const seed = (niche + dateStr).split('').reduce((a, b) => a + b.charCodeAt(0), 0);
     const pseudoRandom = (i: number) => {
         const x = Math.sin(seed + i * 7.3) * 10000;
         return x - Math.floor(x);
     };
 
     // Create more realistic pattern with dips and spikes
-    // Pattern: Start moderate, dip, spike, dip again, then rise with a weekend boost
     const patterns = [
-        0.7,  // Mon - Start of week, moderate
-        0.5,  // Tue - Dip
-        0.85, // Wed - Recovery spike
-        0.6,  // Thu - Another dip
-        0.75, // Fri - Building up to weekend
-        0.95, // Sat - Weekend high
-        0.8,  // Sun - Slight drop but still good
+        0.65, // 6 days ago
+        0.55, // 5 days ago - dip
+        0.8,  // 4 days ago - spike
+        0.6,  // 3 days ago - dip
+        0.75, // 2 days ago
+        0.9,  // Yesterday - building
+        0.85, // Today
     ];
 
     return {
         data: days.map((day, index) => {
             const patternMultiplier = patterns[index];
-            const randomVariation = (pseudoRandom(index) - 0.5) * 0.3; // ±15% random variation
-            const trendBonus = index * 2000; // Slight upward trend over the week
+            const randomVariation = (pseudoRandom(index) - 0.5) * 0.3;
+            const trendBonus = index * 1500;
             const views = Math.floor(
                 config.base * (patternMultiplier + randomVariation) + trendBonus
             );
-            return { day, views: Math.max(views, 10000) }; // Ensure minimum views
+            return { day, views: Math.max(views, 10000) };
         }),
         growth: config.growth,
+        isEstimate: true, // Flag that this is estimated data
     };
 }
 
@@ -77,7 +92,10 @@ export function NicheViewsChart({ niche }: NicheViewsChartProps) {
                 <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2 text-xl">
                         <span className="text-2xl">📊</span>
-                        Niche Performance This Week
+                        Niche Trend Estimate
+                        <Badge variant="outline" className="text-xs font-normal text-muted-foreground ml-1">
+                            Estimated
+                        </Badge>
                     </CardTitle>
                     <Badge variant="secondary" className="font-normal gap-1">
                         <TrendingUp className="h-3 w-3" />

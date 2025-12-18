@@ -20,16 +20,32 @@ export async function POST(request: Request) {
             );
         }
 
-        // Extract video ID from TikTok URL
+        // Extract video ID from TikTok URL - multiple patterns
+        let videoId: string | null = null;
+
+        // Pattern 1: Standard TikTok URL with /video/
         const videoIdMatch = videoUrl.match(/video\/(\d+)/);
-        if (!videoIdMatch) {
+        if (videoIdMatch) {
+            videoId = videoIdMatch[1];
+        }
+
+        // Pattern 2: Short TikTok URL (vm.tiktok.com or vt.tiktok.com)
+        if (!videoId && videoUrl.includes('tiktok.com')) {
+            // Try to extract from the end of URL
+            const urlParts = videoUrl.split('/');
+            const lastPart = urlParts[urlParts.length - 1].split('?')[0];
+            if (/^\d+$/.test(lastPart)) {
+                videoId = lastPart;
+            }
+        }
+
+        if (!videoId) {
             return NextResponse.json(
-                { error: "Invalid TikTok URL. Please use a direct video link." },
+                { error: "Could not extract video ID. Please use a direct TikTok video URL like: https://www.tiktok.com/@username/video/1234567890" },
                 { status: 400 }
             );
         }
 
-        const videoId = videoIdMatch[1];
         console.log("Analyzing video ID:", videoId);
 
         // Fetch video details from TikTok API
@@ -49,38 +65,59 @@ export async function POST(request: Request) {
 
         if (!videoResponse.ok) {
             console.error("Failed to fetch video info:", videoResponse.status);
+            const errorText = await videoResponse.text();
+            console.error("Error response:", errorText);
             return NextResponse.json(
-                { error: "Failed to fetch video details. Please check the URL." },
+                { error: `Failed to fetch video details (${videoResponse.status}). The video might be private or deleted.` },
                 { status: 400 }
             );
         }
 
         const videoData = await videoResponse.json();
-        console.log("Video data received:", Object.keys(videoData));
+        console.log("Video data keys:", Object.keys(videoData));
+        console.log("Full video data:", JSON.stringify(videoData).substring(0, 500));
 
-        // Extract video info
-        const videoInfo = videoData.itemInfo?.itemStruct || videoData;
+        // Try multiple paths to extract video info (API response format varies)
+        const videoInfo =
+            videoData.itemInfo?.itemStruct ||
+            videoData.aweme_detail ||
+            videoData.item ||
+            videoData.data ||
+            videoData;
 
-        const stats = videoInfo.stats || {};
-        const author = videoInfo.author || {};
-        const desc = videoInfo.desc || "";
-        const duration = videoInfo.video?.duration || 0;
+        // Extract stats from various possible paths
+        const stats = videoInfo.stats || videoInfo.statistics || {};
+        const author = videoInfo.author || videoInfo.author_info || {};
+        const desc = videoInfo.desc || videoInfo.description || videoInfo.title || "";
+        const duration = videoInfo.video?.duration || videoInfo.duration || 0;
+
+        // Map stats to consistent format
+        const mappedStats = {
+            playCount: stats.playCount || stats.play_count || stats.view_count || 0,
+            diggCount: stats.diggCount || stats.digg_count || stats.like_count || 0,
+            commentCount: stats.commentCount || stats.comment_count || 0,
+            shareCount: stats.shareCount || stats.share_count || 0,
+        };
+
+        console.log("Extracted - Author:", author.uniqueId || author.unique_id || author.nickname);
+        console.log("Extracted - Stats:", mappedStats);
+        console.log("Extracted - Description:", desc.substring(0, 100));
 
         // Analyze the video content
-        const analysis = analyzeVideoContent(desc, stats, duration);
+        const analysis = analyzeVideoContent(desc, mappedStats, duration);
 
         return NextResponse.json({
             success: true,
             video: {
                 id: videoId,
                 description: desc,
-                creator: author.uniqueId || author.nickname || "Unknown",
+                creator: author.uniqueId || author.unique_id || author.nickname || "Unknown",
                 duration: duration,
                 stats: {
-                    views: stats.playCount || 0,
-                    likes: stats.diggCount || 0,
-                    comments: stats.commentCount || 0,
-                    shares: stats.shareCount || 0,
+                    views: mappedStats.playCount,
+                    likes: mappedStats.diggCount,
+                    comments: mappedStats.commentCount,
+                    shares: mappedStats.shareCount,
                 },
             },
             analysis: analysis,
@@ -88,7 +125,7 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error("Error analyzing video:", error);
         return NextResponse.json(
-            { error: "Failed to analyze video" },
+            { error: "Failed to analyze video. Please try again." },
             { status: 500 }
         );
     }

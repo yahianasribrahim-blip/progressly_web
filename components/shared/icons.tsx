@@ -48,6 +48,7 @@ import {
   Instagram,
   Youtube,
   ExternalLink,
+  Video,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -169,6 +170,7 @@ export const Icons = {
   instagram: Instagram,
   youtube: Youtube,
   externalLink: ExternalLink,
+  video: Video,
   fileText: FileText,
   tiktok: ({ ...props }: LucideProps) => (
     <svg
