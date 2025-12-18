@@ -258,16 +258,62 @@ function analyzeVideoContent(
     const shares = stats.shareCount || 0;
 
     const engagementRate = views > 0 ? ((likes + comments + shares) / views) * 100 : 0;
+    const likeRate = views > 0 ? (likes / views) * 100 : 0;
 
-    // Engagement analysis
-    if (engagementRate > 10) {
-        strengths.push("🔥 Excellent engagement rate! Your content is resonating with viewers.");
-    } else if (engagementRate > 5) {
-        strengths.push("✅ Good engagement rate - above average for TikTok.");
-    } else if (engagementRate > 2) {
-        feedback.push("📊 Average engagement rate. Consider stronger hooks to boost interaction.");
+    // DETECT VIDEO TYPE based on description and patterns
+    const descLower = description.toLowerCase();
+    let videoType: "dance" | "tutorial" | "comedy" | "story" | "trend" | "educational" | "aesthetic" | "unknown" = "unknown";
+
+    // Dance/Music videos - typically have music references, dance hashtags, no question-based engagement
+    if (descLower.match(/(dance|dancing|choreo|moves|trend|vibe|song|music|beat|fy|fyp|foryou|foryoupage)/)) {
+        videoType = "dance";
+    }
+    // Tutorial/Educational
+    else if (descLower.match(/(how to|tutorial|learn|tip|hack|secret|step|guide|recipe|diy)/)) {
+        videoType = "tutorial";
+    }
+    // Comedy/Entertainment
+    else if (descLower.match(/(funny|comedy|joke|lol|pov|when you|me when|relatable)/)) {
+        videoType = "comedy";
+    }
+    // Story/Personal
+    else if (descLower.match(/(story|storytime|my|i am|my journey|experience)/)) {
+        videoType = "story";
+    }
+    // Aesthetic/Lifestyle
+    else if (descLower.match(/(aesthetic|lifestyle|vlog|grwm|day in|routine|outfit)/)) {
+        videoType = "aesthetic";
+    }
+    // Default to trend if has common trend markers
+    else if (descLower.match(/(trend|viral|this|wait|watch)/)) {
+        videoType = "trend";
+    }
+
+    console.log("Detected video type:", videoType);
+
+    // TYPE-SPECIFIC engagement analysis
+    if (videoType === "dance" || videoType === "trend") {
+        // Dance/trend videos are judged on like rate, not comments
+        if (likeRate >= 10) {
+            strengths.push(`💃 ${likeRate.toFixed(1)}% like rate is exceptional for a ${videoType} video! People loved this.`);
+        } else if (likeRate >= 5) {
+            strengths.push(`✅ ${likeRate.toFixed(1)}% like rate is solid for trending content.`);
+        } else if (likeRate >= 2) {
+            feedback.push(`📊 ${likeRate.toFixed(1)}% like rate is average for ${videoType} content.`);
+        } else {
+            improvements.push(`📉 ${likeRate.toFixed(1)}% like rate is low. For ${videoType} videos, try using a more popular sound or add a unique twist.`);
+        }
     } else {
-        improvements.push("📉 Low engagement rate. Focus on creating more compelling hooks and calls-to-action.");
+        // Other video types - engagement rate matters
+        if (engagementRate > 10) {
+            strengths.push(`🔥 ${engagementRate.toFixed(1)}% engagement is excellent!`);
+        } else if (engagementRate > 5) {
+            strengths.push(`✅ ${engagementRate.toFixed(1)}% engagement is above TikTok average.`);
+        } else if (engagementRate > 2) {
+            feedback.push(`📊 ${engagementRate.toFixed(1)}% engagement is average.`);
+        } else {
+            improvements.push(`📉 ${engagementRate.toFixed(1)}% engagement is below average.`);
+        }
     }
 
     // Duration analysis
@@ -407,45 +453,63 @@ function analyzeVideoContent(
         engagementContext = "Your engagement rate is below the TikTok average (5-6%). Focus on hooks.";
     }
 
-    // Generate SPECIFIC tips based on this video's issues
+    // Generate SPECIFIC tips based on video TYPE and actual issues
     const tips: string[] = [];
 
-    // Tip based on engagement rate
-    if (engagementRate < 5) {
-        tips.push(`Your ${engagementRate.toFixed(1)}% engagement is below the 5-6% TikTok average. Try: Start with movement in frame, use a text hook in first second, or start mid-sentence to grab attention.`);
-    }
-
-    // Tip based on comments
-    if (comments > 0 && likes > 0) {
-        const commentRatio = (comments / likes) * 100;
-        if (commentRatio < 2) {
-            tips.push(`Only ${commentRatio.toFixed(1)}% of likers commented. End with a question like "What would YOU do?" or "Comment your experience 👇" to spark conversation.`);
+    // TYPE-SPECIFIC tips
+    if (videoType === "dance" || videoType === "trend") {
+        // Dance/trend videos - focus on virality, not comments
+        if (likeRate < 5) {
+            tips.push(`Like rate is ${likeRate.toFixed(1)}%. For ${videoType} videos: Try a more viral sound, add a unique twist, or film in an interesting location.`);
+        }
+        if (shares > 0 && views > 0 && (shares / views) * 100 < 1) {
+            tips.push(`Share rate is low. Make it more "send to a friend" worthy - add humor, surprise, or "you need to see this" moments.`);
+        }
+        if (views < 10000) {
+            tips.push(`Views are under 10K. Post when your audience is most active, use trending sounds early, and add text on screen.`);
+        }
+        // Positive tip if doing well
+        if (likeRate >= 5) {
+            tips.push(`Great ${videoType} content! Keep using trending sounds early before they peak. Your timing matters.`);
+        }
+    } else if (videoType === "tutorial") {
+        // Tutorial videos - focus on value and saves
+        if (comments > 0 && likes > 0) {
+            const commentRatio = (comments / likes) * 100;
+            if (commentRatio < 2) {
+                tips.push(`Ask "What topic should I cover next?" at the end to boost comments.`);
+            }
+        }
+        tips.push(`Add text on screen summarizing key points - helps with "save for later" behavior.`);
+    } else if (videoType === "comedy" || videoType === "story") {
+        // Comedy/story - engagement and relatability
+        if (shares > 0 && views > 0) {
+            const shareRate = (shares / views) * 100;
+            if (shareRate < 1) {
+                tips.push(`Share rate is ${shareRate.toFixed(2)}%. Make the punchline/ending more "I need to send this" worthy.`);
+            }
+        }
+        tips.push(`For ${videoType} content, the ending is everything. Nail the punchline or emotional moment.`);
+    } else {
+        // Generic but still specific to this video
+        if (engagementRate < 5) {
+            tips.push(`${engagementRate.toFixed(1)}% engagement is below average. Hook viewers in the first 1-2 seconds.`);
+        }
+        if (comments > 0 && likes > 0 && (comments / likes) * 100 < 2) {
+            tips.push(`End with a question relevant to your topic to boost comments.`);
         }
     }
 
-    // Tip based on description
-    if (description.length < 100) {
-        tips.push(`Your caption is only ${description.length} chars. Add 1-2 sentences of value + a question to increase dwell time and comments.`);
-    }
-
-    // Tip based on hashtags
+    // Universal tips but framed specifically
     const hashtagCount = (description.match(/#\w+/g) || []).length;
     if (hashtagCount < 3) {
-        tips.push(`Add hashtags like #fyp #foryou + 2-3 niche tags. You only have ${hashtagCount}. More = more reach.`);
+        tips.push(`Add #fyp + 2-3 niche hashtags. You have ${hashtagCount}. More = more reach.`);
     }
 
-    // Tip based on shares
-    if (shares > 0 && views > 0) {
-        const shareRate = (shares / views) * 100;
-        if (shareRate < 0.5) {
-            tips.push(`Share rate is ${shareRate.toFixed(2)}%. Create "save this" or "send to a friend who needs this" content to boost shares.`);
-        }
-    }
-
-    // Default tips if we don't have enough specific ones
-    if (tips.length < 2) {
-        tips.push(`Reply to comments within the first hour to boost algorithm visibility.`);
-        tips.push(`Create a Part 2 or series to build returning viewers.`);
+    // If we somehow have no tips, add generic ones
+    if (tips.length === 0) {
+        tips.push(`Reply to comments quickly - it signals to TikTok that your content is worth showing.`);
+        tips.push(`Create a follow-up video if this performed well.`);
     }
 
     return {

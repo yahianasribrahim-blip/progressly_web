@@ -346,8 +346,8 @@ export async function analyzeNiche(niche: string): Promise<{
     const allVideos: TikTokVideo[] = [];
     const hashtagStats: TrendingHashtag[] = [];
 
-    // Fetch data for each hashtag (limit to 2 to conserve API calls)
-    const hashtagsToQuery = hashtags.slice(0, 2);
+    // Fetch data for each hashtag (query 3 hashtags for more videos)
+    const hashtagsToQuery = hashtags.slice(0, 3);
 
     for (const hashtag of hashtagsToQuery) {
         console.log(`Processing hashtag: ${hashtag}`);
@@ -366,8 +366,9 @@ export async function analyzeNiche(niche: string): Promise<{
                 category: categorizeHashtag(info.viewCount || 0),
             });
 
-            // Now fetch videos using the ID
-            const videos = await fetchHashtagVideos(info.id, 15);
+            // Fetch MORE videos (30 per hashtag)
+            const videos = await fetchHashtagVideos(info.id, 30);
+            console.log(`Fetched ${videos.length} videos for #${hashtag}`);
             allVideos.push(...videos);
         } else {
             console.log(`Could not get info for hashtag: ${hashtag}`);
@@ -391,54 +392,92 @@ export async function analyzeNiche(niche: string): Promise<{
         });
     });
 
-    // Calculate the timestamp for 30 days ago (more lenient than 7 days)
-    const thirtyDaysAgo = Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60);
-    console.log("Filtering videos from last 30 days (timestamp >=", thirtyDaysAgo, ")");
+    // Calculate timestamps for filtering
+    const now = Math.floor(Date.now() / 1000);
+    const sevenDaysAgo = now - (7 * 24 * 60 * 60);
+    const thirtyDaysAgo = now - (30 * 24 * 60 * 60);
 
-    // Start with all valid videos
+    console.log("Current timestamp:", now, "= ", new Date().toISOString());
+    console.log("7 days ago:", sevenDaysAgo, "= ", new Date(sevenDaysAgo * 1000).toISOString());
+
+    // Start with all valid videos and add date info
     const validVideos = allVideos
         .filter((v) => v.stats?.playCount)
-        .filter((v) => isContentAppropriate(v.desc));
+        .filter((v) => isContentAppropriate(v.desc))
+        .map(v => {
+            const createDate = v.createTime ? new Date(v.createTime * 1000) : null;
+            const daysAgo = v.createTime ? Math.floor((now - v.createTime) / (24 * 60 * 60)) : null;
+            return { ...v, _createDate: createDate, _daysAgo: daysAgo };
+        });
 
-    // Sort by views (highest first)
-    validVideos.sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
+    // Log video dates for debugging
+    console.log("=== VIDEO DATES ===");
+    validVideos.slice(0, 10).forEach((v, i) => {
+        console.log(`Video ${i + 1}: ${v._daysAgo} days ago, ${v.stats?.playCount} views, "${v.desc?.substring(0, 30)}..."`);
+    });
 
-    // Try to get videos with high view counts (trending = 50K+ views)
-    // If not enough, progressively lower the threshold
+    // STRICT: First try to get videos from last 7 days ONLY
+    let sortedVideos = validVideos
+        .filter(v => v.createTime && v.createTime >= sevenDaysAgo)
+        .sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
+
+    console.log(`Videos from last 7 days: ${sortedVideos.length}`);
+
+    // If not enough from 7 days, try 30 days
+    if (sortedVideos.length < 8) {
+        console.log("Not enough from 7 days, trying 30 days...");
+        sortedVideos = validVideos
+            .filter(v => v.createTime && v.createTime >= thirtyDaysAgo)
+            .sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
+        console.log(`Videos from last 30 days: ${sortedVideos.length}`);
+    }
+
+    // If STILL not enough, use all but warn
+    if (sortedVideos.length < 8) {
+        console.warn("WARNING: Not enough recent videos! Using all available videos.");
+        sortedVideos = validVideos.sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
+    }
+
+    // Now apply view threshold on top of date-filtered videos
     const viewThresholds = [50000, 10000, 1000, 0];
-    let sortedVideos: typeof validVideos = [];
+    let finalVideos: typeof sortedVideos = [];
 
     for (const threshold of viewThresholds) {
-        sortedVideos = validVideos.filter(v => (v.stats?.playCount || 0) >= threshold);
-        if (sortedVideos.length >= 8) {
-            console.log(`Found ${sortedVideos.length} videos with ${threshold}+ views`);
+        finalVideos = sortedVideos.filter(v => (v.stats?.playCount || 0) >= threshold);
+        if (finalVideos.length >= 8) {
+            console.log(`Found ${finalVideos.length} videos with ${threshold}+ views`);
             break;
         }
     }
 
-    // If still not enough, use all valid videos
-    if (sortedVideos.length < 8) {
-        sortedVideos = validVideos;
-        console.log("Using all valid videos:", sortedVideos.length);
+    // Use whatever we have
+    if (finalVideos.length < 8) {
+        finalVideos = sortedVideos;
+        console.log("Using all date-filtered videos:", finalVideos.length);
     }
 
-    console.log("Total videos found:", allVideos.length);
+    console.log("=== FINAL VIDEOS ===");
+    console.log("Total raw videos:", allVideos.length);
     console.log("Valid videos:", validVideos.length);
-    console.log("Top video views:", sortedVideos[0]?.stats?.playCount || 0);
+    console.log("Final videos to display:", finalVideos.length);
+    console.log("Top video:", finalVideos[0]?.stats?.playCount, "views,", finalVideos[0]?._daysAgo, "days ago");
 
-    // Log first few video descriptions
-    sortedVideos.slice(0, 3).forEach((v, i) => {
-        console.log(`Video ${i + 1} (${v.stats?.playCount} views):`, v.desc?.substring(0, 50));
-        console.log(`  Video URL available:`, !!v.video?.playAddr);
+    // Use finalVideos from here on
+    const sortedVideosFinal = finalVideos;
+
+    // Log first few video descriptions WITH DATES
+    sortedVideosFinal.slice(0, 5).forEach((v, i) => {
+        console.log(`Video ${i + 1}: ${v.stats?.playCount} views, ${v._daysAgo} days old, "${v.desc?.substring(0, 50)}..."`);
     });
 
     // Import transcription service dynamically to avoid circular deps
     const { getSpokenHooksFromVideos } = await import("./deepgram-transcription");
 
     // ALWAYS get caption-based hooks from video descriptions (these are "Viral Captions")
-    console.log("Extracting viral captions from video descriptions...");
-    const captions: TrendingHook[] = sortedVideos
-        .slice(0, 15) // Get top 15 performing videos
+    // Use ONLY videos from sortedVideosFinal (the ones we're showing)
+    console.log("Extracting viral captions from the DISPLAYED videos...");
+    const captions: TrendingHook[] = sortedVideosFinal
+        .slice(0, 8) // Only from the videos we're actually showing
         .filter((v) => v.desc && v.desc.length > 10)
         .map((video, index) => ({
             id: `c${index + 1}`,
@@ -450,14 +489,14 @@ export async function analyzeNiche(niche: string): Promise<{
         }))
         .filter(c => c.text.length > 15); // Filter out very short captions
 
-    console.log(`Got ${captions.length} viral captions`);
+    console.log(`Got ${captions.length} viral captions from displayed videos`);
 
-    // Try HARDER to get SPOKEN hooks - process up to 20 videos to find ones with actual speech
-    console.log("Attempting to transcribe spoken hooks from up to 20 videos...");
+    // Try HARDER to get SPOKEN hooks - process ONLY the videos we're showing
+    console.log("Attempting to transcribe spoken hooks from displayed videos...");
     let spokenHooks: TrendingHook[] = [];
 
     try {
-        const rawSpokenHooks = await getSpokenHooksFromVideos(sortedVideos, 20); // Try 20 videos!
+        const rawSpokenHooks = await getSpokenHooksFromVideos(sortedVideosFinal.slice(0, 8), 8);
 
         if (rawSpokenHooks.length > 0) {
             console.log(`Got ${rawSpokenHooks.length} spoken hooks from transcription!`);
@@ -481,8 +520,8 @@ export async function analyzeNiche(niche: string): Promise<{
         ? [...spokenHooks, ...captions.slice(0, 5 - spokenHooks.length)]
         : captions;
 
-    // Create video examples (return 8 for Pro users)
-    const examples: VideoExample[] = sortedVideos.slice(0, 8).map((video) => ({
+    // Create video examples (return 8 for Pro users) - USE sortedVideosFinal
+    const examples: VideoExample[] = sortedVideosFinal.slice(0, 8).map((video) => ({
         id: video.id,
         thumbnail: video.video?.cover || "/api/placeholder/320/180",
         creator: `@${video.author?.uniqueId || "creator"}`,
@@ -494,11 +533,11 @@ export async function analyzeNiche(niche: string): Promise<{
         duration: video.video?.duration || 0,
     }));
 
-    // Analyze video formats
-    const formats = analyzeVideoFormats(sortedVideos);
+    // Analyze video formats from the displayed videos
+    const formats = analyzeVideoFormats(sortedVideosFinal);
 
-    // Calculate benchmark based on actual data
-    const viewCounts = sortedVideos.map((v) => v.stats?.playCount || 0);
+    // Calculate benchmark based on actual data from displayed videos
+    const viewCounts = sortedVideosFinal.map((v) => v.stats?.playCount || 0);
     const medianViews = viewCounts.length > 0
         ? viewCounts[Math.floor(viewCounts.length / 2)]
         : 10000;
