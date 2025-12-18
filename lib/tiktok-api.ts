@@ -459,8 +459,8 @@ export async function analyzeNiche(niche: string): Promise<{
         ? [...spokenHooks, ...captions.slice(0, 5 - spokenHooks.length)]
         : captions;
 
-    // Create video examples
-    const examples: VideoExample[] = sortedVideos.slice(0, 4).map((video) => ({
+    // Create video examples (return 8 for Pro users)
+    const examples: VideoExample[] = sortedVideos.slice(0, 8).map((video) => ({
         id: video.id,
         thumbnail: video.video?.cover || "/api/placeholder/320/180",
         creator: `@${video.author?.uniqueId || "creator"}`,
