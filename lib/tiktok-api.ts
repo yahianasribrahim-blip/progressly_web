@@ -15,6 +15,29 @@ export const NICHE_HASHTAGS: Record<string, string[]> = {
     storytelling: ["storytime", "muslimstory", "revertmuslim", "myjourney", "islamicstories"],
 };
 
+// Words to filter out - videos with these in descriptions are excluded
+const INAPPROPRIATE_KEYWORDS = [
+    // Romantic/explicit themes
+    "love song", "sexy", "hot girl", "hot boy", "kiss", "romance", "boyfriend", "girlfriend",
+    "bae", "dating", "hookup", "crush", "flirting", "nsfw", "18+", "explicit",
+    // Drugs/alcohol
+    "weed", "420", "drunk", "alcohol", "beer", "wine", "party", "high af", "stoned",
+    "molly", "xanax", "drugs", "smoke", "blunt", "joints",
+    // Violence
+    "kill", "murder", "blood", "fight", "gang", "gun", "shoot", "violence", "death",
+    // Profanity (common ones)
+    "wtf", "af", "fck", "f*ck", "sh*t", "b*tch", "damn", "hell yeah",
+    // Other inappropriate
+    "thirst trap", "body count", "situationship", "fwb",
+];
+
+// Check if video content is appropriate for Muslim creators
+function isContentAppropriate(description: string): boolean {
+    if (!description) return true;
+    const lowerDesc = description.toLowerCase();
+    return !INAPPROPRIATE_KEYWORDS.some(keyword => lowerDesc.includes(keyword.toLowerCase()));
+}
+
 interface TikTokVideo {
     id: string;
     desc: string;
@@ -368,13 +391,18 @@ export async function analyzeNiche(niche: string): Promise<{
         });
     });
 
-    // Sort videos by views
+    // Sort videos by views and FILTER OUT inappropriate content
     const sortedVideos = allVideos
         .filter((v) => v.stats?.playCount)
+        .filter((v) => isContentAppropriate(v.desc)) // Filter out inappropriate content
         .sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
 
+    const filteredCount = allVideos.length - sortedVideos.length;
     console.log("Total videos found:", allVideos.length);
-    console.log("Videos with play counts:", sortedVideos.length);
+    console.log("Videos after content filter:", sortedVideos.length);
+    if (filteredCount > 0) {
+        console.log(`Filtered out ${filteredCount} videos with inappropriate content`);
+    }
 
     // Log first few video descriptions
     sortedVideos.slice(0, 3).forEach((v, i) => {

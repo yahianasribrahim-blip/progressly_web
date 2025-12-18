@@ -1,8 +1,18 @@
 "use client";
 
-import { ExternalLink, Lock, Eye } from "lucide-react";
+import { useState } from "react";
+import { ExternalLink, Lock, Eye, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { ExampleVideo } from "@/lib/mock-analysis";
 import { Icons } from "@/components/shared/icons";
@@ -14,6 +24,23 @@ interface ExampleVideosCardProps {
 }
 
 export function ExampleVideosCard({ videos, isPremium, plan }: ExampleVideosCardProps) {
+    const [showDisclaimer, setShowDisclaimer] = useState(false);
+    const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+
+    const handleVideoClick = (url: string, e: React.MouseEvent) => {
+        e.preventDefault();
+        setPendingUrl(url);
+        setShowDisclaimer(true);
+    };
+
+    const confirmOpenVideo = () => {
+        if (pendingUrl) {
+            window.open(pendingUrl, "_blank", "noopener,noreferrer");
+        }
+        setShowDisclaimer(false);
+        setPendingUrl(null);
+    };
+
     const getPlatformIcon = (platform: ExampleVideo["platform"]) => {
         switch (platform) {
             case "TikTok":
@@ -166,14 +193,12 @@ export function ExampleVideosCard({ videos, isPremium, plan }: ExampleVideosCard
                                             {video.creator}
                                         </span>
                                         {!locked && (
-                                            <a
-                                                href={video.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                            <button
+                                                onClick={(e) => handleVideoClick(video.url, e)}
                                                 className="text-muted-foreground hover:text-foreground transition-colors"
                                             >
                                                 <ExternalLink className="h-4 w-4" />
-                                            </a>
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -182,6 +207,47 @@ export function ExampleVideosCard({ videos, isPremium, plan }: ExampleVideosCard
                     })}
                 </div>
             </CardContent>
+
+            {/* Music Disclaimer Dialog */}
+            <Dialog open={showDisclaimer} onOpenChange={setShowDisclaimer}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
+                            <AlertTriangle className="h-5 w-5" />
+                            Important Reminder
+                        </DialogTitle>
+                        <DialogDescription className="text-left pt-4 space-y-3">
+                            <p>
+                                According to the majority of scholars, <strong>music with instruments is considered haram</strong>.
+                                Many trending videos contain music that may not align with Islamic values.
+                            </p>
+                            <p>
+                                We strongly encourage you to <strong>avoid using music in your content</strong>.
+                                Barakah (blessing) comes from following Allah's guidance, not from chasing views.
+                            </p>
+                            <p className="text-sm text-muted-foreground italic">
+                                This video is shown for educational reference only - to understand video formats and hooks,
+                                not to copy music or haram content.
+                            </p>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="flex-col sm:flex-row gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowDisclaimer(false)}
+                            className="w-full sm:w-auto"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={confirmOpenVideo}
+                            className="w-full sm:w-auto"
+                        >
+                            I Understand, Open Video
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </Card>
     );
 }
