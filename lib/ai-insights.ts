@@ -232,8 +232,15 @@ function generateTemplateInsights(data: AnalysisData): AIInsights {
         ? `Based on ${data.videoCount} trending videos in ${nicheCapitalized}`
         : `Based on current ${nicheCapitalized} trends`;
 
+    // Properly format the view count
+    const formatViews = (count: number): string => {
+        if (count >= 1000000) return (count / 1000000).toFixed(1) + "M";
+        if (count >= 1000) return Math.round(count / 1000) + "K";
+        return count.toString();
+    };
+
     const viewsText = data.topViewCount > 10000
-        ? ` Top videos average ${Math.round(data.topViewCount / 1000)}K+ views.`
+        ? ` Top videos average ${formatViews(data.topViewCount)}+ views.`
         : ` Focus on authentic content.`;
 
     // Generate pattern-based summary

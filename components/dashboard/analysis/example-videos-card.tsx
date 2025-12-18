@@ -63,56 +63,30 @@ export function ExampleVideosCard({ videos, isPremium, plan }: ExampleVideosCard
         }
     };
 
-    // Create 8 videos (4 for starter, 4 for starter+pro)
-    const allVideos = [
-        ...videos,
-        // Additional mock videos to fill up to 8
-        {
-            id: "v5",
-            thumbnail: "/api/placeholder/320/180",
-            creator: "@creativemind",
-            platform: "TikTok" as const,
-            views: "1.8M",
-            url: "https://tiktok.com",
-        },
-        {
-            id: "v6",
-            thumbnail: "/api/placeholder/320/180",
-            creator: "@trendylife",
-            platform: "Instagram" as const,
-            views: "650K",
-            url: "https://instagram.com",
-        },
-        {
-            id: "v7",
-            thumbnail: "/api/placeholder/320/180",
-            creator: "@viralcreator",
-            platform: "YouTube" as const,
-            views: "2.1M",
-            url: "https://youtube.com",
-        },
-        {
-            id: "v8",
-            thumbnail: "/api/placeholder/320/180",
-            creator: "@contentpro",
-            platform: "TikTok" as const,
-            views: "920K",
-            url: "https://tiktok.com",
-        },
-    ];
+    // Use the actual videos from the API - no mock data!
+    // Show only videos that have real URLs (not just homepage links)
+    const realVideos = videos.filter(v =>
+        v.url &&
+        v.url !== "https://tiktok.com" &&
+        v.url !== "https://instagram.com" &&
+        v.url !== "https://youtube.com" &&
+        v.url.includes("/video/")
+    );
+
+    // Determine how many videos to show based on plan
+    const maxVideos = plan === "pro" ? 8 : plan === "starter" ? 4 : 0;
+    const displayVideos = realVideos.slice(0, maxVideos);
 
     const getLockedLabel = (index: number): string | null => {
-        // For free plan, show lock labels
+        // For free plan, all videos are locked
         if (plan === "free") {
-            if (index < 4) return "Starter Only";
-            return "Starter & Pro";
+            return "Upgrade to view";
         }
-        // For starter plan, only the last 4 are locked
-        if (plan === "starter") {
-            if (index >= 4) return "Pro Only";
-            return null;
+        // For starter, videos after index 3 are locked (Pro only)
+        if (plan === "starter" && index >= 4) {
+            return "Pro Only";
         }
-        // Pro plan has access to all
+        // Pro plan has no locks
         return null;
     };
 
@@ -132,80 +106,87 @@ export function ExampleVideosCard({ videos, isPremium, plan }: ExampleVideosCard
                         <span className="text-sm font-normal text-muted-foreground">(Reference Only)</span>
                     </CardTitle>
                     <Badge variant="secondary" className="font-normal">
-                        {allVideos.length} videos
+                        {displayVideos.length} real video{displayVideos.length !== 1 ? "s" : ""}
                     </Badge>
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {allVideos.map((video, index) => {
-                        const locked = isLocked(index);
-                        const lockLabel = getLockedLabel(index);
+                {displayVideos.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                        <p className="text-lg">😕 No videos found from the last 7 days</p>
+                        <p className="text-sm mt-2">Try a different niche or check back later for fresh content.</p>
+                    </div>
+                ) : (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        {displayVideos.map((video, index) => {
+                            const locked = isLocked(index);
+                            const lockLabel = getLockedLabel(index);
 
-                        return (
-                            <div
-                                key={video.id}
-                                className={cn(
-                                    "group relative overflow-hidden rounded-xl border bg-muted transition-all hover:shadow-lg",
-                                    locked && "pointer-events-none"
-                                )}
-                            >
-                                {/* Thumbnail */}
-                                <div className="relative aspect-video bg-gradient-to-br from-gray-800 to-gray-900">
-                                    {/* Placeholder gradient thumbnail */}
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <div className={cn(
-                                            "rounded-full p-4",
-                                            getPlatformColor(video.platform)
-                                        )}>
-                                            {getPlatformIcon(video.platform)}
-                                        </div>
-                                    </div>
-
-                                    {/* Views Badge */}
-                                    <div className="absolute bottom-2 left-2">
-                                        <Badge variant="secondary" className="gap-1 bg-black/70 text-white text-xs">
-                                            <Eye className="h-3 w-3" />
-                                            {video.views}
-                                        </Badge>
-                                    </div>
-
-                                    {/* Platform Badge */}
-                                    <div className="absolute top-2 right-2">
-                                        <Badge className={cn("text-xs", getPlatformColor(video.platform))}>
-                                            {video.platform}
-                                        </Badge>
-                                    </div>
-
-                                    {/* Blur Overlay for Locked Videos */}
-                                    {locked && (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
-                                            <Lock className="h-6 w-6 text-muted-foreground mb-2" />
-                                            <span className="text-xs font-medium text-muted-foreground">{lockLabel}</span>
-                                        </div>
+                            return (
+                                <div
+                                    key={video.id}
+                                    className={cn(
+                                        "group relative overflow-hidden rounded-xl border bg-muted transition-all hover:shadow-lg",
+                                        locked && "pointer-events-none"
                                     )}
-                                </div>
+                                >
+                                    {/* Thumbnail */}
+                                    <div className="relative aspect-video bg-gradient-to-br from-gray-800 to-gray-900">
+                                        {/* Placeholder gradient thumbnail */}
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <div className={cn(
+                                                "rounded-full p-4",
+                                                getPlatformColor(video.platform)
+                                            )}>
+                                                {getPlatformIcon(video.platform)}
+                                            </div>
+                                        </div>
 
-                                {/* Video Info */}
-                                <div className="p-3">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium truncate">
-                                            {video.creator}
-                                        </span>
-                                        {!locked && (
-                                            <button
-                                                onClick={(e) => handleVideoClick(video.url, e)}
-                                                className="text-muted-foreground hover:text-foreground transition-colors"
-                                            >
-                                                <ExternalLink className="h-4 w-4" />
-                                            </button>
+                                        {/* Views Badge */}
+                                        <div className="absolute bottom-2 left-2">
+                                            <Badge variant="secondary" className="gap-1 bg-black/70 text-white text-xs">
+                                                <Eye className="h-3 w-3" />
+                                                {video.views}
+                                            </Badge>
+                                        </div>
+
+                                        {/* Platform Badge */}
+                                        <div className="absolute top-2 right-2">
+                                            <Badge className={cn("text-xs", getPlatformColor(video.platform))}>
+                                                {video.platform}
+                                            </Badge>
+                                        </div>
+
+                                        {/* Blur Overlay for Locked Videos */}
+                                        {locked && (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
+                                                <Lock className="h-6 w-6 text-muted-foreground mb-2" />
+                                                <span className="text-xs font-medium text-muted-foreground">{lockLabel}</span>
+                                            </div>
                                         )}
                                     </div>
+
+                                    {/* Video Info */}
+                                    <div className="p-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium truncate">
+                                                {video.creator}
+                                            </span>
+                                            {!locked && (
+                                                <button
+                                                    onClick={(e) => handleVideoClick(video.url, e)}
+                                                    className="text-muted-foreground hover:text-foreground transition-colors"
+                                                >
+                                                    <ExternalLink className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </CardContent>
 
             {/* Music Disclaimer Dialog */}

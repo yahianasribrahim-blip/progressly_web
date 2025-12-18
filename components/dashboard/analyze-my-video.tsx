@@ -36,6 +36,7 @@ interface VideoAnalysis {
     score: number;
     verdict: string;
     engagementRate: string;
+    engagementContext?: string;
     strengths: string[];
     improvements: string[];
     feedback: string[];
@@ -225,12 +226,19 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                     </div>
 
                                     {/* Engagement Rate */}
-                                    <div className="flex items-center gap-2">
-                                        <TrendingUp className="h-4 w-4 text-emerald-500" />
-                                        <span className="text-sm">
-                                            <span className="font-medium">{analysis.engagementRate}%</span>
-                                            <span className="text-muted-foreground"> engagement rate</span>
-                                        </span>
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <TrendingUp className="h-4 w-4 text-emerald-500" />
+                                            <span className="text-sm">
+                                                <span className="font-medium">{analysis.engagementRate}%</span>
+                                                <span className="text-muted-foreground"> engagement rate</span>
+                                            </span>
+                                        </div>
+                                        {analysis.engagementContext && (
+                                            <p className="text-xs text-muted-foreground ml-6">
+                                                {analysis.engagementContext}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>

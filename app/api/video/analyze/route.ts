@@ -339,28 +339,75 @@ function analyzeVideoContent(
         }
     }
 
-    // Overall score
-    let score = 50; // Base score
-    score += strengths.length * 10;
-    score -= improvements.length * 8;
+    // IMPROVED SCORING SYSTEM - Based primarily on actual engagement rate
+    // TikTok average engagement is around 5-6%
+    // Great videos get 10%+, viral videos get 15%+
+    let score = 0;
+
+    // Engagement rate is the most important factor (0-60 points)
+    if (engagementRate >= 15) {
+        score += 60; // Exceptional - viral level
+    } else if (engagementRate >= 10) {
+        score += 50; // Excellent
+    } else if (engagementRate >= 6) {
+        score += 40; // Good - above average  
+    } else if (engagementRate >= 3) {
+        score += 25; // Average
+    } else if (engagementRate >= 1) {
+        score += 15; // Below average
+    } else {
+        score += 5; // Poor
+    }
+
+    // View count matters too (0-20 points)
+    if (views >= 1000000) {
+        score += 20; // Viral
+    } else if (views >= 100000) {
+        score += 15; // Very popular
+    } else if (views >= 10000) {
+        score += 10; // Popular
+    } else if (views >= 1000) {
+        score += 5; // Decent reach
+    }
+
+    // Content quality bonuses (0-20 points)
+    score += Math.min(strengths.length * 3, 12); // Max 12 points from strengths
+    score -= Math.min(improvements.length * 2, 10); // Deduct for issues
+
+    // Ensure score is between 0-100
     score = Math.min(100, Math.max(0, score));
 
-    // Determine overall verdict
+    // Determine overall verdict based on new scoring
     let verdict = "";
     if (score >= 80) {
-        verdict = "🌟 Excellent Performance! This video is doing great.";
+        verdict = "🌟 Exceptional Performance! This video is crushing it.";
     } else if (score >= 60) {
-        verdict = "✅ Good Performance. Keep up the good work with some tweaks.";
+        verdict = "✅ Good Performance. Solid metrics with room to grow.";
     } else if (score >= 40) {
-        verdict = "📈 Average Performance. Apply the improvements below to boost results.";
+        verdict = "📈 Average Performance. Apply the improvements below.";
+    } else if (score >= 20) {
+        verdict = "⚠️ Below Average. Focus on improving engagement.";
     } else {
-        verdict = "🔧 Needs Work. Focus on the key improvements listed.";
+        verdict = "🔧 Needs Work. Study what top creators are doing differently.";
+    }
+
+    // Add engagement rate context
+    let engagementContext = "";
+    if (engagementRate >= 10) {
+        engagementContext = "Your engagement rate is excellent! Top 10% of TikTok.";
+    } else if (engagementRate >= 5) {
+        engagementContext = "Your engagement rate is above average for TikTok.";
+    } else if (engagementRate >= 2) {
+        engagementContext = "Your engagement rate is average. The TikTok average is around 5-6%.";
+    } else {
+        engagementContext = "Your engagement rate is below the TikTok average (5-6%). Focus on hooks.";
     }
 
     return {
         score,
         verdict,
         engagementRate: engagementRate.toFixed(2),
+        engagementContext,
         strengths,
         improvements,
         feedback,
@@ -368,7 +415,7 @@ function analyzeVideoContent(
             "Post consistently at peak hours (7-9 AM or 7-10 PM)",
             "Reply to comments quickly to boost algorithm",
             "Create content series to build loyal audience",
-            "Use trending sounds (permissible ones) to increase reach",
+            "Your first 3 seconds decide if viewers stay - make them count",
         ],
     };
 }
