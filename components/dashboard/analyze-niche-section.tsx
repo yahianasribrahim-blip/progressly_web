@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Loader2, Zap, Lock } from "lucide-react";
+import { Sparkles, Loader2, Zap, Lock, Bookmark, BookmarkCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -43,9 +43,43 @@ export function AnalyzeNicheSection({
     limitMessage,
 }: AnalyzeNicheSectionProps) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
     const [selectedNiche, setSelectedNiche] = useState<string>("");
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
     const [aiInsights, setAIInsights] = useState<AIInsights | null>(null);
+
+    const handleSaveAnalysis = async () => {
+        if (!analysisResult || isSaving) return;
+
+        setIsSaving(true);
+        try {
+            const response = await fetch("/api/analysis/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    niche: analysisResult.niche,
+                    analysisData: {
+                        ...analysisResult,
+                        aiInsights,
+                        savedAt: new Date().toISOString(),
+                    },
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to save analysis");
+            }
+
+            setIsSaved(true);
+            toast.success("Analysis saved! View it in 'Saved Analyses'");
+        } catch (error) {
+            console.error("Error saving analysis:", error);
+            toast.error("Failed to save analysis");
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const handleAnalyze = async () => {
         if (!canAnalyze) {
@@ -226,6 +260,34 @@ export function AnalyzeNicheSection({
             {/* Analysis Results */}
             {analysisResult && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {/* Save Analysis Button */}
+                    <div className="flex justify-end">
+                        <Button
+                            variant={isSaved ? "secondary" : "outline"}
+                            size="sm"
+                            onClick={handleSaveAnalysis}
+                            disabled={isSaving || isSaved}
+                            className="gap-2"
+                        >
+                            {isSaving ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : isSaved ? (
+                                <>
+                                    <BookmarkCheck className="h-4 w-4 text-emerald-500" />
+                                    Saved
+                                </>
+                            ) : (
+                                <>
+                                    <Bookmark className="h-4 w-4" />
+                                    Save Analysis
+                                </>
+                            )}
+                        </Button>
+                    </div>
+
                     {/* 0. AI Insights Card (Most Important First) */}
                     {aiInsights && (
                         <div className="space-y-4">
