@@ -54,8 +54,14 @@ export async function POST(request: Request) {
         const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
         const RAPIDAPI_HOST = "tiktok-scraper2.p.rapidapi.com";
 
-        // Try the video info endpoint
-        const videoResponse = await fetch(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let videoData: any = null;
+        let apiFound = "";
+
+        // Try multiple endpoints to get video data
+        // Endpoint 1: Video info by video_id
+        console.log("Trying endpoint 1: video/info?video_id=...");
+        const response1 = await fetch(
             `https://${RAPIDAPI_HOST}/video/info?video_id=${videoId}`,
             {
                 method: "GET",
@@ -66,18 +72,79 @@ export async function POST(request: Request) {
             }
         );
 
-        console.log("API Response status:", videoResponse.status);
+        if (response1.ok) {
+            videoData = await response1.json();
+            apiFound = "video/info?video_id";
+            console.log("Endpoint 1 success, keys:", Object.keys(videoData));
+        } else {
+            console.log("Endpoint 1 failed:", response1.status);
+        }
 
-        if (!videoResponse.ok) {
-            const errorText = await videoResponse.text();
-            console.error("API Error:", errorText);
+        // If first endpoint didn't return proper stats, try endpoint 2
+        if (!videoData?.itemInfo?.itemStruct?.stats?.playCount) {
+            console.log("Trying endpoint 2: video/info_v2?video_url=...");
+            const encodedUrl = encodeURIComponent(videoUrl);
+            const response2 = await fetch(
+                `https://${RAPIDAPI_HOST}/video/info_v2?video_url=${encodedUrl}`,
+                {
+                    method: "GET",
+                    headers: {
+                        "x-rapidapi-key": RAPIDAPI_KEY,
+                        "x-rapidapi-host": RAPIDAPI_HOST,
+                    },
+                }
+            );
+
+            if (response2.ok) {
+                const data2 = await response2.json();
+                console.log("Endpoint 2 response keys:", Object.keys(data2));
+                // Only use this if it has better data
+                if (data2?.itemInfo?.itemStruct?.stats?.playCount || data2?.data?.stats?.playCount) {
+                    videoData = data2;
+                    apiFound = "video/info_v2?video_url";
+                    console.log("Endpoint 2 has better stats, using it");
+                }
+            } else {
+                console.log("Endpoint 2 failed:", response2.status);
+            }
+        }
+
+        // If still no data, try endpoint 3 with post details
+        if (!videoData?.itemInfo?.itemStruct?.stats?.playCount && !videoData?.data?.stats?.playCount) {
+            console.log("Trying endpoint 3: post/details...");
+            const response3 = await fetch(
+                `https://${RAPIDAPI_HOST}/post/details?video_id=${videoId}`,
+                {
+                    method: "GET",
+                    headers: {
+                        "x-rapidapi-key": RAPIDAPI_KEY,
+                        "x-rapidapi-host": RAPIDAPI_HOST,
+                    },
+                }
+            );
+
+            if (response3.ok) {
+                const data3 = await response3.json();
+                console.log("Endpoint 3 response keys:", Object.keys(data3));
+                if (data3?.stats?.playCount || data3?.itemStruct?.stats?.playCount) {
+                    videoData = data3;
+                    apiFound = "post/details";
+                    console.log("Endpoint 3 has data, using it");
+                }
+            } else {
+                console.log("Endpoint 3 failed:", response3.status);
+            }
+        }
+
+        if (!videoData) {
             return NextResponse.json(
-                { error: `Failed to fetch video details (${videoResponse.status}). The video might be private, deleted, or the URL format is not supported.` },
+                { error: "Failed to fetch video details from any API endpoint. Please try again later." },
                 { status: 400 }
             );
         }
 
-        const videoData = await videoResponse.json();
+        console.log("Using API endpoint:", apiFound);
+        console.log("API Response status: OK");
         console.log("API Response keys:", Object.keys(videoData));
         console.log("Raw response (first 1000 chars):", JSON.stringify(videoData).substring(0, 1000));
 
