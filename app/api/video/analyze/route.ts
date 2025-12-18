@@ -279,37 +279,41 @@ function analyzeVideoContent(
         }
     } else if (duration > 60) {
         if (engagementRate > 3) {
-            strengths.push("📺 Longer format is working - your audience is engaged.");
+            strengths.push(`📺 Your ${duration}s video held attention despite length - that's rare and valuable.`);
         } else {
-            improvements.push("⏱️ Long video with lower engagement - try trimming to the best 30-45 seconds.");
+            improvements.push(`⏱️ At ${duration}s, this is a long TikTok. Consider cutting it to 30-45s and keeping only the most engaging moments.`);
         }
     } else {
-        strengths.push("⏱️ Good video length - sweet spot for TikTok.");
+        strengths.push(`⏱️ ${duration}s is in the TikTok sweet spot (15-60s).`);
     }
 
     // Hook analysis (first part of description)
     const hook = description.split(/[.!?]/).shift() || "";
-    if (hook.length < 20) {
-        improvements.push("🎣 Hook seems short. Start with a bold statement, question, or POV.");
+    if (hook.length < 20 && description.length > 0) {
+        improvements.push(`🎣 Your caption starts with "${hook.substring(0, 30)}..." - try opening with a question, "POV:", or a bold claim to stop scrollers.`);
     } else if (hook.toLowerCase().includes("pov") || hook.toLowerCase().includes("how to") || hook.toLowerCase().includes("this is")) {
-        strengths.push("🎣 Good hook pattern - using proven formats like POV or How-to.");
+        strengths.push(`🎣 Great hook format! "${hook.substring(0, 40)}..." uses proven patterns.`);
+    } else if (hook.length > 20) {
+        feedback.push(`🎣 Your hook: "${hook.substring(0, 40)}..." - consider starting with "POV:", "Wait for it", or a question.`);
     }
 
     // Hashtag analysis
     const hashtags = description.match(/#\w+/g) || [];
-    if (hashtags.length === 0) {
-        improvements.push("📌 No hashtags found. Add 3-5 relevant hashtags for discoverability.");
+    if (hashtags.length === 0 && description.length > 0) {
+        improvements.push(`📌 No hashtags! Add 3-5 like #fyp #foryou plus 2-3 niche-specific ones.`);
     } else if (hashtags.length > 10) {
-        improvements.push("📌 Too many hashtags (>10). Focus on 3-5 highly relevant ones.");
+        improvements.push(`📌 You used ${hashtags.length} hashtags. TikTok recommends 3-5. Pick your strongest: ${hashtags.slice(0, 3).join(" ")}`);
     } else if (hashtags.length >= 3 && hashtags.length <= 5) {
-        strengths.push("📌 Good hashtag count - optimal for discoverability.");
+        strengths.push(`📌 Perfect! ${hashtags.length} hashtags (${hashtags.slice(0, 3).join(" ")}...) is optimal for reach.`);
+    } else if (hashtags.length === 1 || hashtags.length === 2) {
+        improvements.push(`📌 Only ${hashtags.length} hashtag(s): ${hashtags.join(" ")}. Add 2-3 more for better discoverability.`);
     }
 
     // Caption length analysis
-    if (description.length < 50) {
-        improvements.push("✍️ Caption is quite short. Add context or a call-to-action.");
+    if (description.length < 50 && description.length > 0) {
+        improvements.push(`✍️ Caption is only ${description.length} characters. Add context about what viewers will learn or feel.`);
     } else if (description.length > 500) {
-        feedback.push("✍️ Long caption - make sure the key message is in the first line.");
+        feedback.push(`✍️ Your ${description.length}-character caption is long. Put your hook in the first line since TikTok truncates after 150 chars.`);
     }
 
     // Call to action analysis
@@ -403,6 +407,47 @@ function analyzeVideoContent(
         engagementContext = "Your engagement rate is below the TikTok average (5-6%). Focus on hooks.";
     }
 
+    // Generate SPECIFIC tips based on this video's issues
+    const tips: string[] = [];
+
+    // Tip based on engagement rate
+    if (engagementRate < 5) {
+        tips.push(`Your ${engagementRate.toFixed(1)}% engagement is below the 5-6% TikTok average. Try: Start with movement in frame, use a text hook in first second, or start mid-sentence to grab attention.`);
+    }
+
+    // Tip based on comments
+    if (comments > 0 && likes > 0) {
+        const commentRatio = (comments / likes) * 100;
+        if (commentRatio < 2) {
+            tips.push(`Only ${commentRatio.toFixed(1)}% of likers commented. End with a question like "What would YOU do?" or "Comment your experience 👇" to spark conversation.`);
+        }
+    }
+
+    // Tip based on description
+    if (description.length < 100) {
+        tips.push(`Your caption is only ${description.length} chars. Add 1-2 sentences of value + a question to increase dwell time and comments.`);
+    }
+
+    // Tip based on hashtags
+    const hashtagCount = (description.match(/#\w+/g) || []).length;
+    if (hashtagCount < 3) {
+        tips.push(`Add hashtags like #fyp #foryou + 2-3 niche tags. You only have ${hashtagCount}. More = more reach.`);
+    }
+
+    // Tip based on shares
+    if (shares > 0 && views > 0) {
+        const shareRate = (shares / views) * 100;
+        if (shareRate < 0.5) {
+            tips.push(`Share rate is ${shareRate.toFixed(2)}%. Create "save this" or "send to a friend who needs this" content to boost shares.`);
+        }
+    }
+
+    // Default tips if we don't have enough specific ones
+    if (tips.length < 2) {
+        tips.push(`Reply to comments within the first hour to boost algorithm visibility.`);
+        tips.push(`Create a Part 2 or series to build returning viewers.`);
+    }
+
     return {
         score,
         verdict,
@@ -411,11 +456,6 @@ function analyzeVideoContent(
         strengths,
         improvements,
         feedback,
-        tips: [
-            "Post consistently at peak hours (7-9 AM or 7-10 PM)",
-            "Reply to comments quickly to boost algorithm",
-            "Create content series to build loyal audience",
-            "Your first 3 seconds decide if viewers stay - make them count",
-        ],
+        tips: tips.slice(0, 4), // Limit to 4 tips
     };
 }

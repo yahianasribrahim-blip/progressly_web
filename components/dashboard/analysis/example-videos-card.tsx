@@ -63,19 +63,10 @@ export function ExampleVideosCard({ videos, isPremium, plan }: ExampleVideosCard
         }
     };
 
-    // Use the actual videos from the API - no mock data!
-    // Show only videos that have real URLs (not just homepage links)
-    const realVideos = videos.filter(v =>
-        v.url &&
-        v.url !== "https://tiktok.com" &&
-        v.url !== "https://instagram.com" &&
-        v.url !== "https://youtube.com" &&
-        v.url.includes("/video/")
-    );
-
+    // Use all videos from the API (already filtered/sorted by the backend)
     // Determine how many videos to show based on plan
     const maxVideos = plan === "pro" ? 8 : plan === "starter" ? 4 : 0;
-    const displayVideos = realVideos.slice(0, maxVideos);
+    const displayVideos = videos.slice(0, maxVideos);
 
     const getLockedLabel = (index: number): string | null => {
         // For free plan, all videos are locked

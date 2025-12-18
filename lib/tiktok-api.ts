@@ -395,31 +395,36 @@ export async function analyzeNiche(niche: string): Promise<{
     const thirtyDaysAgo = Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60);
     console.log("Filtering videos from last 30 days (timestamp >=", thirtyDaysAgo, ")");
 
-    // First, try to get videos from last 30 days
-    let sortedVideos = allVideos
+    // Start with all valid videos
+    const validVideos = allVideos
         .filter((v) => v.stats?.playCount)
-        .filter((v) => isContentAppropriate(v.desc)) // Filter out inappropriate content
-        .filter((v) => {
-            // Filter for recent videos (within last 30 days)
-            const createTime = v.createTime || 0;
-            if (createTime > 0 && createTime < thirtyDaysAgo) {
-                return false; // Video is too old
-            }
-            return true;
-        })
-        .sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
+        .filter((v) => isContentAppropriate(v.desc));
 
-    // If we got less than 5 videos, fallback to showing all videos (no date filter)
-    if (sortedVideos.length < 5) {
-        console.log("Not enough recent videos, showing all videos without date filter");
-        sortedVideos = allVideos
-            .filter((v) => v.stats?.playCount)
-            .filter((v) => isContentAppropriate(v.desc))
-            .sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
+    // Sort by views (highest first)
+    validVideos.sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
+
+    // Try to get videos with high view counts (trending = 50K+ views)
+    // If not enough, progressively lower the threshold
+    const viewThresholds = [50000, 10000, 1000, 0];
+    let sortedVideos: typeof validVideos = [];
+
+    for (const threshold of viewThresholds) {
+        sortedVideos = validVideos.filter(v => (v.stats?.playCount || 0) >= threshold);
+        if (sortedVideos.length >= 8) {
+            console.log(`Found ${sortedVideos.length} videos with ${threshold}+ views`);
+            break;
+        }
+    }
+
+    // If still not enough, use all valid videos
+    if (sortedVideos.length < 8) {
+        sortedVideos = validVideos;
+        console.log("Using all valid videos:", sortedVideos.length);
     }
 
     console.log("Total videos found:", allVideos.length);
-    console.log("Videos after filtering:", sortedVideos.length);
+    console.log("Valid videos:", validVideos.length);
+    console.log("Top video views:", sortedVideos[0]?.stats?.playCount || 0);
 
     // Log first few video descriptions
     sortedVideos.slice(0, 3).forEach((v, i) => {
