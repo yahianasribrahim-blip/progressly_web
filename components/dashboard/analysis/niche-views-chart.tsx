@@ -8,7 +8,7 @@ interface NicheViewsChartProps {
     niche: string;
 }
 
-// Generate data based on niche with more variety
+// Generate data based on niche with more variety - realistic inconsistent spikes
 function generateViewsData(niche: string) {
     const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -28,15 +28,32 @@ function generateViewsData(niche: string) {
     // Use a seed based on niche for consistent results per niche
     const seed = niche.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
     const pseudoRandom = (i: number) => {
-        const x = Math.sin(seed + i) * 10000;
+        const x = Math.sin(seed + i * 7.3) * 10000;
         return x - Math.floor(x);
     };
 
+    // Create more realistic pattern with dips and spikes
+    // Pattern: Start moderate, dip, spike, dip again, then rise with a weekend boost
+    const patterns = [
+        0.7,  // Mon - Start of week, moderate
+        0.5,  // Tue - Dip
+        0.85, // Wed - Recovery spike
+        0.6,  // Thu - Another dip
+        0.75, // Fri - Building up to weekend
+        0.95, // Sat - Weekend high
+        0.8,  // Sun - Slight drop but still good
+    ];
+
     return {
-        data: days.map((day, index) => ({
-            day,
-            views: Math.floor(config.base + (pseudoRandom(index) - 0.5) * config.base * config.volatility + index * 3000),
-        })),
+        data: days.map((day, index) => {
+            const patternMultiplier = patterns[index];
+            const randomVariation = (pseudoRandom(index) - 0.5) * 0.3; // ±15% random variation
+            const trendBonus = index * 2000; // Slight upward trend over the week
+            const views = Math.floor(
+                config.base * (patternMultiplier + randomVariation) + trendBonus
+            );
+            return { day, views: Math.max(views, 10000) }; // Ensure minimum views
+        }),
         growth: config.growth,
     };
 }
