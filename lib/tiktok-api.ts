@@ -19,8 +19,8 @@ export const NICHE_HASHTAGS: Record<string, string[]> = {
     cultural: ["ramadan", "eid", "muslimlife", "muslimculture", "eidmubarak", "muslimcommunity", "ummah", "muslimvibes", "eidvibes", "muslimtraditions"],
     // Food: Mix of restaurant reviews, home cooking, recipes, and traditional meals
     food: ["halalfood", "halaleats", "halalrecipes", "muslimcooking", "homemadehalal", "arabfood", "pakistanifood", "middleeasternfood", "cookingwithme", "recipeoftheday", "traditionalmeal", "familyrecipes", "halalrestaurant", "foodreview", "cookwitme"],
-    // Gym: Mix of Muslim fitness and general workout hashtags
-    gym: ["muslimfitness", "hijabifitness", "fitmuslimah", "gymtok", "workoutmotivation", "legday", "armday", "gymworkout", "fitnessjourney", "strengthtraining", "fitnessgirl", "gymmotivation"],
+    // Gym: Mix of Muslim fitness and popular general workout hashtags
+    gym: ["muslimfitness", "hijabifitness", "fitmuslimah", "gymtok", "workoutmotivation", "legday", "armday", "gymworkout", "fitnessjourney", "strengthtraining", "fitnessgirl", "gymmotivation", "gym", "workout", "fitness", "homeworkout", "gluteworkout", "upperbody", "lowerbody", "fitcheck"],
     pets: ["muslimswithcats", "catsofislam", "catlovers", "muslimcat", "petsofmuslims", "islamandcats", "muslimpetowner", "catsofmuslims", "muslimcatlover", "catsofsunnah"],
     // Storytelling: Personal stories, daily life, school/work stories - NOT AI generated religious content
     storytelling: ["storytime", "muslimstorytime", "dayinmylife", "schoolstory", "workstory", "storywithme", "whathapenedtome", "crazystory", "mystory", "lifeupdate", "muslimlife", "daywithme", "grwm", "vlog"],
@@ -599,24 +599,24 @@ export async function analyzeNiche(niche: string): Promise<{
 
     console.log(`Videos from last 7 days: ${sortedVideos.length}`);
 
-    // If not enough from 7 days, try 14 days MAX - this is the absolute limit
+    // If not enough from 7 days, try 15 days MAX
     // Users want FRESH trends, not month-old content
-    const fourteenDaysAgo = now - (14 * 24 * 60 * 60);
+    const fifteenDaysAgo = now - (15 * 24 * 60 * 60);
     if (sortedVideos.length < 8) {
-        console.log("Not enough from 7 days, trying 14 days MAX...");
+        console.log("Not enough from 7 days, trying 15 days MAX...");
         sortedVideos = validVideos
-            .filter(v => v.createTime && v.createTime >= fourteenDaysAgo)
+            .filter(v => v.createTime && v.createTime >= fifteenDaysAgo)
             .sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
-        console.log(`Videos from last 14 days: ${sortedVideos.length}`);
+        console.log(`Videos from last 15 days: ${sortedVideos.length}`);
     }
 
-    // HARD STOP: Never show videos older than 14 days
+    // HARD STOP: Never show videos older than 15 days
     // If we still don't have enough, that's okay - quality over quantity
     if (sortedVideos.length < 3) {
         console.warn("WARNING: Very few recent videos found! This niche may have limited fresh content.");
         // Only include videos with valid dates, sorted by recency + views
         sortedVideos = validVideos
-            .filter(v => v.createTime && v.createTime >= fourteenDaysAgo)
+            .filter(v => v.createTime && v.createTime >= fifteenDaysAgo)
             .sort((a, b) => {
                 // Prioritize recency, then views
                 const recencyA = a.createTime || 0;
@@ -637,12 +637,12 @@ export async function analyzeNiche(niche: string): Promise<{
         const videosWithoutDates = validVideos.filter(v => !v.createTime);
         console.log(`Videos WITH createTime: ${videosWithDates.length}, WITHOUT: ${videosWithoutDates.length}`);
 
-        // STRICT: Only include videos with valid dates within 14 days, never include undated videos
+        // STRICT: Only include videos with valid dates within 15 days, never include undated videos
         // This ensures users always get FRESH content they can act on
-        const strictlyRecentVideos = videosWithDates.filter(v => v.createTime && v.createTime >= fourteenDaysAgo);
+        const strictlyRecentVideos = videosWithDates.filter(v => v.createTime && v.createTime >= fifteenDaysAgo);
         if (strictlyRecentVideos.length > 0) {
             sortedVideos = strictlyRecentVideos.sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
-            console.log(`Using ${sortedVideos.length} strictly recent videos (within 14 days)`);
+            console.log(`Using ${sortedVideos.length} strictly recent videos (within 15 days)`);
         }
     }
 
