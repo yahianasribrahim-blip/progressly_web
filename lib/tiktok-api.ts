@@ -45,6 +45,14 @@ const INAPPROPRIATE_KEYWORDS = [
     "wtf", "fck", "f*ck", "sh*t", "b*tch",
     // Clubbing
     "twerk", "twerking", "clubbing", "rave", "nightclub",
+    // AI Generated Content (haram - creating images of living beings)
+    "ai generated", "ai voice", "ai art", "ai story", "ai stories",
+    "midjourney", "dalle", "dall-e", "stable diffusion", "ai animation",
+    "ai prophet", "ai sahaba", "ai companion", "generated with ai",
+    // Misguided religious content
+    "hijab not required", "hijab is not fard", "don't need hijab", "hijab optional",
+    "hijab not mandatory", "hijab not obligatory", "hijab is cultural",
+    "not required in quran", "moderate muslim", "progressive muslim",
 ];
 
 // Check if video content is appropriate for Muslim creators
