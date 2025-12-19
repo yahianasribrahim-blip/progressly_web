@@ -34,24 +34,20 @@ export async function moderateThumbnail(thumbnailUrl: string, niche: string = ""
         const base64Url = `data:${contentType};base64,${base64}`;
 
         // Different prompts based on niche requirements
-        // STRICT for hijab/modest fashion - tight tops are not acceptable even with hijab
+        // MIDDLE GROUND: Catch obviously inappropriate content but don't block everything
         const modestPrompt = `You are checking content for a Muslim modest fashion platform.
 
-REJECT if you see ANY of these (even if person is wearing hijab):
-- Tight/fitted top that shows body shape or curves
-- Form-fitting shirt or blouse that clings to the body
-- Low-cut or revealing neckline
-- Exposed stomach, chest, or excessive skin
-- Clothing that emphasizes body shape
+REJECT if you clearly see:
+- VERY tight top that obviously shows body curves/shape (not just fitted)
+- Clearly revealing or low-cut neckline showing chest
+- Exposed stomach or excessive skin
 
-IMPORTANT: A person can wear hijab but still be dressed immodestly if their top is tight/form-fitting. REJECT those.
+APPROVE if:
+- Normal hijab tutorials and styling content
+- Person is dressed modestly overall
+- Clothing is not obviously body-hugging/skin-tight
 
-APPROVE only if:
-- Loose, non-form-fitting clothing
-- Modest neckline that doesn't show chest
-- Can't clearly see body shape through the clothing
-
-Be STRICT - this is for a Muslim modest fashion platform.
+Note: Slightly fitted clothing is OK. Only reject if it's OBVIOUSLY tight and emphasizing body shape.
 Respond with ONLY: APPROVE or REJECT`;
 
         const generalPrompt = `Check if this is appropriate family-friendly content.
