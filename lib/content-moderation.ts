@@ -44,25 +44,21 @@ export async function moderateThumbnail(thumbnailUrl: string): Promise<Moderatio
                         content: [
                             {
                                 type: "text",
-                                text: `You are a content moderator for a MUSLIM modest fashion platform. 
-                                
-This image is a TikTok thumbnail. Check if it shows APPROPRIATE modest content.
+                                text: `You are a content moderator. Check this TikTok thumbnail for CLEARLY INAPPROPRIATE content.
 
-REJECT if you see ANY of these:
-- Tight/revealing clothing showing body shape
-- Exposed skin (arms, chest, stomach, legs)
-- Low-cut tops or cleavage
-- Form-fitting/bodycon clothing
-- Suggestive poses or expressions
-- Makeup focused on appearing "sexy"
-- Any content that would be considered immodest in Islamic standards
+REJECT ONLY if you see OBVIOUS issues like:
+- Explicit nudity or near-nudity
+- Very revealing clothing showing cleavage, stomach, or excessive skin
+- Obviously sexualized poses or content
+- Violence or gore
 
-APPROVE only if the content shows:
-- Loose, modest clothing that doesn't reveal body shape
-- Proper hijab/head covering (if worn)
-- Appropriate Islamic fashion or tutorials
-- Family-friendly content
+APPROVE if the content is:
+- Normal fashion content (even if not strictly modest)
+- Hijab tutorials or styling videos
+- Cultural content
+- Regular TikTok content that isn't explicitly sexual
 
+BE LENIENT - only reject clearly inappropriate content.
 Respond with ONLY one word: APPROVE or REJECT`
                             },
                             {

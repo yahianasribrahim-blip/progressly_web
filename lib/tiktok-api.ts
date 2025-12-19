@@ -24,31 +24,25 @@ export const NICHE_HASHTAGS: Record<string, string[]> = {
 };
 
 // Words to filter out - videos with these in descriptions are excluded
-// CRITICAL: This filter protects Muslim users from inappropriate content
+// NOTE: Keep this list FOCUSED on truly inappropriate content - avoid common words
 const INAPPROPRIATE_KEYWORDS = [
     // Romantic/explicit themes
-    "love song", "sexy", "hot girl", "hot boy", "kiss", "romance", "boyfriend", "girlfriend",
-    "bae", "dating", "hookup", "crush", "flirting", "nsfw", "18+", "explicit", "sensual",
-    // Revealing/immodest content - CRITICAL for modest fashion niche
-    "tight", "revealing", "cleavage", "busty", "curves", "curvy", "body", "figure",
-    "body goals", "bodycon", "low cut", "crop top", "midriff", "belly", "abs",
-    "bikini", "swimsuit", "lingerie", "underwear", "bra", "braless", "shorts",
-    "miniskirt", "mini skirt", "thigh", "legs", "booty", "butt", "ass",
-    "show off", "showing off", "flaunt", "slay", "baddie", "baddies",
-    "model", "modeling", "photoshoot", "photo shoot", "gorgeous", "stunning",
+    "sexy", "hot girl", "hot boy", "kiss", "hookup", "flirting", "nsfw", "18+", "explicit", "sensual",
+    // Clearly revealing/explicit content
+    "cleavage", "busty", "bodycon", "braless", "lingerie", "underwear",
+    "bikini", "swimsuit", "booty", "butt",
     // Thirst trap indicators
     "thirst trap", "body count", "situationship", "fwb", "rate me", "am i hot",
-    "would you date", "dm me", "dms open", "link in bio",
+    "would you date", "dms open",
     // Drugs/alcohol
-    "weed", "420", "drunk", "alcohol", "beer", "wine", "party", "high af", "stoned",
-    "molly", "xanax", "drugs", "smoke", "blunt", "joints", "edibles",
+    "weed", "420", "drunk", "alcohol", "high af", "stoned",
+    "molly", "xanax", "drugs", "blunt", "joints", "edibles",
     // Violence
-    "kill", "murder", "blood", "fight", "gang", "gun", "shoot", "violence", "death",
-    // Profanity (common ones)
-    "wtf", "af", "fck", "f*ck", "sh*t", "b*tch", "damn", "hell yeah",
-    "omfg", "stfu", "lmfao",
-    // Music/haram content
-    "twerk", "twerking", "dance", "dancing", "clubbing", "rave", "nightclub",
+    "kill", "murder", "blood", "gang", "gun", "shoot", "violence",
+    // Profanity
+    "wtf", "fck", "f*ck", "sh*t", "b*tch",
+    // Clubbing
+    "twerk", "twerking", "clubbing", "rave", "nightclub",
 ];
 
 // Check if video content is appropriate for Muslim creators
@@ -631,14 +625,14 @@ export async function analyzeNiche(niche: string): Promise<{
     }
 
     // Now apply view threshold on top of date-filtered videos
-    // MINIMUM 50k views - we only show quality viral content
-    const MIN_VIEWS = 50000;
-    const viewThresholds = [500000, 100000, 50000]; // Never go below 50k
+    // MINIMUM 10k views - balance between quality and availability
+    const MIN_VIEWS = 10000;
+    const viewThresholds = [500000, 100000, 50000, 10000]; // Floor is 10k
     let finalVideos: typeof sortedVideos = [];
 
     for (const threshold of viewThresholds) {
         finalVideos = sortedVideos.filter(v => (v.stats?.playCount || 0) >= threshold);
-        if (finalVideos.length >= 5) { // Reduced from 8 - quality over quantity
+        if (finalVideos.length >= 5) {
             console.log(`Found ${finalVideos.length} videos with ${threshold}+ views`);
             break;
         }
