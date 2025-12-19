@@ -177,6 +177,13 @@ CRITICAL RULES:
 4. If you only have 1-2 videos to work with, give 1-2 ideas max, don't pad with made-up stuff
 5. Keep summaries SHORT and REAL - no academic language
 
+🚫 NEVER RELATE TRENDS TO HOLIDAYS/EVENTS:
+- If a video mentions "Raya", "Eid", "Ramadan" etc, just say it's about "festive hijab styles" or "special occasion looks"
+- DO NOT say "for the upcoming Raya" because you don't know when holidays are
+- Keep ideas TIMELESS - they should work ANY time, not tied to specific dates
+- Say "for special occasions" NOT "for Eid celebrations"
+- The ideas should be usable TODAY, not waiting for a holiday
+
 HOOK RECOMMENDATIONS:
 - VERBAL: What to actually SAY (quote it)
 - VISUAL: What to SHOW on screen
