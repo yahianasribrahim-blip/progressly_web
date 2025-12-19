@@ -24,19 +24,31 @@ export const NICHE_HASHTAGS: Record<string, string[]> = {
 };
 
 // Words to filter out - videos with these in descriptions are excluded
+// CRITICAL: This filter protects Muslim users from inappropriate content
 const INAPPROPRIATE_KEYWORDS = [
     // Romantic/explicit themes
     "love song", "sexy", "hot girl", "hot boy", "kiss", "romance", "boyfriend", "girlfriend",
-    "bae", "dating", "hookup", "crush", "flirting", "nsfw", "18+", "explicit",
+    "bae", "dating", "hookup", "crush", "flirting", "nsfw", "18+", "explicit", "sensual",
+    // Revealing/immodest content - CRITICAL for modest fashion niche
+    "tight", "revealing", "cleavage", "busty", "curves", "curvy", "body", "figure",
+    "body goals", "bodycon", "low cut", "crop top", "midriff", "belly", "abs",
+    "bikini", "swimsuit", "lingerie", "underwear", "bra", "braless", "shorts",
+    "miniskirt", "mini skirt", "thigh", "legs", "booty", "butt", "ass",
+    "show off", "showing off", "flaunt", "slay", "baddie", "baddies",
+    "model", "modeling", "photoshoot", "photo shoot", "gorgeous", "stunning",
+    // Thirst trap indicators
+    "thirst trap", "body count", "situationship", "fwb", "rate me", "am i hot",
+    "would you date", "dm me", "dms open", "link in bio",
     // Drugs/alcohol
     "weed", "420", "drunk", "alcohol", "beer", "wine", "party", "high af", "stoned",
-    "molly", "xanax", "drugs", "smoke", "blunt", "joints",
+    "molly", "xanax", "drugs", "smoke", "blunt", "joints", "edibles",
     // Violence
     "kill", "murder", "blood", "fight", "gang", "gun", "shoot", "violence", "death",
     // Profanity (common ones)
     "wtf", "af", "fck", "f*ck", "sh*t", "b*tch", "damn", "hell yeah",
-    // Other inappropriate
-    "thirst trap", "body count", "situationship", "fwb",
+    "omfg", "stfu", "lmfao",
+    // Music/haram content
+    "twerk", "twerking", "dance", "dancing", "clubbing", "rave", "nightclub",
 ];
 
 // Check if video content is appropriate for Muslim creators
@@ -645,8 +657,17 @@ export async function analyzeNiche(niche: string): Promise<{
     console.log("Final videos to display:", finalVideos.length);
     console.log("Top video:", finalVideos[0]?.stats?.playCount, "views,", finalVideos[0]?._daysAgo, "days ago");
 
-    // Use finalVideos from here on
-    const sortedVideosFinal = finalVideos;
+    // CRITICAL: Visual content moderation - scan thumbnails for immodest content
+    // This catches revealing content that text filters miss
+    const { moderateVideoThumbnails } = await import("./content-moderation");
+    const rejectedIds = await moderateVideoThumbnails(finalVideos, 10);
+
+    // Remove moderated videos
+    const moderatedVideos = finalVideos.filter(v => !rejectedIds.has(v.id));
+    console.log(`After visual moderation: ${moderatedVideos.length} videos (removed ${rejectedIds.size} for immodest content)`);
+
+    // Use moderated videos from here on
+    const sortedVideosFinal = moderatedVideos;
 
     // Log first few video descriptions WITH DATES
     sortedVideosFinal.slice(0, 5).forEach((v, i) => {
