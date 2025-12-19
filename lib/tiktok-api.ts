@@ -12,15 +12,17 @@ const WOOP_API_HOST = "tiktok-most-trending-and-viral-content.p.rapidapi.com";
 // OLD: TikTok Scraper API - kept for video download functionality in deepgram-transcription.ts
 const SCRAPER_API_HOST = "tiktok-scraper2.p.rapidapi.com";
 
-// Hashtags to query for each niche - expanded for premium users
+// Hashtags to query for each niche - expanded for variety
 export const NICHE_HASHTAGS: Record<string, string[]> = {
     hijab: ["hijabtutorial", "hijabstyle", "modestfashion", "hijabfashion", "muslimfashion", "hijabi", "hijabista", "hijabers", "modestoutfit", "hijabtrends"],
     deen: ["islamicreminders", "muslim", "quran", "islamicquotes", "deenoverdunya", "islamicwisdom", "muslimtiktok", "alhamdulillah", "islamicknowledge", "quranquotes"],
     cultural: ["ramadan", "eid", "muslimlife", "muslimculture", "eidmubarak", "muslimcommunity", "ummah", "muslimvibes", "eidvibes", "muslimtraditions"],
-    food: ["halalfood", "halaleats", "iftarrecipes", "muslimfoodie", "halalrecipes", "halalmeal", "halalcooking", "iftarprep", "suhoorrecipes", "halalfoodies"],
+    // Food: Mix of restaurant reviews, home cooking, recipes, and traditional meals
+    food: ["halalfood", "halaleats", "halalrecipes", "muslimcooking", "homemadehalal", "arabfood", "pakistanifood", "middleeasternfood", "cookingwithme", "recipeoftheday", "traditionalmeal", "familyrecipes", "halalrestaurant", "foodreview", "cookwitme"],
     gym: ["muslimfitness", "hijabifitness", "modestworkout", "fitmuslimah", "ramadanfitness", "hijabigym", "modestactivewear", "muslimgains", "halalfitness", "fitmuslim"],
     pets: ["muslimswithcats", "catsofislam", "catlovers", "muslimcat", "petsofmuslims", "islamandcats", "muslimpetowner", "catsofmuslims", "muslimcatlover", "catsofsunnah"],
-    storytelling: ["storytime", "muslimstory", "revertmuslim", "myjourney", "islamicstories", "muslimrevert", "myislamicjourney", "islamstorytime", "muslimtales", "revertlife"],
+    // Storytelling: Personal stories, daily life, school/work stories - NOT AI generated religious content
+    storytelling: ["storytime", "muslimstorytime", "dayinmylife", "schoolstory", "workstory", "storywithme", "whathapenedtome", "crazystory", "mystory", "lifeupdate", "muslimlife", "daywithme", "grwm", "vlog"],
 };
 
 // Words to filter out - videos with these in descriptions are excluded
