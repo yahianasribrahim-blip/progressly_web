@@ -474,6 +474,7 @@ export async function analyzeNiche(niche: string): Promise<{
     formats: VideoFormat[];
     examples: VideoExample[];
     benchmark: { viewRange: string; timeframe: string };
+    nicheWarning?: string; // Warning if niche has too few quality videos
 }> {
     const nicheKey = niche.toLowerCase();
     const hashtags = NICHE_HASHTAGS[nicheKey] || NICHE_HASHTAGS.deen;
@@ -625,9 +626,9 @@ export async function analyzeNiche(niche: string): Promise<{
     }
 
     // Now apply view threshold on top of date-filtered videos
-    // MINIMUM 10k views - balance between quality and availability
-    const MIN_VIEWS = 10000;
-    const viewThresholds = [500000, 100000, 50000, 10000]; // Floor is 10k
+    // HARD FLOOR: 50k views minimum - no exceptions
+    const MIN_VIEWS = 50000;
+    const viewThresholds = [500000, 100000, 50000]; // Floor is 50k
     let finalVideos: typeof sortedVideos = [];
 
     for (const threshold of viewThresholds) {
@@ -638,11 +639,14 @@ export async function analyzeNiche(niche: string): Promise<{
         }
     }
 
-    // HARD FLOOR: Never show videos under 50k views
-    // If we don't have 5 videos at 50k+, show what we have (quality over quantity)
-    if (finalVideos.length === 0 || finalVideos.some(v => (v.stats?.playCount || 0) < MIN_VIEWS)) {
-        finalVideos = sortedVideos.filter(v => (v.stats?.playCount || 0) >= MIN_VIEWS);
-        console.log(`Applied 50k floor: ${finalVideos.length} videos qualify`);
+    // HARD FLOOR: Only videos with 50k+ views
+    finalVideos = sortedVideos.filter(v => (v.stats?.playCount || 0) >= MIN_VIEWS);
+    console.log(`Videos meeting 50k floor: ${finalVideos.length}`);
+
+    // Detect low-quality niche (less than 3 quality videos)
+    const isLowQualityNiche = finalVideos.length < 3;
+    if (isLowQualityNiche) {
+        console.warn(`⚠️ LOW QUALITY NICHE: Only ${finalVideos.length} quality videos found!`);
     }
 
     console.log("=== FINAL VIDEOS ===");
@@ -660,12 +664,24 @@ export async function analyzeNiche(niche: string): Promise<{
     const moderatedVideos = finalVideos.filter(v => !rejectedIds.has(v.id));
     console.log(`After visual moderation: ${moderatedVideos.length} videos (removed ${rejectedIds.size} for immodest content)`);
 
-    // Use moderated videos from here on
-    const sortedVideosFinal = moderatedVideos;
+    // FINAL SAFETY CHECK: Ensure ALL videos meet 50k minimum (double-check)
+    const safeVideos = moderatedVideos.filter(v => {
+        const views = v.stats?.playCount || 0;
+        if (views < MIN_VIEWS) {
+            console.warn(`❌ REMOVING video ${v.id} with only ${views} views (below 50k)`);
+            return false;
+        }
+        return true;
+    });
+    console.log(`After final view check: ${safeVideos.length} videos qualify`);
 
-    // Log first few video descriptions WITH DATES
-    sortedVideosFinal.slice(0, 5).forEach((v, i) => {
-        console.log(`Video ${i + 1}: ${v.stats?.playCount} views, ${v._daysAgo} days old, "${v.desc?.substring(0, 50)}..."`);
+    // Use safe videos from here on
+    const sortedVideosFinal = safeVideos;
+
+    // Log ALL videos that will be shown with their view counts
+    console.log("=== VIDEOS TO BE DISPLAYED ===");
+    sortedVideosFinal.forEach((v, i) => {
+        console.log(`Video ${i + 1}: ${v.stats?.playCount?.toLocaleString()} views, ${v._daysAgo} days old, "${v.desc?.substring(0, 50)}..."`);
     });
 
     // Import transcription service dynamically to avoid circular deps
@@ -785,6 +801,11 @@ export async function analyzeNiche(niche: string): Promise<{
     const lowRange = Math.floor(medianViews * 0.3);
     const highRange = Math.floor(medianViews * 1.5);
 
+    // Generate warning message for low-quality niches
+    const nicheWarning = isLowQualityNiche
+        ? `⚠️ This niche has limited trending content (only ${finalVideos.length} quality video${finalVideos.length === 1 ? '' : 's'} found in the past 2 weeks). The insights below are based on limited data.`
+        : undefined;
+
     return {
         hooks: mergedHooks.length > 0 ? mergedHooks : getDefaultHooks(nicheKey),
         captions: captions.slice(0, 10), // Top 10 viral captions
@@ -796,6 +817,7 @@ export async function analyzeNiche(niche: string): Promise<{
             viewRange: `${formatViewCount(lowRange)}–${formatViewCount(highRange)}`,
             timeframe: "48–72 hours",
         },
+        nicheWarning,
     };
 }
 

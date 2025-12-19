@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Loader2, Zap, Lock, Bookmark, BookmarkCheck } from "lucide-react";
+import { Sparkles, Loader2, Zap, Lock, Bookmark, BookmarkCheck, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -48,6 +48,7 @@ export function AnalyzeNicheSection({
     const [selectedNiche, setSelectedNiche] = useState<string>("");
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
     const [aiInsights, setAIInsights] = useState<AIInsights | null>(null);
+    const [nicheWarning, setNicheWarning] = useState<string | null>(null);
 
     const handleSaveAnalysis = async () => {
         if (!analysisResult || isSaving) return;
@@ -174,6 +175,13 @@ export function AnalyzeNicheSection({
 
             setAnalysisResult(result);
 
+            // Set niche warning if present
+            if (data.nicheWarning) {
+                setNicheWarning(data.nicheWarning);
+            } else {
+                setNicheWarning(null);
+            }
+
             // Set AI insights if available
             if (data.aiInsights) {
                 setAIInsights(data.aiInsights);
@@ -260,6 +268,20 @@ export function AnalyzeNicheSection({
             {/* Analysis Results */}
             {analysisResult && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {/* Niche Warning Banner */}
+                    {nicheWarning && (
+                        <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+                            <CardContent className="py-4">
+                                <div className="flex items-start gap-3">
+                                    <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                                        {nicheWarning}
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
                     {/* Save Analysis Button */}
                     <div className="flex justify-end">
                         <Button
