@@ -1,5 +1,8 @@
 // TikTok API Integration using Woop "TikTok Most Trending and Viral Content" API
 
+import { getSpokenHooksFromVideos } from "./deepgram-transcription";
+import { getVisualHooksFromVideos } from "./video-frame-analysis";
+
 // API Configuration
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "f278804a40mshe80b9aa07df21a1p1f6e3ejsn89a14ca0342c";
 
@@ -661,9 +664,16 @@ export async function analyzeNiche(niche: string): Promise<{
     // Try HARDER to get SPOKEN hooks - process ONLY the videos we're showing
     console.log("Attempting to transcribe spoken hooks from displayed videos...");
     let spokenHooks: TrendingHook[] = [];
+    let visualHooks: TrendingHook[] = [];
+
+    // Run spoken and visual hook extraction in parallel for speed
+    const videosForHooks = sortedVideosFinal.slice(0, 5);
 
     try {
-        const rawSpokenHooks = await getSpokenHooksFromVideos(sortedVideosFinal.slice(0, 8), 8);
+        const [rawSpokenHooks, rawVisualHooks] = await Promise.all([
+            getSpokenHooksFromVideos(videosForHooks, 5),
+            getVisualHooksFromVideos(videosForHooks, nicheKey, 3), // Less visual hooks (more expensive)
+        ]);
 
         if (rawSpokenHooks.length > 0) {
             console.log(`Got ${rawSpokenHooks.length} spoken hooks from transcription!`);
@@ -676,11 +686,23 @@ export async function analyzeNiche(niche: string): Promise<{
                 likes: h.likes,
             }));
         }
+
+        if (rawVisualHooks.length > 0) {
+            console.log(`Got ${rawVisualHooks.length} visual hooks from video frames!`);
+            visualHooks = rawVisualHooks.map(h => ({
+                id: h.id,
+                text: h.text, // Visual hooks are described without quotes
+                engagement: h.engagement,
+                platform: h.platform,
+                views: 0, // Visual hooks don't have view counts
+                likes: 0,
+            }));
+        }
     } catch (error) {
-        console.error("Transcription failed:", error);
+        console.error("Hook extraction failed:", error);
     }
 
-    console.log(`Final: ${captions.length} captions, ${spokenHooks.length} spoken hooks`);
+    console.log(`Final: ${captions.length} captions, ${spokenHooks.length} spoken hooks, ${visualHooks.length} visual hooks`);
 
     // Deduplicate hooks by text (case-insensitive)
     const seenHookTexts = new Set<string>();
@@ -697,13 +719,17 @@ export async function analyzeNiche(niche: string): Promise<{
 
     const uniqueCaptions = deduplicateHooks(captions);
     const uniqueSpokenHooks = deduplicateHooks(spokenHooks);
+    const uniqueVisualHooks = deduplicateHooks(visualHooks);
 
-    console.log(`After dedup: ${uniqueCaptions.length} captions, ${uniqueSpokenHooks.length} spoken hooks`);
+    console.log(`After dedup: ${uniqueCaptions.length} captions, ${uniqueSpokenHooks.length} spoken hooks, ${uniqueVisualHooks.length} visual hooks`);
 
-    // Merged hooks for backwards compatibility (spoken hooks first, then captions as fallback)
-    const mergedHooks = uniqueSpokenHooks.length > 0
-        ? [...uniqueSpokenHooks, ...uniqueCaptions.slice(0, 5 - uniqueSpokenHooks.length)]
-        : uniqueCaptions;
+    // Merged hooks: spoken hooks first, then visual hooks, then captions as fallback
+    // This gives us both verbal ("quote") and visual (description) hooks
+    const mergedHooks = [
+        ...uniqueSpokenHooks,
+        ...uniqueVisualHooks,
+        ...uniqueCaptions.slice(0, Math.max(0, 5 - uniqueSpokenHooks.length - uniqueVisualHooks.length)),
+    ];
 
     // Create video examples (return 8 for Pro users) - USE sortedVideosFinal
     const examples: VideoExample[] = sortedVideosFinal.slice(0, 8).map((video) => ({
