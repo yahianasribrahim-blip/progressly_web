@@ -4,7 +4,7 @@ import { getSpokenHooksFromVideos } from "./deepgram-transcription";
 import { getVisualHooksFromVideos } from "./video-frame-analysis";
 
 // API Configuration
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "f278804a40mshe80b9aa07df21a1p1f6e3ejsn89a14ca0342c";
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
 
 // NEW: Woop Trending API - supports date filtering for recent videos (last 1-7 days)
 const WOOP_API_HOST = "tiktok-most-trending-and-viral-content.p.rapidapi.com";
