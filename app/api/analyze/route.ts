@@ -48,6 +48,8 @@ export async function POST(request: Request) {
             formats: analysisResult.formats,
             videoCount: analysisResult.examples.length * 5, // Approximate
             topViewCount,
+            // NEW: Pass actual video descriptions to AI
+            videoDescriptions: analysisResult.examples.map(e => e.description || "").filter(d => d.length > 10),
         });
 
         console.log("AI insights generated:", {

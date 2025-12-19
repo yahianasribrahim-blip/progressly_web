@@ -9,6 +9,7 @@ interface AnalysisData {
     formats: Array<{ name: string; averageLength: string; whyItWorks: string }>;
     videoCount: number;
     topViewCount: number;
+    videoDescriptions?: string[]; // NEW: Actual video descriptions for AI analysis
 }
 
 interface AIInsights {
@@ -101,10 +102,18 @@ function buildPrompt(data: AnalysisData): string {
     const topHashtags = data.hashtags.slice(0, 5).map(h => `#${h.tag} (${h.category})`).join(", ");
     const formats = data.formats.map(f => `${f.name}: ${f.averageLength}`).join("\n");
 
-    return `
-Analyze this TikTok data for the "${data.niche}" niche (Muslim creator focus):
+    // NEW: Include actual video descriptions
+    const videoDescriptions = data.videoDescriptions?.slice(0, 5).map((desc, i) =>
+        `Video ${i + 1}: "${desc.substring(0, 200)}${desc.length > 200 ? '...' : ''}"`
+    ).join("\n") || "No descriptions available";
 
-TOP PERFORMING HOOKS (what creators are saying):
+    return `
+Analyze this TikTok data for the "${data.niche}" niche:
+
+TOP PERFORMING VIDEO DESCRIPTIONS (these are the ACTUAL captions from viral videos):
+${videoDescriptions}
+
+TOP PERFORMING HOOKS:
 ${topHooks}
 
 TRENDING HASHTAGS:
@@ -117,8 +126,14 @@ STATS:
 - Analyzed ${data.videoCount} trending videos
 - Top video has ${data.topViewCount.toLocaleString()} views
 
-Based on this real data, provide specific insights for a Muslim content creator in this niche.
-What patterns do you see? What should they do this week?
+CRITICAL INSTRUCTIONS:
+1. Look at what the top performing videos have IN COMMON (theme, format, style)
+2. Generate content ideas that are SPECIFIC to what's actually working (not generic advice)
+3. If 3/5 videos are about parent reactions to reversion, the idea should be: "Film a parent's reaction to learning about Islam"
+4. If videos are dance challenges, DON'T suggest "respond to comments" - suggest dance content
+5. Be SPECIFIC. Never say "respond to trending topic" - say WHAT the topic is
+
+Based on this real data, provide specific insights for a content creator in this niche.
     `.trim();
 }
 
@@ -203,11 +218,22 @@ function generateTemplateInsights(data: AnalysisData): AIInsights {
         contentIdeas.push("💪 Tell a story of when faith helped you through hardship");
     }
 
-    // If no patterns detected, give generic but useful ideas based on niche
+    // If no patterns detected, use actual video descriptions to generate ideas
     if (contentIdeas.length < 3) {
-        contentIdeas.push(`📹 Recreate the top performing video style in your own way`);
-        contentIdeas.push(`💬 Film a reaction to a trending topic in ${nicheCapitalized}`);
-        contentIdeas.push(`🎯 Answer a common question your audience has`);
+        // Get the most viewed video descriptions and suggest similar content
+        const topDescriptions = data.videoDescriptions?.slice(0, 3) || [];
+        if (topDescriptions.length > 0) {
+            // Summarize top video themes
+            const topThemes = topDescriptions.map((desc, i) => {
+                const shortDesc = desc.substring(0, 100);
+                return `📹 Video ${i + 1} that went viral: "${shortDesc}..." - Try something similar!`;
+            });
+            contentIdeas.push(...topThemes.slice(0, 3 - contentIdeas.length));
+        } else {
+            // Absolute fallback - but at least mention the niche
+            contentIdeas.push(`📹 Create content in the ${nicheCapitalized} niche - check the example videos for inspiration`);
+            contentIdeas.push(`🔥 Study the top hooks above and use a similar format`);
+        }
     }
 
     // Limit to 5 ideas

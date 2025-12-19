@@ -121,23 +121,38 @@ export async function transcribeVideoAudio(videoUrl: string): Promise<Transcript
 }
 
 /**
- * Extract the spoken hook (first sentence) from a transcript
+ * Extract the spoken hook (first 1-2 sentences) from a transcript
+ * Fixed: Requires 25+ chars and 3+ words to avoid garbage like "Please"
  */
 export function extractSpokenHook(transcript: string): string {
-    if (!transcript || transcript.length < 5) return "";
+    if (!transcript || transcript.length < 25) return "";
 
-    // Get the first sentence (ends with . ! or ?)
-    const firstSentence = transcript.split(/[.!?]/)[0]?.trim();
+    // Common single-word garbage to skip
+    const garbageWords = ["please", "wait", "hey", "hi", "um", "uh", "okay", "so", "like"];
 
-    if (!firstSentence || firstSentence.length < 5) {
-        return transcript.substring(0, 80).trim();
+    // Split into sentences and take first 2
+    const sentences = transcript.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    let hook = sentences.slice(0, 2).join(". ").trim();
+
+    // If still too short, take more of the transcript
+    if (hook.length < 25 && transcript.length >= 25) {
+        hook = transcript.substring(0, 80).trim();
     }
 
-    if (firstSentence.length > 100) {
-        return firstSentence.substring(0, 97) + "...";
+    // Check if it's just garbage
+    const words = hook.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    if (words.length < 3) return ""; // Need at least 3 words
+    if (words.length === 1 && garbageWords.includes(words[0])) return "";
+
+    // Final length check
+    if (hook.length < 25) return "";
+
+    // Truncate if too long
+    if (hook.length > 120) {
+        return hook.substring(0, 117) + "...";
     }
 
-    return firstSentence;
+    return hook;
 }
 
 /**

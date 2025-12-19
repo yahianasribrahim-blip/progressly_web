@@ -400,8 +400,19 @@ export async function analyzeNiche(niche: string): Promise<{
     console.log("Current timestamp:", now, "= ", new Date().toISOString());
     console.log("7 days ago:", sevenDaysAgo, "= ", new Date(sevenDaysAgo * 1000).toISOString());
 
+    // CRITICAL: Deduplicate videos by ID (same video can appear in multiple hashtags)
+    const seenVideoIds = new Set<string>();
+    const uniqueAllVideos = allVideos.filter(v => {
+        if (!v.id || seenVideoIds.has(v.id)) {
+            return false;
+        }
+        seenVideoIds.add(v.id);
+        return true;
+    });
+    console.log(`Deduplicated: ${allVideos.length} → ${uniqueAllVideos.length} unique videos (removed ${allVideos.length - uniqueAllVideos.length} duplicates)`);
+
     // Start with all valid videos and add date info
-    const validVideos = allVideos
+    const validVideos = uniqueAllVideos
         .filter((v) => v.stats?.playCount)
         .filter((v) => isContentAppropriate(v.desc))
         .map(v => {
@@ -515,10 +526,28 @@ export async function analyzeNiche(niche: string): Promise<{
 
     console.log(`Final: ${captions.length} captions, ${spokenHooks.length} spoken hooks`);
 
+    // Deduplicate hooks by text (case-insensitive)
+    const seenHookTexts = new Set<string>();
+    const deduplicateHooks = <T extends { text: string }>(hooks: T[]): T[] => {
+        return hooks.filter(h => {
+            const normalized = h.text.toLowerCase().trim();
+            if (seenHookTexts.has(normalized) || normalized.length < 25) {
+                return false;
+            }
+            seenHookTexts.add(normalized);
+            return true;
+        });
+    };
+
+    const uniqueCaptions = deduplicateHooks(captions);
+    const uniqueSpokenHooks = deduplicateHooks(spokenHooks);
+
+    console.log(`After dedup: ${uniqueCaptions.length} captions, ${uniqueSpokenHooks.length} spoken hooks`);
+
     // Merged hooks for backwards compatibility (spoken hooks first, then captions as fallback)
-    const mergedHooks = spokenHooks.length > 0
-        ? [...spokenHooks, ...captions.slice(0, 5 - spokenHooks.length)]
-        : captions;
+    const mergedHooks = uniqueSpokenHooks.length > 0
+        ? [...uniqueSpokenHooks, ...uniqueCaptions.slice(0, 5 - uniqueSpokenHooks.length)]
+        : uniqueCaptions;
 
     // Create video examples (return 8 for Pro users) - USE sortedVideosFinal
     const examples: VideoExample[] = sortedVideosFinal.slice(0, 8).map((video) => ({
