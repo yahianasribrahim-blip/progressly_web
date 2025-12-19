@@ -444,10 +444,32 @@ export async function analyzeNiche(niche: string): Promise<{
         console.log(`Videos from last 30 days: ${sortedVideos.length}`);
     }
 
-    // If STILL not enough, use all but warn
+    // If STILL not enough, try 90 days MAX - no older than this
+    const ninetyDaysAgo = now - (90 * 24 * 60 * 60);
     if (sortedVideos.length < 8) {
-        console.warn("WARNING: Not enough recent videos! Using all available videos.");
-        sortedVideos = validVideos.sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
+        console.log("Not enough from 30 days, trying 90 days MAX...");
+        sortedVideos = validVideos
+            .filter(v => v.createTime && v.createTime >= ninetyDaysAgo)
+            .sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
+        console.log(`Videos from last 90 days: ${sortedVideos.length}`);
+    }
+
+    // If STILL not enough, use all but log the issue
+    if (sortedVideos.length < 8) {
+        console.warn("WARNING: Not enough recent videos! API may not be returning createTime.");
+        // Log what dates we're seeing
+        const videosWithDates = validVideos.filter(v => v.createTime);
+        const videosWithoutDates = validVideos.filter(v => !v.createTime);
+        console.log(`Videos WITH createTime: ${videosWithDates.length}, WITHOUT: ${videosWithoutDates.length}`);
+        if (videosWithDates.length > 0) {
+            console.log("Sample dates:", videosWithDates.slice(0, 3).map(v => ({
+                daysAgo: v._daysAgo,
+                date: v._createDate?.toISOString(),
+            })));
+        }
+        // Prefer videos with dates, then fill with those without
+        sortedVideos = [...videosWithDates, ...videosWithoutDates]
+            .sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
     }
 
     // Now apply view threshold on top of date-filtered videos
