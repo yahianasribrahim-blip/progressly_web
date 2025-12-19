@@ -652,9 +652,9 @@ export async function analyzeNiche(niche: string): Promise<{
     console.log("Top video:", finalVideos[0]?.stats?.playCount, "views,", finalVideos[0]?._daysAgo, "days ago");
 
     // CRITICAL: Visual content moderation - scan thumbnails for immodest content
-    // This catches revealing content that text filters miss
+    // Uses NICHE-AWARE moderation: strict for hijab/fashion, lenient for others
     const { moderateVideoThumbnails } = await import("./content-moderation");
-    const rejectedIds = await moderateVideoThumbnails(finalVideos, 10);
+    const rejectedIds = await moderateVideoThumbnails(finalVideos, nicheKey, 10);
 
     // Remove moderated videos
     const moderatedVideos = finalVideos.filter(v => !rejectedIds.has(v.id));

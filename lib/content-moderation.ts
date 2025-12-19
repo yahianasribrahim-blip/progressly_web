@@ -9,13 +9,17 @@ interface ModerationResult {
 }
 
 /**
- * Check if a video thumbnail shows appropriate modest content
- * Uses GPT-4o Vision to scan for revealing/immodest imagery
+ * Check if a video thumbnail shows appropriate content for the given niche
+ * Uses GPT-4o Vision - stricter for hijab/modest fashion niches
  */
-export async function moderateThumbnail(thumbnailUrl: string): Promise<ModerationResult> {
+export async function moderateThumbnail(thumbnailUrl: string, niche: string = ""): Promise<ModerationResult> {
     if (!OPENAI_API_KEY || !thumbnailUrl) {
         return { isAppropriate: true }; // Default to allow if can't check
     }
+
+    // Determine if this niche requires strict modest fashion standards
+    const modestFashionNiches = ["hijab", "modest", "fashion", "cultural"];
+    const requiresModestStandards = modestFashionNiches.some(n => niche.toLowerCase().includes(n));
 
     try {
         // Download thumbnail as base64
@@ -29,7 +33,36 @@ export async function moderateThumbnail(thumbnailUrl: string): Promise<Moderatio
         const contentType = response.headers.get("content-type") || "image/jpeg";
         const base64Url = `data:${contentType};base64,${base64}`;
 
-        // Use GPT-4o to check for modesty
+        // Different prompts based on niche requirements
+        const modestPrompt = `You are checking content for a MUSLIM MODEST FASHION platform.
+
+REJECT if you see:
+- Tight/form-fitting tops or clothing that shows body shape/curves
+- Low-cut, revealing, or clinging clothing
+- Exposed skin beyond face and hands
+- Sexualized poses or expressions
+
+APPROVE if:
+- Loose-fitting, modest clothing
+- Proper hijab styling tutorials
+- Family-friendly Islamic content
+
+This is for HIJAB/MODEST FASHION content. Apply Islamic modesty standards.
+Respond with ONLY: APPROVE or REJECT`;
+
+        const generalPrompt = `Check if this is appropriate family-friendly content.
+
+REJECT ONLY for:
+- Explicit nudity or near-nudity  
+- Obviously sexualized content
+- Violence or gore
+
+APPROVE normal content.
+Respond with ONLY: APPROVE or REJECT`;
+
+        const prompt = requiresModestStandards ? modestPrompt : generalPrompt;
+
+        // Use GPT-4o to check
         const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -42,29 +75,8 @@ export async function moderateThumbnail(thumbnailUrl: string): Promise<Moderatio
                     {
                         role: "user",
                         content: [
-                            {
-                                type: "text",
-                                text: `You are a content moderator. Check this TikTok thumbnail for CLEARLY INAPPROPRIATE content.
-
-REJECT ONLY if you see OBVIOUS issues like:
-- Explicit nudity or near-nudity
-- Very revealing clothing showing cleavage, stomach, or excessive skin
-- Obviously sexualized poses or content
-- Violence or gore
-
-APPROVE if the content is:
-- Normal fashion content (even if not strictly modest)
-- Hijab tutorials or styling videos
-- Cultural content
-- Regular TikTok content that isn't explicitly sexual
-
-BE LENIENT - only reject clearly inappropriate content.
-Respond with ONLY one word: APPROVE or REJECT`
-                            },
-                            {
-                                type: "image_url",
-                                image_url: { url: base64Url, detail: "low" }
-                            }
+                            { type: "text", text: prompt },
+                            { type: "image_url", image_url: { url: base64Url, detail: "low" } }
                         ]
                     }
                 ],
@@ -102,13 +114,14 @@ export async function moderateVideoThumbnails(
         video?: { cover?: string };
         coverUrl?: string;
     }>,
+    niche: string,
     maxToCheck: number = 10
 ): Promise<Set<string>> {
     const rejectedIds = new Set<string>();
     const videosToCheck = videos.slice(0, maxToCheck);
 
     console.log(`\n=== VISUAL CONTENT MODERATION ===`);
-    console.log(`Checking ${videosToCheck.length} video thumbnails for modest content...`);
+    console.log(`Checking ${videosToCheck.length} video thumbnails for niche "${niche}"...`);
 
     // Check thumbnails in parallel (but limit concurrency)
     const results = await Promise.all(
@@ -116,7 +129,7 @@ export async function moderateVideoThumbnails(
             const thumbnailUrl = video.coverUrl || video.video?.cover;
             if (!thumbnailUrl) return { id: video.id, rejected: false };
 
-            const result = await moderateThumbnail(thumbnailUrl);
+            const result = await moderateThumbnail(thumbnailUrl, niche);
             return { id: video.id, rejected: !result.isAppropriate };
         })
     );
