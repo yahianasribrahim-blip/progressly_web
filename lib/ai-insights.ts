@@ -170,6 +170,12 @@ CRITICAL RULES:
 3. NEVER give generic advice like "respond to comments" or "use trending audio"
 4. Each idea must be ACTIONABLE: "Film your parent's reaction to learning about X" not "Make relatable content"
 
+HOOK RECOMMENDATIONS - VERY IMPORTANT:
+Include BOTH types of hooks:
+- VERBAL hooks: What to SAY at the start (e.g., "Wait, this actually changed my life...")
+- VISUAL hooks: What to SHOW at the start (e.g., "Open with a close-up of the surprising result before the process")
+Mix of both types makes content more engaging!
+
 EXAMPLE OF WHAT YOU SHOULD DO:
 If video descriptions are:
 - "My mom's reaction when I told her I'm fasting"
@@ -184,7 +190,7 @@ Respond in JSON format:
     "summary": "What the top videos have in common - be SPECIFIC (e.g., '4/5 videos are family reaction videos')",
     "contentIdeas": ["SPECIFIC idea based on the pattern", "another specific idea"],
     "bestPostingStrategy": "When to post",
-    "hookRecommendations": ["hook pattern from the data"],
+    "hookRecommendations": ["Verbal: 'Quote what to say'", "Visual: Describe what to show on screen"],
     "warnings": ["things to avoid"]
 }`
                     },

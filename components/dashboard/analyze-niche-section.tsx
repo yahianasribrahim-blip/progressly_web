@@ -313,15 +313,15 @@ export function AnalyzeNicheSection({
                         plan={plan}
                     />
 
-                    {/* 3. Spoken Hooks Card - Actual hooks from video audio */}
+                    {/* 3. Hooks Card - Both verbal and visual hooks from trending videos */}
                     {analysisResult.spokenHooks && analysisResult.spokenHooks.length > 0 && (
                         <HooksCard
                             hooks={analysisResult.spokenHooks}
                             isPremium={isPremium}
                             plan={plan}
-                            title="🎤 Spoken Hooks"
-                            type="spoken"
-                            emptyMessage="No spoken hooks found - videos in this niche may use music/text instead"
+                            title="🎯 Hooks"
+                            type="hook"
+                            emptyMessage="No hooks found for this niche"
                         />
                     )}
 

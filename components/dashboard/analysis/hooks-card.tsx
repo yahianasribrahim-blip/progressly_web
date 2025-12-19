@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check, Lock, Zap, Mic, MessageSquare } from "lucide-react";
+import { Copy, Check, Lock, Zap, Mic, MessageSquare, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ interface HooksCardProps {
     isPremium: boolean;
     plan: "free" | "starter" | "pro";
     title?: string;
-    type?: "spoken" | "caption";
+    type?: "spoken" | "caption" | "hook";
     emptyMessage?: string;
 }
 
@@ -65,10 +65,24 @@ export function HooksCard({
     };
 
     const getTypeIcon = () => {
+        if (type === "hook") {
+            return <Target className="h-5 w-5 text-orange-500" />;
+        }
         if (type === "spoken") {
             return <Mic className="h-5 w-5 text-violet-500" />;
         }
         return <MessageSquare className="h-5 w-5 text-blue-500" />;
+    };
+
+    // Determine if a hook should be displayed with quotes (verbal) or without (visual)
+    const isVerbalHook = (hookText: string): boolean => {
+        // Visual hooks typically describe actions, not speech
+        const visualIndicators = [
+            "show", "pan to", "cut to", "zoom", "transition", "reveal",
+            "walk", "pick up", "open", "close", "display", "hold up"
+        ];
+        const lowerText = hookText.toLowerCase();
+        return !visualIndicators.some(indicator => lowerText.startsWith(indicator));
     };
 
     if (hooks.length === 0) {
@@ -96,7 +110,7 @@ export function HooksCard({
                         {title}
                     </CardTitle>
                     <Badge variant="secondary" className="font-normal">
-                        {hooks.length} {type === "spoken" ? "hooks" : "captions"}
+                        {hooks.length} hooks
                     </Badge>
                 </div>
             </CardHeader>
@@ -118,7 +132,7 @@ export function HooksCard({
                             {/* Hook Content */}
                             <div className="flex-1 space-y-2">
                                 <p className="text-base font-medium leading-snug">
-                                    "{hook.text}"
+                                    {isVerbalHook(hook.text) ? `"${hook.text}"` : hook.text}
                                 </p>
                                 <div className="flex items-center gap-2">
                                     <Badge
