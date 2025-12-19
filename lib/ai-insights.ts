@@ -130,8 +130,13 @@ SUGGESTED CONTENT IDEA: [One specific, actionable idea based on the common theme
  * Generate AI-powered insights from the analysis data
  */
 export async function generateAIInsights(data: AnalysisData): Promise<AIInsights> {
+    console.log("=== GENERATE AI INSIGHTS CALLED ===");
+    console.log("Has OpenAI API key:", !!OPENAI_API_KEY);
+    console.log("Has thumbnails:", data.videoThumbnails?.length || 0);
+    console.log("Has descriptions:", data.videoDescriptions?.length || 0);
+
     if (!OPENAI_API_KEY) {
-        console.log("OpenAI API key not set, using template insights");
+        console.log("❌ OpenAI API key not set, using template insights");
         return generateTemplateInsights(data);
     }
 
