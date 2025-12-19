@@ -175,12 +175,12 @@ RULES:
 6. If video shows "Korean hijabi saying we need more representation" → idea is "make a video celebrating hijabis from your culture/background"
 
 WRONG: "Reflect on your journey wearing hijab" (too vague, not from video)
-RIGHT: "Do what video #1 did: show different hijab styles step by step"
+RIGHT: "Show different hijab styles step by step"
 
 Format:
 {
     "summary": "One sentence: what the videos actually show",
-    "contentIdeas": ["🎬 Do what video 1 did: [literal description]", "🎬 Do what video 2 did: [literal description]"],
+    "contentIdeas": ["🎬 [Literal description of what video 1 did]", "🎬 [Literal description of what video 2 did]"],
     "bestPostingStrategy": "Evening 7-9pm when people are scrolling",
     "hookRecommendations": ["Verbal: 'Start with [exact hook from video]'", "Visual: Show [what video showed first]"],
     "warnings": ["avoid generic advice"]

@@ -145,12 +145,12 @@ export function AnalyzeNicheSection({
                 formats: data.formats.map((format: { id: string; name: string; averageLength: string; whyItWorks: string; popularity?: number }, index: number) => ({
                     id: format.id || `f${index + 1}`,
                     name: format.name,
-                    cameraStyle: "See top videos for reference",
-                    subtitleStyle: "Bold captions, center or bottom",
+                    cameraStyle: "See example videos below ↓",
+                    subtitleStyle: "See example videos below ↓",
                     averageLength: format.averageLength,
                     whyItWorks: format.whyItWorks,
-                    environment: "Clean background or natural setting",
-                    lighting: "Natural or ring light",
+                    environment: "See example videos below ↓",
+                    lighting: "See example videos below ↓",
                 })),
                 exampleVideos: data.examples.map((video: { id: string; thumbnail: string; creator: string; platform: string; views: string; url: string }) => ({
                     id: video.id,

@@ -12,15 +12,15 @@ const WOOP_API_HOST = "tiktok-most-trending-and-viral-content.p.rapidapi.com";
 // OLD: TikTok Scraper API - kept for video download functionality in deepgram-transcription.ts
 const SCRAPER_API_HOST = "tiktok-scraper2.p.rapidapi.com";
 
-// Hashtags to query for each niche
+// Hashtags to query for each niche - expanded for premium users
 export const NICHE_HASHTAGS: Record<string, string[]> = {
-    hijab: ["hijabtutorial", "hijabstyle", "modestfashion", "hijabfashion", "muslimfashion"],
-    deen: ["islamicreminders", "muslim", "quran", "islamicquotes", "deenoverdunya"],
-    cultural: ["ramadan", "eid", "muslimlife", "muslimculture", "eidmubarak"],
-    food: ["halalfood", "halaleats", "iftarrecipes", "muslimfoodie", "halalrecipes"],
-    gym: ["muslimfitness", "hijabifitness", "modestworkout", "fitmuslimah", "ramadanfitness"],
-    pets: ["muslimswithcats", "catsofislam", "catlovers", "muslimcat", "petsofmuslims"],
-    storytelling: ["storytime", "muslimstory", "revertmuslim", "myjourney", "islamicstories"],
+    hijab: ["hijabtutorial", "hijabstyle", "modestfashion", "hijabfashion", "muslimfashion", "hijabi", "hijabista", "hijabers", "modestoutfit", "hijabtrends"],
+    deen: ["islamicreminders", "muslim", "quran", "islamicquotes", "deenoverdunya", "islamicwisdom", "muslimtiktok", "alhamdulillah", "islamicknowledge", "quranquotes"],
+    cultural: ["ramadan", "eid", "muslimlife", "muslimculture", "eidmubarak", "muslimcommunity", "ummah", "muslimvibes", "eidvibes", "muslimtraditions"],
+    food: ["halalfood", "halaleats", "iftarrecipes", "muslimfoodie", "halalrecipes", "halalmeal", "halalcooking", "iftarprep", "suhoorrecipes", "halalfoodies"],
+    gym: ["muslimfitness", "hijabifitness", "modestworkout", "fitmuslimah", "ramadanfitness", "hijabigym", "modestactivewear", "muslimgains", "halalfitness", "fitmuslim"],
+    pets: ["muslimswithcats", "catsofislam", "catlovers", "muslimcat", "petsofmuslims", "islamandcats", "muslimpetowner", "catsofmuslims", "muslimcatlover", "catsofsunnah"],
+    storytelling: ["storytime", "muslimstory", "revertmuslim", "myjourney", "islamicstories", "muslimrevert", "myislamicjourney", "islamstorytime", "muslimtales", "revertlife"],
 };
 
 // Words to filter out - videos with these in descriptions are excluded
