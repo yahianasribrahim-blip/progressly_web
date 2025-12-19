@@ -187,7 +187,7 @@ Your content idea should be: "🎬 Film a family member's genuine reaction to so
 
 Respond in JSON format:
 {
-    "summary": "What the top videos have in common - be SPECIFIC (e.g., '4/5 videos are family reaction videos')",
+    "summary": "The common theme in these viral videos - be SPECIFIC (e.g., 'Most videos are family reaction videos' or 'Hijab tutorials dominate')",
     "contentIdeas": ["SPECIFIC idea based on the pattern", "another specific idea"],
     "bestPostingStrategy": "When to post",
     "hookRecommendations": ["Verbal: 'Quote what to say'", "Visual: Describe what to show on screen"],

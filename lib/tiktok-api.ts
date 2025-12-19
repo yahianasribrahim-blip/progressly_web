@@ -619,21 +619,24 @@ export async function analyzeNiche(niche: string): Promise<{
     }
 
     // Now apply view threshold on top of date-filtered videos
-    const viewThresholds = [50000, 10000, 1000, 0];
+    // MINIMUM 50k views - we only show quality viral content
+    const MIN_VIEWS = 50000;
+    const viewThresholds = [500000, 100000, 50000]; // Never go below 50k
     let finalVideos: typeof sortedVideos = [];
 
     for (const threshold of viewThresholds) {
         finalVideos = sortedVideos.filter(v => (v.stats?.playCount || 0) >= threshold);
-        if (finalVideos.length >= 8) {
+        if (finalVideos.length >= 5) { // Reduced from 8 - quality over quantity
             console.log(`Found ${finalVideos.length} videos with ${threshold}+ views`);
             break;
         }
     }
 
-    // Use whatever we have
-    if (finalVideos.length < 8) {
-        finalVideos = sortedVideos;
-        console.log("Using all date-filtered videos:", finalVideos.length);
+    // HARD FLOOR: Never show videos under 50k views
+    // If we don't have 5 videos at 50k+, show what we have (quality over quantity)
+    if (finalVideos.length === 0 || finalVideos.some(v => (v.stats?.playCount || 0) < MIN_VIEWS)) {
+        finalVideos = sortedVideos.filter(v => (v.stats?.playCount || 0) >= MIN_VIEWS);
+        console.log(`Applied 50k floor: ${finalVideos.length} videos qualify`);
     }
 
     console.log("=== FINAL VIDEOS ===");
