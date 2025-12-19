@@ -25,6 +25,8 @@ export interface ExampleVideo {
     platform: "TikTok" | "Instagram" | "YouTube";
     views: string;
     url: string;
+    description?: string;
+    daysAgo?: number | null; // How old is the video
 }
 
 export interface Hashtag {

@@ -94,6 +94,7 @@ export interface VideoExample {
     url: string;
     description: string;
     duration: number;
+    daysAgo?: number | null; // NEW: How old is the video
 }
 
 export interface VideoFormat {
@@ -560,6 +561,7 @@ export async function analyzeNiche(niche: string): Promise<{
         url: `https://www.tiktok.com/@${video.author?.uniqueId}/video/${video.id}`,
         description: video.desc,
         duration: video.video?.duration || 0,
+        daysAgo: video._daysAgo, // NEW: Pass video age
     }));
 
     // Analyze video formats from the displayed videos

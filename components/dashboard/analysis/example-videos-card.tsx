@@ -142,7 +142,12 @@ export function ExampleVideosCard({ videos, isPremium, plan }: ExampleVideosCard
                                         </div>
 
                                         {/* Platform Badge */}
-                                        <div className="absolute top-2 right-2">
+                                        <div className="absolute top-2 right-2 flex gap-1">
+                                            {video.daysAgo !== null && video.daysAgo !== undefined && (
+                                                <Badge className={cn("text-xs", video.daysAgo <= 7 ? "bg-green-500/90" : video.daysAgo <= 30 ? "bg-yellow-500/90" : "bg-red-500/90")}>
+                                                    {video.daysAgo <= 7 ? `${video.daysAgo}d` : video.daysAgo <= 30 ? `${Math.floor(video.daysAgo / 7)}w` : `${Math.floor(video.daysAgo / 30)}mo`}
+                                                </Badge>
+                                            )}
                                             <Badge className={cn("text-xs", getPlatformColor(video.platform))}>
                                                 {video.platform}
                                             </Badge>
