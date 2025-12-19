@@ -43,17 +43,31 @@ export async function generateAIInsights(data: AnalysisData): Promise<AIInsights
                 messages: [
                     {
                         role: "system",
-                        content: `You are a social media strategist specializing in TikTok content for Muslim creators. 
-                        Analyze the provided data and give specific, actionable insights.
-                        Be concise but helpful. Focus on what will actually help them grow.
-                        Respond in JSON format with the following structure:
-                        {
-                            "summary": "2-3 sentence overview of what's working",
-                            "contentIdeas": ["idea 1", "idea 2", "idea 3"],
-                            "bestPostingStrategy": "When and how often to post",
-                            "hookRecommendations": ["hook pattern 1", "hook pattern 2"],
-                            "warnings": ["any things to avoid or be careful about"]
-                        }`
+                        content: `You are a TikTok content strategist. Your job is to analyze ACTUAL viral video descriptions and find patterns.
+
+CRITICAL RULES:
+1. READ the video descriptions provided. What do they have IN COMMON?
+2. Generate content ideas that are SPECIFIC to what's actually working
+3. NEVER give generic advice like "respond to comments" or "use trending audio"
+4. Each idea must be ACTIONABLE: "Film your parent's reaction to learning about X" not "Make relatable content"
+
+EXAMPLE OF WHAT YOU SHOULD DO:
+If video descriptions are:
+- "My mom's reaction when I told her I'm fasting"
+- "Dad found out I'm learning Arabic 😂"
+- "When your family sees you wearing modest clothes"
+
+You should notice: All these are about FAMILY REACTIONS to Islamic practices
+Your content idea should be: "🎬 Film a family member's genuine reaction to something you do as a Muslim - reactions videos are dominating this niche"
+
+Respond in JSON format:
+{
+    "summary": "What the top videos have in common - be SPECIFIC (e.g., '4/5 videos are family reaction videos')",
+    "contentIdeas": ["SPECIFIC idea based on the pattern", "another specific idea"],
+    "bestPostingStrategy": "When to post",
+    "hookRecommendations": ["hook pattern from the data"],
+    "warnings": ["things to avoid"]
+}`
                     },
                     {
                         role: "user",
@@ -61,7 +75,7 @@ export async function generateAIInsights(data: AnalysisData): Promise<AIInsights
                     }
                 ],
                 temperature: 0.7,
-                max_tokens: 800,
+                max_tokens: 1000,
             }),
         });
 
@@ -218,22 +232,35 @@ function generateTemplateInsights(data: AnalysisData): AIInsights {
         contentIdeas.push("💪 Tell a story of when faith helped you through hardship");
     }
 
-    // If no patterns detected, use actual video descriptions to generate ideas
-    if (contentIdeas.length < 3) {
-        // Get the most viewed video descriptions and suggest similar content
-        const topDescriptions = data.videoDescriptions?.slice(0, 3) || [];
-        if (topDescriptions.length > 0) {
-            // Summarize top video themes
-            const topThemes = topDescriptions.map((desc, i) => {
-                const shortDesc = desc.substring(0, 100);
-                return `📹 Video ${i + 1} that went viral: "${shortDesc}..." - Try something similar!`;
-            });
-            contentIdeas.push(...topThemes.slice(0, 3 - contentIdeas.length));
-        } else {
-            // Absolute fallback - but at least mention the niche
-            contentIdeas.push(`📹 Create content in the ${nicheCapitalized} niche - check the example videos for inspiration`);
-            contentIdeas.push(`🔥 Study the top hooks above and use a similar format`);
+    // If no patterns detected, analyze video descriptions for common themes
+    if (contentIdeas.length < 3 && data.videoDescriptions && data.videoDescriptions.length > 0) {
+        const descriptions = data.videoDescriptions.slice(0, 5).join(" ").toLowerCase();
+
+        // Look for common themes in the descriptions
+        const themeKeywords = [
+            { keywords: ["reaction", "reacted", "face when", "expression"], theme: "reaction", idea: "🎬 Film someone's genuine reaction - reaction videos are trending in this niche" },
+            { keywords: ["mom", "dad", "parent", "family", "mom's", "dad's"], theme: "family", idea: "👨‍👩‍👧 Create content involving family members - family content is performing well" },
+            { keywords: ["pov:", "pov"], theme: "pov", idea: "🎭 Use the POV format - it's dominating this niche" },
+            { keywords: ["how to", "tutorial", "step", "guide"], theme: "tutorial", idea: "📚 Create a how-to or tutorial - educational content is working" },
+            { keywords: ["day in", "routine", "morning", "night"], theme: "routine", idea: "☀️ Film a day-in-the-life or routine video - these are trending" },
+            { keywords: ["storytime", "story time", "what happened"], theme: "story", idea: "📖 Share a personal storytime - story content is engaging viewers" },
+            { keywords: ["vs", "versus", "or", "comparison"], theme: "comparison", idea: "⚖️ Make a comparison or 'this vs that' video - these are getting views" },
+            { keywords: ["challenge", "trying", "tried"], theme: "challenge", idea: "🎯 Try a challenge video - challenges are performing well" },
+        ];
+
+        for (const { keywords, idea } of themeKeywords) {
+            if (keywords.some(k => descriptions.includes(k)) && contentIdeas.length < 5) {
+                if (!contentIdeas.includes(idea)) {
+                    contentIdeas.push(idea);
+                }
+            }
         }
+    }
+
+    // Absolute fallback - still better than nothing
+    if (contentIdeas.length < 2) {
+        contentIdeas.push(`📹 Study the example videos and create something similar with your own twist`);
+        contentIdeas.push(`🎯 Use one of the hook styles shown above - they're working in this niche`);
     }
 
     // Limit to 5 ideas
