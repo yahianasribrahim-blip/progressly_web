@@ -158,11 +158,11 @@ async function fetchTrendingVideos(niche: string, count: number = 30): Promise<T
     try {
         // Build URL with parameters
         // - sorting: "rise" = videos with biggest daily rise in views
-        // - days: 7 = only videos from last 7 days
+        // - days: 1 = only TODAY's rising videos (freshest possible)
         // - order: "desc" = highest rise first
         const params = new URLSearchParams({
             sorting: "rise",      // Sort by daily view rise
-            days: "7",            // Only last 7 days - THIS IS THE KEY IMPROVEMENT!
+            days: "1",            // TODAY's rising videos - ensures freshest content!
             order: "desc",        // Highest first
         });
 
@@ -571,41 +571,51 @@ export async function analyzeNiche(niche: string): Promise<{
 
     console.log(`Videos from last 7 days: ${sortedVideos.length}`);
 
-    // If not enough from 7 days, try 30 days
+    // If not enough from 7 days, try 14 days MAX - this is the absolute limit
+    // Users want FRESH trends, not month-old content
+    const fourteenDaysAgo = now - (14 * 24 * 60 * 60);
     if (sortedVideos.length < 8) {
-        console.log("Not enough from 7 days, trying 30 days...");
+        console.log("Not enough from 7 days, trying 14 days MAX...");
         sortedVideos = validVideos
-            .filter(v => v.createTime && v.createTime >= thirtyDaysAgo)
+            .filter(v => v.createTime && v.createTime >= fourteenDaysAgo)
             .sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
-        console.log(`Videos from last 30 days: ${sortedVideos.length}`);
+        console.log(`Videos from last 14 days: ${sortedVideos.length}`);
     }
 
-    // If STILL not enough, try 90 days MAX - no older than this
-    const ninetyDaysAgo = now - (90 * 24 * 60 * 60);
-    if (sortedVideos.length < 8) {
-        console.log("Not enough from 30 days, trying 90 days MAX...");
+    // HARD STOP: Never show videos older than 14 days
+    // If we still don't have enough, that's okay - quality over quantity
+    if (sortedVideos.length < 3) {
+        console.warn("WARNING: Very few recent videos found! This niche may have limited fresh content.");
+        // Only include videos with valid dates, sorted by recency + views
         sortedVideos = validVideos
-            .filter(v => v.createTime && v.createTime >= ninetyDaysAgo)
-            .sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
-        console.log(`Videos from last 90 days: ${sortedVideos.length}`);
+            .filter(v => v.createTime && v.createTime >= fourteenDaysAgo)
+            .sort((a, b) => {
+                // Prioritize recency, then views
+                const recencyA = a.createTime || 0;
+                const recencyB = b.createTime || 0;
+                if (Math.abs(recencyA - recencyB) > (2 * 24 * 60 * 60)) {
+                    return recencyB - recencyA; // More recent first if 2+ days apart
+                }
+                return (b.stats?.playCount || 0) - (a.stats?.playCount || 0);
+            });
     }
 
-    // If STILL not enough, use all but log the issue
-    if (sortedVideos.length < 8) {
-        console.warn("WARNING: Not enough recent videos! API may not be returning createTime.");
-        // Log what dates we're seeing
+    // If STILL not enough, log the issue but DON'T include old/undated videos
+    // Users expect FRESH trends - better to show fewer but recent videos
+    if (sortedVideos.length < 5) {
+        console.warn("WARNING: Not enough recent videos! This niche may have limited trending content.");
+        // Log what dates we're seeing for debugging
         const videosWithDates = validVideos.filter(v => v.createTime);
         const videosWithoutDates = validVideos.filter(v => !v.createTime);
         console.log(`Videos WITH createTime: ${videosWithDates.length}, WITHOUT: ${videosWithoutDates.length}`);
-        if (videosWithDates.length > 0) {
-            console.log("Sample dates:", videosWithDates.slice(0, 3).map(v => ({
-                daysAgo: v._daysAgo,
-                date: v._createDate?.toISOString(),
-            })));
+
+        // STRICT: Only include videos with valid dates within 14 days, never include undated videos
+        // This ensures users always get FRESH content they can act on
+        const strictlyRecentVideos = videosWithDates.filter(v => v.createTime && v.createTime >= fourteenDaysAgo);
+        if (strictlyRecentVideos.length > 0) {
+            sortedVideos = strictlyRecentVideos.sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
+            console.log(`Using ${sortedVideos.length} strictly recent videos (within 14 days)`);
         }
-        // Prefer videos with dates, then fill with those without
-        sortedVideos = [...videosWithDates, ...videosWithoutDates]
-            .sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0));
     }
 
     // Now apply view threshold on top of date-filtered videos
