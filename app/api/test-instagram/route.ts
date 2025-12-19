@@ -11,52 +11,62 @@ export async function GET(request: NextRequest) {
 
     const hashtag = request.nextUrl.searchParams.get("hashtag") || "hijabfashion";
 
-    try {
-        // Try the posts_by_hashtag endpoint
-        const url = `https://${INSTAGRAM_API_HOST}/posts_by_hashtag.php`;
+    // Try multiple possible endpoint paths
+    const possibleEndpoints = [
+        { method: "POST", path: "/hashtag_posts", body: `hashtag=${encodeURIComponent(hashtag)}` },
+        { method: "POST", path: "/get_hashtag_posts", body: `hashtag=${encodeURIComponent(hashtag)}` },
+        { method: "POST", path: "/hashtag", body: `hashtag=${encodeURIComponent(hashtag)}` },
+        { method: "POST", path: "/search/hashtag", body: `hashtag=${encodeURIComponent(hashtag)}` },
+        { method: "GET", path: `/hashtag_posts?hashtag=${encodeURIComponent(hashtag)}`, body: null },
+        { method: "GET", path: `/hashtag?hashtag=${encodeURIComponent(hashtag)}`, body: null },
+        { method: "GET", path: `/tag/${encodeURIComponent(hashtag)}`, body: null },
+        { method: "POST", path: "/ig/posts_hashtag", body: `hashtag=${encodeURIComponent(hashtag)}` },
+        { method: "POST", path: "/v1/hashtag", body: `hashtag=${encodeURIComponent(hashtag)}` },
+        { method: "POST", path: "/get_posts_by_hashtag", body: `hashtag=${encodeURIComponent(hashtag)}` },
+    ];
 
-        console.log("[Instagram Test] Fetching:", url);
-        console.log("[Instagram Test] Hashtag:", hashtag);
-        console.log("[Instagram Test] API Key starts with:", INSTAGRAM_RAPIDAPI_KEY.substring(0, 10));
+    const results: Array<{ endpoint: string; method: string; status: number; preview: string }> = [];
 
-        const response = await fetch(url, {
-            method: "POST",
-            cache: "no-store",
-            headers: {
-                "x-rapidapi-host": INSTAGRAM_API_HOST,
-                "x-rapidapi-key": INSTAGRAM_RAPIDAPI_KEY,
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: `hashtag=${encodeURIComponent(hashtag)}`,
-        });
+    for (const ep of possibleEndpoints) {
+        try {
+            const url = `https://${INSTAGRAM_API_HOST}${ep.path}`;
 
-        const status = response.status;
-        const statusText = response.statusText;
+            const response = await fetch(url, {
+                method: ep.method,
+                cache: "no-store",
+                headers: {
+                    "x-rapidapi-host": INSTAGRAM_API_HOST,
+                    "x-rapidapi-key": INSTAGRAM_RAPIDAPI_KEY,
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: ep.body,
+            });
 
-        let data: unknown;
-        const contentType = response.headers.get("content-type");
+            const text = await response.text();
 
-        if (contentType?.includes("application/json")) {
-            data = await response.json();
-        } else {
-            data = await response.text();
+            results.push({
+                endpoint: ep.path,
+                method: ep.method,
+                status: response.status,
+                preview: text.substring(0, 300),
+            });
+
+            // If we found a working endpoint (not 404), stop searching
+            if (response.status !== 404) {
+                break;
+            }
+        } catch (error) {
+            results.push({
+                endpoint: ep.path,
+                method: ep.method,
+                status: 0,
+                preview: `Error: ${error instanceof Error ? error.message : String(error)}`,
+            });
         }
-
-        return NextResponse.json({
-            success: response.ok,
-            status,
-            statusText,
-            contentType,
-            dataType: typeof data,
-            isArray: Array.isArray(data),
-            keys: typeof data === "object" && data !== null ? Object.keys(data) : null,
-            // Show first 2000 chars of response
-            preview: JSON.stringify(data).substring(0, 2000),
-        });
-    } catch (error) {
-        return NextResponse.json({
-            error: "Request failed",
-            message: error instanceof Error ? error.message : String(error),
-        }, { status: 500 });
     }
+
+    return NextResponse.json({
+        hashtag,
+        testedEndpoints: results,
+    });
 }
