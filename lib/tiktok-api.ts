@@ -1,8 +1,13 @@
-// TikTok API Integration using RapidAPI TikTok Scraper
+// TikTok API Integration using Woop "TikTok Most Trending and Viral Content" API
 
-// TEMPORARY: Hardcoded for testing - move back to env var later
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "b3277b1e5amsh2b4133d3f8c9368p16998bjsnd0bfd0467eeb";
-const RAPIDAPI_HOST = "tiktok-scraper2.p.rapidapi.com";
+// API Configuration
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "f278804a40mshe80b9aa07df21a1p1f6e3ejsn89a14ca0342c";
+
+// NEW: Woop Trending API - supports date filtering for recent videos (last 1-7 days)
+const WOOP_API_HOST = "tiktok-most-trending-and-viral-content.p.rapidapi.com";
+
+// OLD: TikTok Scraper API - kept for video download functionality in deepgram-transcription.ts
+const SCRAPER_API_HOST = "tiktok-scraper2.p.rapidapi.com";
 
 // Hashtags to query for each niche
 export const NICHE_HASHTAGS: Record<string, string[]> = {
@@ -105,9 +110,138 @@ export interface VideoFormat {
     popularity: number;
 }
 
-// Fetch info about a hashtag (returns ID and stats)
-async function fetchHashtagInfo(hashtag: string): Promise<HashtagInfo | null> {
+// =============================================================================
+// NEW: Woop API - Fetch trending videos with date filtering (last 7 days)
+// =============================================================================
+
+// Niche to TikTok category mapping for the Woop API
+const NICHE_CATEGORY_MAP: Record<string, number | null> = {
+    hijab: 96,        // Lifestyle
+    deen: 199,        // Faith & Spirituality (or null for no category filter)
+    cultural: 96,     // Lifestyle
+    food: 100,        // Food & Drink
+    gym: 107,         // Sports & Outdoor
+    pets: 108,        // Animals
+    storytelling: 90, // Entertainment
+};
+
+interface WoopVideoResponse {
+    id: string;
+    desc: string;
+    createTime: number;
+    duration: number;
+    coverUrl: string;
+    playUrl: string;
+    playCount: number;
+    likeCount: number;
+    commentCount: number;
+    shareCount: number;
+    authorId: string;
+    authorName: string;
+    authorAvatar: string;
+    authorUniqueId: string;
+}
+
+// Fetch trending videos using Woop API with date filtering
+async function fetchTrendingVideos(niche: string, count: number = 30): Promise<TikTokVideo[]> {
+    console.log("Fetching trending videos from Woop API for niche:", niche);
     console.log("Using RAPIDAPI_KEY starting with:", RAPIDAPI_KEY?.substring(0, 10) + "...");
+
+    if (!RAPIDAPI_KEY) {
+        console.error("RAPIDAPI_KEY is not set");
+        return [];
+    }
+
+    try {
+        // Build URL with parameters
+        // - sorting: "rise" = videos with biggest daily rise in views
+        // - days: 7 = only videos from last 7 days
+        // - order: "desc" = highest rise first
+        const params = new URLSearchParams({
+            sorting: "rise",      // Sort by daily view rise
+            days: "7",            // Only last 7 days - THIS IS THE KEY IMPROVEMENT!
+            order: "desc",        // Highest first
+        });
+
+        // Add category filter if available for this niche
+        const category = NICHE_CATEGORY_MAP[niche.toLowerCase()];
+        if (category) {
+            params.append("category", category.toString());
+        }
+
+        const url = `https://${WOOP_API_HOST}/video?${params.toString()}`;
+        console.log("Fetching from Woop API:", url);
+
+        const response = await fetch(url, {
+            method: "GET",
+            cache: "no-store",
+            headers: {
+                "x-rapidapi-host": WOOP_API_HOST,
+                "x-rapidapi-key": RAPIDAPI_KEY,
+                "Accept": "application/json",
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text().catch(() => "");
+            console.error(`Woop API error: ${response.status} - ${errorText}`);
+            return [];
+        }
+
+        const data = await response.json();
+        console.log("Woop API response keys:", Object.keys(data));
+        console.log("Sample response:", JSON.stringify(data).substring(0, 500));
+
+        // Map Woop API response to our TikTokVideo interface
+        const videos: TikTokVideo[] = [];
+        const rawVideos = data.data || data.videos || data || [];
+
+        if (Array.isArray(rawVideos)) {
+            for (const v of rawVideos.slice(0, count)) {
+                try {
+                    // Map the response - exact field names may need adjustment based on actual API response
+                    videos.push({
+                        id: v.id || v.videoId || "",
+                        desc: v.desc || v.description || v.title || "",
+                        createTime: v.createTime || v.created_at || Math.floor(Date.now() / 1000),
+                        video: {
+                            duration: v.duration || v.videoDuration || 0,
+                            cover: v.coverUrl || v.cover || v.thumbnail || "",
+                            playAddr: v.playUrl || v.videoUrl || "",
+                        },
+                        author: {
+                            uniqueId: v.authorUniqueId || v.author?.uniqueId || v.username || "creator",
+                            nickname: v.authorName || v.author?.nickname || v.displayName || "Creator",
+                            avatarThumb: v.authorAvatar || v.author?.avatarThumb || "",
+                        },
+                        stats: {
+                            playCount: v.playCount || v.views || v.stats?.playCount || 0,
+                            diggCount: v.likeCount || v.likes || v.stats?.diggCount || 0,
+                            commentCount: v.commentCount || v.comments || v.stats?.commentCount || 0,
+                            shareCount: v.shareCount || v.shares || v.stats?.shareCount || 0,
+                        },
+                    });
+                } catch (mapError) {
+                    console.warn("Error mapping video:", mapError);
+                }
+            }
+        }
+
+        console.log(`Woop API returned ${videos.length} videos`);
+        return videos;
+    } catch (error) {
+        console.error("Error fetching from Woop API:", error);
+        return [];
+    }
+}
+
+// =============================================================================
+// OLD: TikTok Scraper API - kept for backward compatibility / fallback
+// =============================================================================
+
+// Fetch info about a hashtag (returns ID and stats) - uses OLD scraper API
+async function fetchHashtagInfo(hashtag: string): Promise<HashtagInfo | null> {
+    console.log("[Fallback] Using RAPIDAPI_KEY starting with:", RAPIDAPI_KEY?.substring(0, 10) + "...");
 
     if (!RAPIDAPI_KEY) {
         console.error("RAPIDAPI_KEY is not set");
@@ -115,7 +249,7 @@ async function fetchHashtagInfo(hashtag: string): Promise<HashtagInfo | null> {
     }
 
     try {
-        const url = `https://${RAPIDAPI_HOST}/hashtag/info?hashtag=${encodeURIComponent(hashtag)}`;
+        const url = `https://${SCRAPER_API_HOST}/hashtag/info?hashtag=${encodeURIComponent(hashtag)}`;
         console.log("Fetching hashtag info:", url);
 
         const response = await fetch(url, {
@@ -123,7 +257,7 @@ async function fetchHashtagInfo(hashtag: string): Promise<HashtagInfo | null> {
             cache: "no-store",
             next: { revalidate: 0 },
             headers: {
-                "x-rapidapi-host": RAPIDAPI_HOST,
+                "x-rapidapi-host": SCRAPER_API_HOST,
                 "x-rapidapi-key": RAPIDAPI_KEY,
                 "Accept": "application/json",
             },
@@ -170,13 +304,13 @@ async function fetchHashtagVideos(hashtagId: string, count: number = 20): Promis
     }
 
     try {
-        const url = `https://${RAPIDAPI_HOST}/hashtag/videos?hashtag_id=${hashtagId}&count=${count}`;
+        const url = `https://${SCRAPER_API_HOST}/hashtag/videos?hashtag_id=${hashtagId}&count=${count}`;
         console.log("Fetching hashtag videos:", url);
 
         const response = await fetch(url, {
             method: "GET",
             headers: {
-                "x-rapidapi-host": RAPIDAPI_HOST,
+                "x-rapidapi-host": SCRAPER_API_HOST,
                 "x-rapidapi-key": RAPIDAPI_KEY,
             },
         });
@@ -347,51 +481,50 @@ export async function analyzeNiche(niche: string): Promise<{
     const allVideos: TikTokVideo[] = [];
     const hashtagStats: TrendingHashtag[] = [];
 
-    // Fetch data for each hashtag (query 3 hashtags for more videos)
-    const hashtagsToQuery = hashtags.slice(0, 3);
+    // =========================================================================
+    // NEW: Use Woop API to get trending videos from last 7 days
+    // =========================================================================
+    console.log("=== USING NEW WOOP API (date-filtered) ===");
+    const woopVideos = await fetchTrendingVideos(nicheKey, 30);
+    allVideos.push(...woopVideos);
+    console.log(`Got ${woopVideos.length} videos from Woop API (already filtered to last 7 days)`);
 
-    for (const hashtag of hashtagsToQuery) {
-        console.log(`Processing hashtag: ${hashtag}`);
+    // If Woop API failed or returned too few videos, fall back to old hashtag approach
+    if (woopVideos.length < 5) {
+        console.log("Woop API returned too few videos, trying hashtag fallback...");
+        const hashtagsToQuery = hashtags.slice(0, 2);
 
-        // First, fetch hashtag info to get the ID
-        const info = await fetchHashtagInfo(hashtag);
+        for (const hashtag of hashtagsToQuery) {
+            console.log(`[Fallback] Processing hashtag: ${hashtag}`);
+            const info = await fetchHashtagInfo(hashtag);
 
-        if (info && info.id) {
-            console.log(`Got hashtag ID: ${info.id} for ${hashtag}`);
+            if (info && info.id) {
+                console.log(`[Fallback] Got hashtag ID: ${info.id} for ${hashtag}`);
+                hashtagStats.push({
+                    tag: hashtag,
+                    viewCount: info.viewCount || 0,
+                    videoCount: info.videoCount || 0,
+                    category: categorizeHashtag(info.viewCount || 0),
+                });
 
-            // Add to hashtag stats
-            hashtagStats.push({
-                tag: hashtag,
-                viewCount: info.viewCount || 0,
-                videoCount: info.videoCount || 0,
-                category: categorizeHashtag(info.viewCount || 0),
-            });
-
-            // Fetch MORE videos (30 per hashtag)
-            const videos = await fetchHashtagVideos(info.id, 30);
-            console.log(`Fetched ${videos.length} videos for #${hashtag}`);
-            allVideos.push(...videos);
-        } else {
-            console.log(`Could not get info for hashtag: ${hashtag}`);
-            // Still add to stats with zero values
-            hashtagStats.push({
-                tag: hashtag,
-                viewCount: 0,
-                videoCount: 0,
-                category: "Niche",
-            });
+                const videos = await fetchHashtagVideos(info.id, 20);
+                console.log(`[Fallback] Fetched ${videos.length} videos for #${hashtag}`);
+                allVideos.push(...videos);
+            }
         }
     }
 
-    // Add remaining hashtags with estimated categories
-    hashtags.slice(3).forEach((tag, index) => {
-        hashtagStats.push({
-            tag,
-            viewCount: 0,
-            videoCount: 0,
-            category: index < 2 ? "Medium" : "Niche",
+    // Generate hashtag stats for display (using predefined niche hashtags)
+    if (hashtagStats.length === 0) {
+        hashtags.forEach((tag, index) => {
+            hashtagStats.push({
+                tag,
+                viewCount: 0, // Will be populated if we add hashtag stats API later
+                videoCount: 0,
+                category: index < 2 ? "Broad" : index < 4 ? "Medium" : "Niche",
+            });
         });
-    });
+    }
 
     // Calculate timestamps for filtering
     const now = Math.floor(Date.now() / 1000);
