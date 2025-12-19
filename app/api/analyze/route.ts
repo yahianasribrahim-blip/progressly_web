@@ -48,8 +48,10 @@ export async function POST(request: Request) {
             formats: analysisResult.formats,
             videoCount: analysisResult.examples.length * 5, // Approximate
             topViewCount,
-            // NEW: Pass actual video descriptions to AI
+            // Pass actual video descriptions to AI
             videoDescriptions: analysisResult.examples.map(e => e.description || "").filter(d => d.length > 10),
+            // NEW: Pass thumbnail URLs for vision analysis
+            videoThumbnails: analysisResult.examples.map(e => e.thumbnail).filter(t => t && t.startsWith("http")),
         });
 
         console.log("AI insights generated:", {

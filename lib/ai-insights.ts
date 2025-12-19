@@ -9,7 +9,8 @@ interface AnalysisData {
     formats: Array<{ name: string; averageLength: string; whyItWorks: string }>;
     videoCount: number;
     topViewCount: number;
-    videoDescriptions?: string[]; // NEW: Actual video descriptions for AI analysis
+    videoDescriptions?: string[]; // Text descriptions from TikTok
+    videoThumbnails?: string[]; // NEW: Thumbnail URLs for vision analysis
 }
 
 interface AIInsights {
@@ -18,6 +19,82 @@ interface AIInsights {
     bestPostingStrategy: string;
     hookRecommendations: string[];
     warnings: string[];
+}
+
+/**
+ * Analyze video thumbnails using GPT-4o Vision to understand video content
+ */
+async function analyzeVideoThumbnails(thumbnailUrls: string[], niche: string): Promise<string> {
+    if (!OPENAI_API_KEY || !thumbnailUrls || thumbnailUrls.length === 0) {
+        return "";
+    }
+
+    // Only analyze up to 5 thumbnails to control costs
+    const urlsToAnalyze = thumbnailUrls.slice(0, 5).filter(url => url && url.startsWith("http"));
+
+    if (urlsToAnalyze.length === 0) {
+        return "";
+    }
+
+    try {
+        console.log(`Analyzing ${urlsToAnalyze.length} video thumbnails with Vision API...`);
+
+        // Build the content array with images
+        const imageContent = urlsToAnalyze.map(url => ({
+            type: "image_url" as const,
+            image_url: { url, detail: "low" as const } // Low detail for cost efficiency
+        }));
+
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${OPENAI_API_KEY}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                model: "gpt-4o-mini",
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            {
+                                type: "text",
+                                text: `You are analyzing ${urlsToAnalyze.length} TikTok video thumbnails in the "${niche}" niche.
+
+For each thumbnail, briefly describe what you see (person, setting, activity, text overlays).
+Then identify the COMMON THEME across these videos.
+
+Format your response as:
+INDIVIDUAL VIDEOS:
+1. [description]
+2. [description]
+...
+
+COMMON THEME: [What these videos have in common - be specific like "family reactions to Islamic practices" or "Eid celebration moments"]
+
+SUGGESTED CONTENT IDEA: [One specific, actionable idea based on the common theme]`
+                            },
+                            ...imageContent
+                        ]
+                    }
+                ],
+                max_tokens: 500,
+            }),
+        });
+
+        if (!response.ok) {
+            console.error("Vision API error:", response.status);
+            return "";
+        }
+
+        const result = await response.json();
+        const content = result.choices?.[0]?.message?.content || "";
+        console.log("Vision analysis result:", content.substring(0, 200) + "...");
+        return content;
+    } catch (error) {
+        console.error("Error analyzing thumbnails:", error);
+        return "";
+    }
 }
 
 /**
@@ -30,7 +107,10 @@ export async function generateAIInsights(data: AnalysisData): Promise<AIInsights
     }
 
     try {
-        const prompt = buildPrompt(data);
+        // FIRST: Analyze thumbnails visually to understand what videos are actually about
+        const visionAnalysis = await analyzeVideoThumbnails(data.videoThumbnails || [], data.niche);
+
+        const prompt = buildPrompt(data, visionAnalysis);
 
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
@@ -111,20 +191,31 @@ Respond in JSON format:
     }
 }
 
-function buildPrompt(data: AnalysisData): string {
+function buildPrompt(data: AnalysisData, visionAnalysis?: string): string {
     const topHooks = data.hooks.slice(0, 5).map(h => `"${h.text}" (${h.views} views)`).join("\n");
     const topHashtags = data.hashtags.slice(0, 5).map(h => `#${h.tag} (${h.category})`).join(", ");
     const formats = data.formats.map(f => `${f.name}: ${f.averageLength}`).join("\n");
 
-    // NEW: Include actual video descriptions
+    // Video descriptions as fallback
     const videoDescriptions = data.videoDescriptions?.slice(0, 5).map((desc, i) =>
         `Video ${i + 1}: "${desc.substring(0, 200)}${desc.length > 200 ? '...' : ''}"`
     ).join("\n") || "No descriptions available";
 
+    // Vision analysis is the MOST IMPORTANT part
+    const visionSection = visionAnalysis ? `
+=== VISUAL ANALYSIS OF TOP VIDEOS (MOST IMPORTANT!) ===
+Our AI analyzed the actual video thumbnails and found:
+${visionAnalysis}
+===
+
+USE THE VISION ANALYSIS ABOVE TO GENERATE YOUR CONTENT IDEAS. The visual analysis tells you what videos are actually about, not just what their text captions say.
+
+` : "";
+
     return `
 Analyze this TikTok data for the "${data.niche}" niche:
 
-TOP PERFORMING VIDEO DESCRIPTIONS (these are the ACTUAL captions from viral videos):
+${visionSection}VIDEO TEXT DESCRIPTIONS (often incomplete/unhelpful):
 ${videoDescriptions}
 
 TOP PERFORMING HOOKS:
@@ -141,11 +232,10 @@ STATS:
 - Top video has ${data.topViewCount.toLocaleString()} views
 
 CRITICAL INSTRUCTIONS:
-1. Look at what the top performing videos have IN COMMON (theme, format, style)
-2. Generate content ideas that are SPECIFIC to what's actually working (not generic advice)
-3. If 3/5 videos are about parent reactions to reversion, the idea should be: "Film a parent's reaction to learning about Islam"
-4. If videos are dance challenges, DON'T suggest "respond to comments" - suggest dance content
-5. Be SPECIFIC. Never say "respond to trending topic" - say WHAT the topic is
+1. PRIORITIZE the vision analysis above - it tells you what videos are ACTUALLY about
+2. Generate content ideas based on the COMMON THEME from vision analysis
+3. Be SPECIFIC: "Film an Eid celebration moment with family" not "make relatable content"
+4. If vision says "Eid celebrations", suggest Eid content. If it says "reversion stories", suggest reversion content.
 
 Based on this real data, provide specific insights for a content creator in this niche.
     `.trim();
