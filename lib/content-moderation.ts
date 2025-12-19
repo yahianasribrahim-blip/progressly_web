@@ -34,20 +34,20 @@ export async function moderateThumbnail(thumbnailUrl: string, niche: string = ""
         const base64Url = `data:${contentType};base64,${base64}`;
 
         // Different prompts based on niche requirements
-        // SLIGHT LOOSEN: Focus on catching only truly inappropriate content
-        const modestPrompt = `You are checking content for a Muslim modest fashion platform.
+        // LENIENT: Only catch truly obvious inappropriate content
+        const modestPrompt = `You are checking content for a Muslim fashion platform.
 
-REJECT ONLY if you see:
-- Extremely tight/skin-tight clothing that's clearly showing off body
-- Very low-cut top clearly showing chest
-- Exposed stomach or revealing outfit
+REJECT ONLY if you see OBVIOUS issues:
+- Clearly revealing outfit (exposed chest/stomach)
+- Very provocative/sexualized content
+- Explicit nudity or near-nudity
 
-APPROVE if:
-- Normal fashion/hijab content
-- Person appears modestly dressed overall
-- Clothing fits but isn't skin-tight
+APPROVE for:
+- Any normal fashion/hijab content
+- Standard fitted clothing (not skin-tight)
+- Person appears generally dressed
 
-When in doubt, APPROVE. Only reject if it's clearly inappropriate.
+Default to APPROVE unless clearly problematic.
 Respond with ONLY: APPROVE or REJECT`;
 
         const generalPrompt = `Check if this is appropriate family-friendly content.

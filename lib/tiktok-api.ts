@@ -55,8 +55,18 @@ const INAPPROPRIATE_KEYWORDS = [
     "not required in quran", "moderate muslim", "progressive muslim",
 ];
 
+// Specific video IDs that are permanently blocked
+const BLOCKED_VIDEO_IDS = [
+    "7582882731755998485", // zarquenn - inappropriate content
+];
+
 // Check if video content is appropriate for Muslim creators
-function isContentAppropriate(description: string): boolean {
+function isContentAppropriate(description: string, videoId?: string): boolean {
+    // Check if video ID is blocked
+    if (videoId && BLOCKED_VIDEO_IDS.includes(videoId)) {
+        console.log(`❌ Video ${videoId} is in blocklist - skipping`);
+        return false;
+    }
     if (!description) return true;
     const lowerDesc = description.toLowerCase();
     return !INAPPROPRIATE_KEYWORDS.some(keyword => lowerDesc.includes(keyword.toLowerCase()));
@@ -568,7 +578,7 @@ export async function analyzeNiche(niche: string): Promise<{
     // Start with all valid videos and add date info
     const validVideos = uniqueAllVideos
         .filter((v) => v.stats?.playCount)
-        .filter((v) => isContentAppropriate(v.desc))
+        .filter((v) => isContentAppropriate(v.desc, v.id))
         .map(v => {
             const createDate = v.createTime ? new Date(v.createTime * 1000) : null;
             const daysAgo = v.createTime ? Math.floor((now - v.createTime) / (24 * 60 * 60)) : null;
