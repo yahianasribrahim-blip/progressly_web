@@ -124,7 +124,7 @@ export interface VideoExample {
     thumbnail: string;
     creator: string;
     creatorAvatar: string;
-    platform: "TikTok";
+    platform: "TikTok" | "Instagram"; // Support both platforms
     views: string;
     url: string;
     description: string;
@@ -796,8 +796,8 @@ export async function analyzeNiche(niche: string): Promise<{
         ...uniqueCaptions.slice(0, Math.max(0, 5 - uniqueSpokenHooks.length - uniqueVisualHooks.length)),
     ];
 
-    // Create video examples (return 8 for Pro users) - USE sortedVideosFinal
-    const examples: VideoExample[] = sortedVideosFinal.slice(0, 8).map((video) => ({
+    // Create TikTok video examples - USE sortedVideosFinal
+    const tiktokExamples: VideoExample[] = sortedVideosFinal.slice(0, 6).map((video) => ({
         id: video.id,
         thumbnail: video.video?.cover || "/api/placeholder/320/180",
         creator: `@${video.author?.uniqueId || "creator"}`,
@@ -807,8 +807,60 @@ export async function analyzeNiche(niche: string): Promise<{
         url: `https://www.tiktok.com/@${video.author?.uniqueId}/video/${video.id}`,
         description: video.desc,
         duration: video.video?.duration || 0,
-        daysAgo: video._daysAgo, // NEW: Pass video age
+        daysAgo: video._daysAgo,
     }));
+
+    // =========================================================================
+    // NEW: Fetch Instagram Reels and merge with TikTok videos
+    // =========================================================================
+    let instagramExamples: VideoExample[] = [];
+    try {
+        const { getInstagramReelsForNiche } = await import("./instagram-api");
+        console.log("=== FETCHING INSTAGRAM REELS ===");
+        const instagramReels = await getInstagramReelsForNiche(nicheKey);
+        instagramExamples = instagramReels.slice(0, 4).map(reel => ({
+            ...reel,
+            platform: "Instagram" as const,
+        }));
+        console.log(`Got ${instagramExamples.length} Instagram Reels to display`);
+    } catch (igError) {
+        console.error("[Instagram] Error fetching reels:", igError);
+        // Continue with TikTok only if Instagram fails
+    }
+
+    // Interleave TikTok and Instagram videos for mixed display
+    // Pattern: TikTok, TikTok, Instagram, TikTok, Instagram, TikTok, Instagram, TikTok
+    const examples: VideoExample[] = [];
+    let ttIdx = 0;
+    let igIdx = 0;
+    const pattern = ["TikTok", "TikTok", "Instagram", "TikTok", "Instagram", "TikTok", "Instagram", "TikTok"];
+
+    for (const platform of pattern) {
+        if (examples.length >= 8) break;
+
+        if (platform === "TikTok" && ttIdx < tiktokExamples.length) {
+            examples.push(tiktokExamples[ttIdx++]);
+        } else if (platform === "Instagram" && igIdx < instagramExamples.length) {
+            examples.push(instagramExamples[igIdx++]);
+        } else if (platform === "TikTok" && igIdx < instagramExamples.length) {
+            // Fallback: if no more TikTok, use Instagram
+            examples.push(instagramExamples[igIdx++]);
+        } else if (platform === "Instagram" && ttIdx < tiktokExamples.length) {
+            // Fallback: if no more Instagram, use TikTok
+            examples.push(tiktokExamples[ttIdx++]);
+        }
+    }
+
+    // Fill remaining slots with any leftover videos
+    while (examples.length < 8 && ttIdx < tiktokExamples.length) {
+        examples.push(tiktokExamples[ttIdx++]);
+    }
+    while (examples.length < 8 && igIdx < instagramExamples.length) {
+        examples.push(instagramExamples[igIdx++]);
+    }
+
+    console.log(`Combined examples: ${examples.filter(e => e.platform === "TikTok").length} TikTok + ${examples.filter(e => e.platform === "Instagram").length} Instagram`);
+
 
     // Analyze video formats from the displayed videos
     const formats = analyzeVideoFormats(sortedVideosFinal);
