@@ -19,7 +19,8 @@ export const NICHE_HASHTAGS: Record<string, string[]> = {
     cultural: ["ramadan", "eid", "muslimlife", "muslimculture", "eidmubarak", "muslimcommunity", "ummah", "muslimvibes", "eidvibes", "muslimtraditions"],
     // Food: Mix of restaurant reviews, home cooking, recipes, and traditional meals
     food: ["halalfood", "halaleats", "halalrecipes", "muslimcooking", "homemadehalal", "arabfood", "pakistanifood", "middleeasternfood", "cookingwithme", "recipeoftheday", "traditionalmeal", "familyrecipes", "halalrestaurant", "foodreview", "cookwitme"],
-    gym: ["muslimfitness", "hijabifitness", "modestworkout", "fitmuslimah", "ramadanfitness", "hijabigym", "modestactivewear", "muslimgains", "halalfitness", "fitmuslim"],
+    // Gym: Focus on actual workouts, exercises, and fitness routines - not just outfits
+    gym: ["gymworkout", "homeworkout", "legday", "upperworkout", "gluteworkout", "armworkout", "gymmotivation", "workoutroutine", "fitnessmotivation", "strengthtraining", "hiitworkout", "cardioworkout"],
     pets: ["muslimswithcats", "catsofislam", "catlovers", "muslimcat", "petsofmuslims", "islamandcats", "muslimpetowner", "catsofmuslims", "muslimcatlover", "catsofsunnah"],
     // Storytelling: Personal stories, daily life, school/work stories - NOT AI generated religious content
     storytelling: ["storytime", "muslimstorytime", "dayinmylife", "schoolstory", "workstory", "storywithme", "whathapenedtome", "crazystory", "mystory", "lifeupdate", "muslimlife", "daywithme", "grwm", "vlog"],

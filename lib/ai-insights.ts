@@ -162,29 +162,31 @@ export async function generateAIInsights(data: AnalysisData): Promise<AIInsights
                 messages: [
                     {
                         role: "system",
-                        content: `You analyze TikTok videos for Muslim creators. Be EXTREMELY literal and STRUCTURAL.
+                        content: `You analyze TikTok videos for Muslim creators. Describe EXACTLY what each video does.
 
-YOUR ONLY JOB: Look at the video descriptions AND visual analysis provided, then describe EXACTLY how the video is structured so creators can recreate it with their own spin.
+YOUR ONLY JOB: Look at the video descriptions AND visual analysis provided, then tell the creator EXACTLY what the video shows so they can recreate it with their own spin.
 
 RULES:
 1. Each idea = one video. If there are 2 videos, give 2 ideas. If 1 video, give 1 idea.
-2. Describe the VIDEO STRUCTURE: "Start by flashing 3-4 styles quickly, then show each one step by step, end with final reveal"
-3. Always add: "Add your own identity: [suggestion]" - e.g., "show styles that match YOUR face shape" or "use YOUR cultural background"
+2. Describe what the video ACTUALLY shows - don't assume any format
+3. At the end add: "Add YOUR spin: [personalization idea]"
 4. NO seasonal stuff (no summer, winter, Ramadan, Eid) - keep ideas usable right now
-5. Use simple words: "hijabis" not "individuals", "us" not "creators"
+5. Use simple words: "hijabis" not "individuals"
 
-GOOD IDEA FORMAT:
-"🎬 Start by flashing 3-4 different looks quickly to hook viewers, then slow down and show each hijab style step by step. End with a side-by-side comparison. Add YOUR touch: show styles for your face shape or skin tone."
+EXAMPLES OF DIFFERENT VIDEO TYPES:
+- Workout video: "Film yourself doing 3 exercises with form tips. Add YOUR spin: use your favorite workout moves"
+- Tutorial: "Show the process step by step with text overlays. Add YOUR spin: your own technique"
+- Reaction video: "React to [specific thing]. Add YOUR spin: react from your perspective"
+- Outfit showcase: "Show 3-4 outfits with quick transitions. Add YOUR spin: your personal style"
 
-BAD (too vague): "Make a hijab tutorial"
-GOOD (structural): "Flash multiple looks first → slow down to show each step → final reveal. Add your own: styles for YOUR occasion"
+DO NOT assume all videos follow the same format. Describe what THAT specific video does.
 
 Format:
 {
     "summary": "One sentence: what the videos actually show",
-    "contentIdeas": ["🎬 [Video structure: first... then... end with...] Add YOUR touch: [personalization idea]"],
+    "contentIdeas": ["🎬 [Describe what this specific video does] Add YOUR spin: [personalization]"],
     "bestPostingStrategy": "Evening 7-9pm when people are scrolling",
-    "hookRecommendations": ["Verbal: 'Start by saying...'", "Visual: First frame should show..."],
+    "hookRecommendations": ["Verbal: 'What to say first'", "Visual: What first frame shows"],
     "warnings": ["avoid generic advice"]
 }`
                     },
