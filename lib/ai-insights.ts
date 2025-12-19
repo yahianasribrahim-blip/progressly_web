@@ -23,9 +23,11 @@ interface AIInsights {
 
 /**
  * Analyze video thumbnails using GPT-4o Vision to understand video content
+ * Downloads and base64 encodes images to avoid URL access issues
  */
 async function analyzeVideoThumbnails(thumbnailUrls: string[], niche: string): Promise<string> {
     if (!OPENAI_API_KEY || !thumbnailUrls || thumbnailUrls.length === 0) {
+        console.log("Vision skipped: no API key or thumbnails");
         return "";
     }
 
@@ -33,17 +35,43 @@ async function analyzeVideoThumbnails(thumbnailUrls: string[], niche: string): P
     const urlsToAnalyze = thumbnailUrls.slice(0, 5).filter(url => url && url.startsWith("http"));
 
     if (urlsToAnalyze.length === 0) {
+        console.log("Vision skipped: no valid thumbnail URLs");
         return "";
     }
 
     try {
         console.log(`Analyzing ${urlsToAnalyze.length} video thumbnails with Vision API...`);
+        console.log("Thumbnail URLs:", urlsToAnalyze);
 
-        // Build the content array with images
-        const imageContent = urlsToAnalyze.map(url => ({
+        // Try to download and base64 encode images (more reliable than URL access)
+        const base64Images: string[] = [];
+        for (const url of urlsToAnalyze) {
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    const buffer = await response.arrayBuffer();
+                    const base64 = Buffer.from(buffer).toString('base64');
+                    const contentType = response.headers.get('content-type') || 'image/jpeg';
+                    base64Images.push(`data:${contentType};base64,${base64}`);
+                    console.log(`Downloaded thumbnail: ${url.substring(0, 50)}...`);
+                }
+            } catch (e) {
+                console.log(`Failed to download thumbnail: ${url.substring(0, 50)}...`);
+            }
+        }
+
+        if (base64Images.length === 0) {
+            console.log("Vision skipped: could not download any thumbnails");
+            return "";
+        }
+
+        // Build the content array with base64 images
+        const imageContent = base64Images.map(base64Url => ({
             type: "image_url" as const,
-            image_url: { url, detail: "low" as const } // Low detail for cost efficiency
+            image_url: { url: base64Url, detail: "low" as const }
         }));
+
+        console.log(`Sending ${imageContent.length} images to GPT-4o Vision...`);
 
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
@@ -59,37 +87,38 @@ async function analyzeVideoThumbnails(thumbnailUrls: string[], niche: string): P
                         content: [
                             {
                                 type: "text",
-                                text: `You are analyzing ${urlsToAnalyze.length} TikTok video thumbnails in the "${niche}" niche.
+                                text: `You are analyzing ${imageContent.length} TikTok video thumbnails in the "${niche}" niche.
 
-For each thumbnail, briefly describe what you see (person, setting, activity, text overlays).
+For each thumbnail, briefly describe what you see (person, setting, activity, text overlays, occasion).
 Then identify the COMMON THEME across these videos.
 
 Format your response as:
-INDIVIDUAL VIDEOS:
-1. [description]
-2. [description]
+VIDEOS ANALYZED:
+1. [what you see in this video thumbnail]
+2. [what you see]
 ...
 
-COMMON THEME: [What these videos have in common - be specific like "family reactions to Islamic practices" or "Eid celebration moments"]
+COMMON THEME: [What these videos have in common - be VERY specific like "Ramadan table preparation" or "Eid celebration with family" or "cooking/food preparation"]
 
-SUGGESTED CONTENT IDEA: [One specific, actionable idea based on the common theme]`
+SUGGESTED CONTENT IDEA: [One specific, actionable idea based on the common theme - like "Film yourself setting up a Ramadan table" or "Show your Eid morning routine"]`
                             },
                             ...imageContent
                         ]
                     }
                 ],
-                max_tokens: 500,
+                max_tokens: 600,
             }),
         });
 
         if (!response.ok) {
-            console.error("Vision API error:", response.status);
+            const errorText = await response.text();
+            console.error("Vision API error:", response.status, errorText);
             return "";
         }
 
         const result = await response.json();
         const content = result.choices?.[0]?.message?.content || "";
-        console.log("Vision analysis result:", content.substring(0, 200) + "...");
+        console.log("Vision analysis SUCCESS:", content);
         return content;
     } catch (error) {
         console.error("Error analyzing thumbnails:", error);
