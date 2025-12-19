@@ -87,20 +87,25 @@ async function analyzeVideoThumbnails(thumbnailUrls: string[], niche: string): P
                         content: [
                             {
                                 type: "text",
-                                text: `You are analyzing ${imageContent.length} TikTok video thumbnails in the "${niche}" niche.
+                                text: `You are analyzing ${imageContent.length} TikTok video thumbnails from the "${niche}" niche.
 
-For each thumbnail, briefly describe what you see (person, setting, activity, text overlays, occasion).
-Then identify the COMMON THEME across these videos.
+CRITICAL: Focus on understanding what the video is ABOUT, not just what you SEE.
 
-Format your response as:
+For each thumbnail, look for:
+1. TEXT OVERLAYS or CAPTIONS visible on screen (this often reveals the video's topic)
+2. The EXPRESSION or ACTION of people (talking to camera = educational, emotional = storytime, POV style, etc.)
+3. Any CONTEXT CLUES about the video's purpose (teaching, entertaining, inspiring, selling)
+
+DO NOT just describe backgrounds, settings, or decorations. A forest background is IRRELEVANT - what matters is WHY the video was made.
+
+Format response:
 VIDEOS ANALYZED:
-1. [what you see in this video thumbnail]
-2. [what you see]
-...
+1. [TEXT ON SCREEN: "quote" or None] - [What the video is probably ABOUT, not what you see]
+2. ...
 
-COMMON THEME: [What these videos have in common - be VERY specific like "Ramadan table preparation" or "Eid celebration with family" or "cooking/food preparation"]
+COMMON VIDEO TYPE: [What TYPE of content these are - e.g., "Educational analogies", "Spiritual reminders", "POV comedy skits", "Storytime/testimonials", "How-to tutorials"]
 
-SUGGESTED CONTENT IDEA: [One specific, actionable idea based on the common theme - like "Film yourself setting up a Ramadan table" or "Show your Eid morning routine"]`
+SUGGESTED CONTENT IDEA: [One idea that matches the ACTUAL content type, not the visual style. If videos are educational analogies, suggest an analogy topic. If they're POV comedy, suggest a POV scenario.]`
                             },
                             ...imageContent
                         ]
@@ -237,12 +242,12 @@ function buildPrompt(data: AnalysisData, visionAnalysis?: string): string {
 
     // Vision analysis is the MOST IMPORTANT part
     const visionSection = visionAnalysis ? `
-=== VISUAL ANALYSIS OF TOP VIDEOS (MOST IMPORTANT!) ===
-Our AI analyzed the actual video thumbnails and found:
+=== VISION ANALYSIS - VIDEO TYPE DETECTION ===
+Our AI analyzed the actual video thumbnails to understand what TYPE of content is trending:
 ${visionAnalysis}
 ===
 
-USE THE VISION ANALYSIS ABOVE TO GENERATE YOUR CONTENT IDEAS. The visual analysis tells you what videos are actually about, not just what their text captions say.
+IMPORTANT: Use the "COMMON VIDEO TYPE" above to generate ideas. If videos are "Educational analogies", suggest NEW analogy topics. If they're "POV comedy skits", suggest NEW POV scenarios. Match the FORMAT and STYLE, not the visuals.
 
 ` : "";
 
