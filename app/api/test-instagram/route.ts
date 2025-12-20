@@ -6,19 +6,30 @@ export async function GET() {
     const INSTAGRAM_API_HOST = "instagram-scraper-stable-api.p.rapidapi.com";
 
     if (!INSTAGRAM_RAPIDAPI_KEY) {
-        return NextResponse.json({ error: "INSTAGRAM_RAPIDAPI_KEY not set" }, { status: 500 });
+        return NextResponse.json({ error: "INSTAGRAM_RAPIDAPI_KEY or RAPIDAPI_KEY not set" }, { status: 500 });
     }
 
     const hashtag = "hijab";
 
-    // Try different endpoints
+    // Based on API documentation: Posts & Reels V2 uses 'hashtag' parameter
     const endpoints = [
-        { name: "search_hashtag.php GET", method: "GET", url: `https://${INSTAGRAM_API_HOST}/search_hashtag.php?hashtag=${hashtag}` },
-        { name: "search_hashtag.php POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/search_hashtag.php`, body: `hashtag=${hashtag}` },
-        { name: "posts_by_hashtag.php GET", method: "GET", url: `https://${INSTAGRAM_API_HOST}/posts_by_hashtag.php?hashtag=${hashtag}` },
-        { name: "hashtag_posts.php GET", method: "GET", url: `https://${INSTAGRAM_API_HOST}/hashtag_posts.php?hashtag=${hashtag}` },
-        { name: "hashtag/posts GET", method: "GET", url: `https://${INSTAGRAM_API_HOST}/hashtag/posts?hashtag=${hashtag}` },
-        { name: "tag_posts.php GET", method: "GET", url: `https://${INSTAGRAM_API_HOST}/tag_posts.php?hashtag=${hashtag}` },
+        // Posts & Reels V2 (from documentation)
+        { name: "posts_reels_v2 POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/posts_reels_v2`, body: `hashtag=${hashtag}` },
+        { name: "posts_and_reels POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/posts_and_reels`, body: `hashtag=${hashtag}` },
+        { name: "posts-reels POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/posts-reels`, body: `hashtag=${hashtag}` },
+
+        // Search endpoints (from documentation)
+        { name: "search POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/search`, body: `search_query=${hashtag}` },
+        { name: "search_hashtag POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/search_hashtag`, body: `search_query=${hashtag}` },
+
+        // Hashtag posts variations
+        { name: "hashtag_posts POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/hashtag_posts`, body: `hashtag=${hashtag}` },
+        { name: "explore_hashtag POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/explore_hashtag`, body: `hashtag=${hashtag}` },
+
+        // Common REST style endpoints
+        { name: "/v2/posts/hashtag POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/v2/posts/hashtag`, body: `hashtag=${hashtag}` },
+        { name: "/hashtag/posts POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/hashtag/posts`, body: `hashtag=${hashtag}` },
+        { name: "/explore/tags POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/explore/tags`, body: `tag=${hashtag}` },
     ];
 
     const results: Array<{
@@ -26,7 +37,7 @@ export async function GET() {
         status: number;
         hasData: boolean;
         dataType: string;
-        sample?: unknown;
+        keys?: string[];
         error?: string;
     }> = [];
 
@@ -38,37 +49,38 @@ export async function GET() {
                 headers: {
                     "x-rapidapi-host": INSTAGRAM_API_HOST,
                     "x-rapidapi-key": INSTAGRAM_RAPIDAPI_KEY,
-                    "Content-Type": endpoint.method === "POST" ? "application/x-www-form-urlencoded" : "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded",
                 },
             };
 
-            if (endpoint.method === "POST" && endpoint.body) {
+            if (endpoint.body) {
                 fetchOptions.body = endpoint.body;
             }
 
             const response = await fetch(endpoint.url, fetchOptions);
 
             if (!response.ok) {
+                const errorText = await response.text().catch(() => "");
                 results.push({
                     endpoint: endpoint.name,
                     status: response.status,
                     hasData: false,
                     dataType: "error",
-                    error: `HTTP ${response.status}`,
+                    error: errorText.substring(0, 100),
                 });
                 continue;
             }
 
             const data = await response.json();
-            const dataType = Array.isArray(data) ? "array" : typeof data;
-            const hasData = dataType === "array" ? data.length > 0 : (dataType === "object" && Object.keys(data).length > 0);
+            const dataKeys = typeof data === "object" && !Array.isArray(data) ? Object.keys(data) : [];
+            const hasData = Array.isArray(data) ? data.length > 0 : dataKeys.length > 0;
 
             results.push({
                 endpoint: endpoint.name,
                 status: response.status,
                 hasData,
-                dataType,
-                sample: Array.isArray(data) ? data.slice(0, 1) : { keys: Object.keys(data) },
+                dataType: Array.isArray(data) ? "array" : typeof data,
+                keys: dataKeys.slice(0, 10),
             });
         } catch (error) {
             results.push({
@@ -85,6 +97,7 @@ export async function GET() {
     const workingEndpoints = results.filter(r => r.status === 200 && r.hasData);
 
     return NextResponse.json({
+        apiKey: `${INSTAGRAM_RAPIDAPI_KEY.substring(0, 10)}...`,
         summary: {
             workingEndpoints: workingEndpoints.map(e => e.endpoint),
             testedCount: results.length,
