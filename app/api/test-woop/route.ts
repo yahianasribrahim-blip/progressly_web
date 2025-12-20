@@ -1,4 +1,4 @@
-// Test endpoint to discover all Woop API endpoints
+// Test popular vs niche hashtags on Woop API
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -9,23 +9,29 @@ export async function GET() {
         return NextResponse.json({ error: "RAPIDAPI_KEY not set" }, { status: 500 });
     }
 
-    // Try multiple possible endpoints
-    const endpoints = [
-        { path: "/video", params: { sorting: "rise", days: "1", order: "desc", hashtag: "gym" } },
-        { path: "/hashtag", params: { name: "gym" } },
-        { path: "/hashtag/video", params: { hashtag: "gym" } },
-        { path: "/videos/hashtag", params: { tag: "gym" } },
-        { path: "/search", params: { query: "gym workout" } },
-        { path: "/video", params: { sorting: "rise", days: "1", order: "desc", niche: "fitness" } },
-        { path: "/video", params: { sorting: "rise", days: "1", order: "desc", keyword: "gym" } },
+    // Test different hashtags - from very popular to niche
+    const hashtagsToTest = [
+        "fitness",       // Very popular
+        "gym",           // Popular
+        "workout",       // Popular  
+        "gymtok",        // TikTok-specific
+        "muslimfitness", // Niche
+        "hijab",         // Moderate
+        "fyp",           // Most popular
     ];
 
-    const results: Array<{ endpoint: string; params: string; status: number; preview: string }> = [];
+    const results: Array<{ hashtag: string; status: number; videoCount: number; firstVideoTitle?: string }> = [];
 
-    for (const ep of endpoints) {
+    for (const hashtag of hashtagsToTest) {
         try {
-            const params = new URLSearchParams(ep.params as Record<string, string>);
-            const url = `https://${WOOP_API_HOST}${ep.path}?${params.toString()}`;
+            const params = new URLSearchParams({
+                hashtag: hashtag,
+                sorting: "rise",
+                days: "7",
+                order: "desc",
+            });
+
+            const url = `https://${WOOP_API_HOST}/video?${params.toString()}`;
 
             const response = await fetch(url, {
                 method: "GET",
@@ -37,26 +43,53 @@ export async function GET() {
                 },
             });
 
-            const text = await response.text();
+            const data = await response.json();
+            const videos = data.data?.stats || [];
 
             results.push({
-                endpoint: ep.path,
-                params: JSON.stringify(ep.params),
+                hashtag,
                 status: response.status,
-                preview: text.substring(0, 500),
+                videoCount: Array.isArray(videos) ? videos.length : 0,
+                firstVideoTitle: videos[0]?.videoTitle?.substring(0, 50),
             });
         } catch (error) {
             results.push({
-                endpoint: ep.path,
-                params: JSON.stringify(ep.params),
+                hashtag,
                 status: 0,
-                preview: `Error: ${error instanceof Error ? error.message : String(error)}`,
+                videoCount: 0,
             });
         }
     }
 
-    return NextResponse.json({
-        message: "Testing Woop API endpoints",
-        results,
-    });
+    // Also test with category + no hashtag
+    try {
+        const params = new URLSearchParams({
+            category: "107", // Sports & Outdoor
+            sorting: "rise",
+            days: "7",
+            order: "desc",
+        });
+        const url = `https://${WOOP_API_HOST}/video?${params.toString()}`;
+        const response = await fetch(url, {
+            method: "GET",
+            cache: "no-store",
+            headers: {
+                "x-rapidapi-host": WOOP_API_HOST,
+                "x-rapidapi-key": RAPIDAPI_KEY,
+                "Accept": "application/json",
+            },
+        });
+        const data = await response.json();
+        const videos = data.data?.stats || [];
+        results.push({
+            hashtag: "category:107 (Sports)",
+            status: response.status,
+            videoCount: Array.isArray(videos) ? videos.length : 0,
+            firstVideoTitle: videos[0]?.videoTitle?.substring(0, 50),
+        });
+    } catch (error) {
+        results.push({ hashtag: "category:107", status: 0, videoCount: 0 });
+    }
+
+    return NextResponse.json({ results });
 }
