@@ -1,4 +1,4 @@
-// Test endpoint to discover working Instagram API endpoints
+// Test endpoint based on actual API sidebar screenshot
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -6,43 +6,51 @@ export async function GET() {
     const INSTAGRAM_API_HOST = "instagram-scraper-stable-api.p.rapidapi.com";
 
     if (!INSTAGRAM_RAPIDAPI_KEY) {
-        return NextResponse.json({ error: "INSTAGRAM_RAPIDAPI_KEY or RAPIDAPI_KEY not set" }, { status: 500 });
+        return NextResponse.json({ error: "API key not set" }, { status: 500 });
     }
 
     const hashtag = "hijab";
+    const username = "hijabfashion"; // Also test with username
 
-    // Based on API documentation: Posts & Reels V2 uses 'hashtag' parameter
+    // Endpoints based on the API sidebar: Search, Posts/Reels (Media), Hashtags
     const endpoints = [
-        // Posts & Reels V2 (from documentation)
-        { name: "posts_reels_v2 POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/posts_reels_v2`, body: `hashtag=${hashtag}` },
-        { name: "posts_and_reels POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/posts_and_reels`, body: `hashtag=${hashtag}` },
-        { name: "posts-reels POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/posts-reels`, body: `hashtag=${hashtag}` },
+        // Search endpoints
+        { name: "search (Users + Hashtags)", method: "POST", body: `search_query=${hashtag}` },
 
-        // Search endpoints (from documentation)
-        { name: "search POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/search`, body: `search_query=${hashtag}` },
-        { name: "search_hashtag POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/search_hashtag`, body: `search_query=${hashtag}` },
+        // Hashtags endpoint variations
+        { name: "hashtags", method: "POST", body: `hashtag=${hashtag}` },
+        { name: "hashtags", method: "GET", query: `?hashtag=${hashtag}` },
 
-        // Hashtag posts variations
-        { name: "hashtag_posts POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/hashtag_posts`, body: `hashtag=${hashtag}` },
-        { name: "explore_hashtag POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/explore_hashtag`, body: `hashtag=${hashtag}` },
+        // Posts/Reels endpoints
+        { name: "posts", method: "POST", body: `username_or_url=${username}` },
+        { name: "posts_reels", method: "POST", body: `username_or_url=${username}` },
+        { name: "reels", method: "POST", body: `username_or_url=${username}` },
+        { name: "media", method: "POST", body: `username_or_url=${username}` },
 
-        // Common REST style endpoints
-        { name: "/v2/posts/hashtag POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/v2/posts/hashtag`, body: `hashtag=${hashtag}` },
-        { name: "/hashtag/posts POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/hashtag/posts`, body: `hashtag=${hashtag}` },
-        { name: "/explore/tags POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/explore/tags`, body: `tag=${hashtag}` },
+        // User endpoints  
+        { name: "user", method: "POST", body: `username_or_url=${username}` },
+        { name: "user_info", method: "POST", body: `username_or_url=${username}` },
+        { name: "profile", method: "POST", body: `username_or_url=${username}` },
+
+        // Tagged posts
+        { name: "user_tagged_posts", method: "POST", body: `username_or_url=${username}` },
     ];
 
     const results: Array<{
         endpoint: string;
+        method: string;
         status: number;
         hasData: boolean;
-        dataType: string;
         keys?: string[];
-        error?: string;
+        preview?: string;
     }> = [];
 
     for (const endpoint of endpoints) {
         try {
+            const url = endpoint.query
+                ? `https://${INSTAGRAM_API_HOST}/${endpoint.name}${endpoint.query}`
+                : `https://${INSTAGRAM_API_HOST}/${endpoint.name}`;
+
             const fetchOptions: RequestInit = {
                 method: endpoint.method,
                 cache: "no-store",
@@ -53,55 +61,48 @@ export async function GET() {
                 },
             };
 
-            if (endpoint.body) {
+            if (endpoint.method === "POST" && endpoint.body) {
                 fetchOptions.body = endpoint.body;
             }
 
-            const response = await fetch(endpoint.url, fetchOptions);
+            const response = await fetch(url, fetchOptions);
+            const text = await response.text();
 
-            if (!response.ok) {
-                const errorText = await response.text().catch(() => "");
-                results.push({
-                    endpoint: endpoint.name,
-                    status: response.status,
-                    hasData: false,
-                    dataType: "error",
-                    error: errorText.substring(0, 100),
-                });
-                continue;
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                data = null;
             }
 
-            const data = await response.json();
-            const dataKeys = typeof data === "object" && !Array.isArray(data) ? Object.keys(data) : [];
-            const hasData = Array.isArray(data) ? data.length > 0 : dataKeys.length > 0;
+            const dataKeys = data && typeof data === "object" && !Array.isArray(data) ? Object.keys(data) : [];
+            const hasData = response.ok && (Array.isArray(data) ? data.length > 0 : dataKeys.length > 0);
 
             results.push({
                 endpoint: endpoint.name,
+                method: endpoint.method,
                 status: response.status,
                 hasData,
-                dataType: Array.isArray(data) ? "array" : typeof data,
-                keys: dataKeys.slice(0, 10),
+                keys: dataKeys.slice(0, 5),
+                preview: text.substring(0, 150),
             });
         } catch (error) {
             results.push({
                 endpoint: endpoint.name,
+                method: endpoint.method,
                 status: 0,
                 hasData: false,
-                dataType: "exception",
-                error: error instanceof Error ? error.message : String(error),
+                preview: error instanceof Error ? error.message : String(error),
             });
         }
     }
 
-    // Find working endpoint
-    const workingEndpoints = results.filter(r => r.status === 200 && r.hasData);
+    // Find working endpoints
+    const working = results.filter(r => r.status === 200 && r.hasData);
 
     return NextResponse.json({
-        apiKey: `${INSTAGRAM_RAPIDAPI_KEY.substring(0, 10)}...`,
-        summary: {
-            workingEndpoints: workingEndpoints.map(e => e.endpoint),
-            testedCount: results.length,
-        },
+        apiKeyPrefix: INSTAGRAM_RAPIDAPI_KEY.substring(0, 10),
+        workingEndpoints: working.map(e => `${e.method} /${e.endpoint}`),
         results,
     });
 }
