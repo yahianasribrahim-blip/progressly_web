@@ -155,6 +155,16 @@ const NICHE_CATEGORY_MAP: Record<string, number | null> = {
     storytelling: 90, // Entertainment
 };
 
+// Keywords to filter for Muslim-related content within generic hashtag results
+const MUSLIM_KEYWORDS = ["muslim", "hijab", "hijabi", "modest", "islam", "deen", "halal", "abaya", "ummah", "ramadan", "eid", "sunnah", "quran", "islamic", "muslimah", "modestfashion", "modesty"];
+
+// Check if video is relevant to Muslim audience
+function isMuslimRelevant(description: string): boolean {
+    if (!description) return false;
+    const lowerDesc = description.toLowerCase();
+    return MUSLIM_KEYWORDS.some(keyword => lowerDesc.includes(keyword));
+}
+
 interface WoopVideoResponse {
     id: string;
     desc: string;
@@ -578,14 +588,18 @@ export async function analyzeNiche(niche: string): Promise<{
     console.log(`Deduplicated: ${allVideos.length} → ${uniqueAllVideos.length} unique videos (removed ${allVideos.length - uniqueAllVideos.length} duplicates)`);
 
     // Start with all valid videos and add date info
+    // Filter for Muslim-related content to ensure relevance
     const validVideos = uniqueAllVideos
         .filter((v) => v.stats?.playCount)
         .filter((v) => isContentAppropriate(v.desc, v.id))
+        .filter((v) => isMuslimRelevant(v.desc)) // Only show Muslim-related content
         .map(v => {
             const createDate = v.createTime ? new Date(v.createTime * 1000) : null;
             const daysAgo = v.createTime ? Math.floor((now - v.createTime) / (24 * 60 * 60)) : null;
             return { ...v, _createDate: createDate, _daysAgo: daysAgo };
         });
+
+    console.log(`After Muslim relevance filter: ${validVideos.length} videos match Muslim keywords`);
 
     // Log video dates for debugging
     console.log("=== VIDEO DATES ===");
