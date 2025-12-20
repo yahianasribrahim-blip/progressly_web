@@ -1,39 +1,25 @@
-// Test if new Instagram API key works
+// Test full gym niche flow
 import { NextResponse } from "next/server";
-
-const INSTAGRAM_RAPIDAPI_KEY = process.env.INSTAGRAM_RAPIDAPI_KEY || process.env.RAPIDAPI_KEY || "";
-const INSTAGRAM_API_HOST = "instagram-scraper-stable-api.p.rapidapi.com";
+import { getInstagramReelsForNiche } from "@/lib/instagram-api";
 
 export async function GET() {
     try {
-        const response = await fetch(`https://${INSTAGRAM_API_HOST}/get_ig_user_reels.php`, {
-            method: "POST",
-            cache: "no-store",
-            headers: {
-                "x-rapidapi-host": INSTAGRAM_API_HOST,
-                "x-rapidapi-key": INSTAGRAM_RAPIDAPI_KEY,
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: `username_or_url=aussiemammoth&amount=3`,
-        });
-
-        const text = await response.text();
-        let json;
-        try { json = JSON.parse(text); } catch { json = null; }
+        console.log("[Test] Starting gym niche test...");
+        const videos = await getInstagramReelsForNiche("gym");
 
         return NextResponse.json({
-            keyPrefix: INSTAGRAM_RAPIDAPI_KEY.substring(0, 10),
-            httpStatus: response.status,
-            success: response.status === 200,
-            reelsCount: json?.reels?.length || 0,
-            message: response.status === 200
-                ? `✓ API working! Found ${json?.reels?.length || 0} reels`
-                : `✗ API error: ${response.status}`,
-            rawResponse: text.substring(0, 150),
+            success: true,
+            videoCount: videos.length,
+            videos: videos.slice(0, 5).map(v => ({
+                creator: v.creator,
+                views: v.views,
+                url: v.url,
+            })),
         });
     } catch (error) {
         return NextResponse.json({
+            success: false,
             error: error instanceof Error ? error.message : String(error),
-        });
+        }, { status: 500 });
     }
 }
