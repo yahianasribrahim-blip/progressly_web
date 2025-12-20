@@ -60,6 +60,9 @@ const INAPPROPRIATE_KEYWORDS = [
     // Taboo topics (even if beneficial, too sensitive for casual content)
     "masturbation", "masturbate", "masturbating", "nofap", "no fap",
     "porn", "pornography", "p*rn", "zina", "fornication",
+    // French taboo terms (some content is in French)
+    "habitude secrète", "habitude secrètes", "arrêter l'habitude",
+    "secret habit", "bad habit", "addiction", "quit this habit",
 ];
 
 // Specific video IDs that are permanently blocked
@@ -726,20 +729,31 @@ export async function analyzeNiche(niche: string): Promise<{
     });
     console.log(`Deduplicated: ${allVideos.length} → ${uniqueAllVideos.length} unique videos (removed ${allVideos.length - uniqueAllVideos.length} duplicates)`);
 
-    // Filter videos for appropriateness
-    // NOTE: We removed the strict niche keyword filter because data showed NO videos have
-    // BOTH Muslim AND gym keywords. In reality, Muslim fitness content is rare on TikTok trends.
-    // We now accept ANY video from Muslim-specific hashtags (Tier 1) as they're already targeted.
+    // Filter videos for appropriateness AND niche relevance
+    // For gym niche: MUST contain fitness/gym keywords to avoid irrelevant content
+    const needsNicheFilter = ["gym", "food", "pets"].includes(nicheKey);
+
     const validVideos = uniqueAllVideos
         .filter((v) => v.stats?.playCount)
         .filter((v) => isContentAppropriate(v.desc, v.id)) // Filter out inappropriate content
+        .filter((v) => {
+            // Apply niche filter for specific niches that need it
+            if (needsNicheFilter) {
+                const isRelevant = isNicheRelevant(v.desc, nicheKey);
+                if (!isRelevant) {
+                    console.log(`Filtered out (not ${nicheKey}): "${v.desc?.substring(0, 40)}..."`);
+                }
+                return isRelevant;
+            }
+            return true; // Other niches accept all Muslim content
+        })
         .map(v => {
             const createDate = v.createTime ? new Date(v.createTime * 1000) : null;
             const daysAgo = v.createTime ? Math.floor((now - v.createTime) / (24 * 60 * 60)) : null;
             return { ...v, _createDate: createDate, _daysAgo: daysAgo };
         });
 
-    console.log(`Valid videos after content moderation: ${validVideos.length}`);
+    console.log(`Valid videos after content moderation${needsNicheFilter ? ` + ${nicheKey} filter` : ""}: ${validVideos.length}`);
 
     // Log video dates for debugging
     console.log("=== VIDEO DATES ===");
