@@ -1,4 +1,4 @@
-// Test endpoint to debug Woop TikTok API response directly
+// Test endpoint to discover all Woop API endpoints
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -9,70 +9,54 @@ export async function GET() {
         return NextResponse.json({ error: "RAPIDAPI_KEY not set" }, { status: 500 });
     }
 
-    try {
-        const params = new URLSearchParams({
-            sorting: "rise",
-            days: "1",
-            order: "desc",
-            category: "96", // Lifestyle category
-        });
+    // Try multiple possible endpoints
+    const endpoints = [
+        { path: "/video", params: { sorting: "rise", days: "1", order: "desc", hashtag: "gym" } },
+        { path: "/hashtag", params: { name: "gym" } },
+        { path: "/hashtag/video", params: { hashtag: "gym" } },
+        { path: "/videos/hashtag", params: { tag: "gym" } },
+        { path: "/search", params: { query: "gym workout" } },
+        { path: "/video", params: { sorting: "rise", days: "1", order: "desc", niche: "fitness" } },
+        { path: "/video", params: { sorting: "rise", days: "1", order: "desc", keyword: "gym" } },
+    ];
 
-        const url = `https://${WOOP_API_HOST}/video?${params.toString()}`;
+    const results: Array<{ endpoint: string; params: string; status: number; preview: string }> = [];
 
-        const response = await fetch(url, {
-            method: "GET",
-            cache: "no-store",
-            headers: {
-                "x-rapidapi-host": WOOP_API_HOST,
-                "x-rapidapi-key": RAPIDAPI_KEY,
-                "Accept": "application/json",
-            },
-        });
-
-        const status = response.status;
-        const statusText = response.statusText;
-
-        let data: unknown;
-        const contentType = response.headers.get("content-type");
-
+    for (const ep of endpoints) {
         try {
-            data = await response.json();
-        } catch {
-            data = await response.text();
+            const params = new URLSearchParams(ep.params as Record<string, string>);
+            const url = `https://${WOOP_API_HOST}${ep.path}?${params.toString()}`;
+
+            const response = await fetch(url, {
+                method: "GET",
+                cache: "no-store",
+                headers: {
+                    "x-rapidapi-host": WOOP_API_HOST,
+                    "x-rapidapi-key": RAPIDAPI_KEY,
+                    "Accept": "application/json",
+                },
+            });
+
+            const text = await response.text();
+
+            results.push({
+                endpoint: ep.path,
+                params: JSON.stringify(ep.params),
+                status: response.status,
+                preview: text.substring(0, 500),
+            });
+        } catch (error) {
+            results.push({
+                endpoint: ep.path,
+                params: JSON.stringify(ep.params),
+                status: 0,
+                preview: `Error: ${error instanceof Error ? error.message : String(error)}`,
+            });
         }
-
-        // Analyze the response structure
-        const dataType = typeof data;
-        const isArray = Array.isArray(data);
-        const keys = dataType === "object" && data !== null ? Object.keys(data as object) : [];
-
-        // Check for common data locations
-        let videoCount = 0;
-        if (isArray) {
-            videoCount = (data as unknown[]).length;
-        } else if (dataType === "object" && data !== null) {
-            const obj = data as Record<string, unknown>;
-            if (Array.isArray(obj.data)) videoCount = obj.data.length;
-            else if (Array.isArray(obj.videos)) videoCount = obj.videos.length;
-            else if (Array.isArray(obj.items)) videoCount = obj.items.length;
-        }
-
-        return NextResponse.json({
-            success: response.ok,
-            status,
-            statusText,
-            contentType,
-            dataType,
-            isArray,
-            keys,
-            videoCount,
-            // Show first 3000 chars of response for debugging
-            preview: JSON.stringify(data).substring(0, 3000),
-        });
-    } catch (error) {
-        return NextResponse.json({
-            error: "Request failed",
-            message: error instanceof Error ? error.message : String(error),
-        }, { status: 500 });
     }
+
+    return NextResponse.json({
+        message: "Testing Woop API endpoints",
+        results,
+    });
 }
