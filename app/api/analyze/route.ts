@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { analyzeNiche } from "@/lib/tiktok-api";
 import { generateAIInsights } from "@/lib/ai-insights";
+import { getInstagramReelsForNiche } from "@/lib/instagram-api";
 
 export async function POST(request: Request) {
     console.log("API /api/analyze called");
@@ -19,16 +20,56 @@ export async function POST(request: Request) {
             );
         }
 
-        console.log("Calling analyzeNiche...");
+        console.log("Calling analyzeNiche (TikTok)...");
 
         // Fetch real TikTok data
         const analysisResult = await analyzeNiche(niche);
 
-        console.log("Got result:", {
+        console.log("TikTok result:", {
             hooksCount: analysisResult.hooks.length,
             hashtagsCount: analysisResult.hashtags.length,
             examplesCount: analysisResult.examples.length,
         });
+
+        // Fetch Instagram reels and add to examples
+        console.log("Fetching Instagram reels...");
+        try {
+            const instagramReels = await getInstagramReelsForNiche(niche);
+            console.log(`Instagram: Got ${instagramReels.length} reels`);
+
+            // Add Instagram reels to examples (they already have platform: "Instagram")
+            const instagramExamples = instagramReels.map(reel => ({
+                id: reel.id,
+                thumbnail: reel.thumbnail,
+                creator: reel.creator,
+                creatorAvatar: reel.creatorAvatar || "",
+                platform: "Instagram" as const,
+                views: reel.views,
+                url: reel.url,
+                description: reel.description,
+                duration: reel.duration || 0,
+            }));
+
+            // Combine TikTok and Instagram examples
+            // Pattern: Alternate TikTok and Instagram for variety
+            const combinedExamples: typeof analysisResult.examples = [];
+            const tiktokExamples = analysisResult.examples;
+            let ttIdx = 0, igIdx = 0;
+
+            while (combinedExamples.length < 8 && (ttIdx < tiktokExamples.length || igIdx < instagramExamples.length)) {
+                if (ttIdx < tiktokExamples.length) {
+                    combinedExamples.push(tiktokExamples[ttIdx++]);
+                }
+                if (igIdx < instagramExamples.length && combinedExamples.length < 8) {
+                    combinedExamples.push(instagramExamples[igIdx++]);
+                }
+            }
+
+            analysisResult.examples = combinedExamples;
+            console.log(`Combined examples: ${combinedExamples.length} (TikTok: ${ttIdx}, Instagram: ${igIdx})`);
+        } catch (igError) {
+            console.error("Instagram error (continuing with TikTok only):", igError);
+        }
 
         // Generate AI insights
         console.log("Generating AI insights...");
