@@ -220,35 +220,43 @@ async function fetchTrendingVideos(niche: string, count: number = 30): Promise<T
 
         const data = await response.json();
         console.log("Woop API response keys:", Object.keys(data));
-        console.log("Sample response:", JSON.stringify(data).substring(0, 500));
 
         // Map Woop API response to our TikTokVideo interface
+        // Woop API returns videos in data.stats (NOT data directly)
         const videos: TikTokVideo[] = [];
-        const rawVideos = data.data || data.videos || data || [];
+        const rawVideos = data.data?.stats || data.stats || data.data || data.videos || [];
+
+        console.log("Looking for videos in data.data.stats, found:", Array.isArray(rawVideos) ? rawVideos.length : 0);
 
         if (Array.isArray(rawVideos)) {
             for (const v of rawVideos.slice(0, count)) {
                 try {
-                    // Map the response - exact field names may need adjustment based on actual API response
+                    // Parse createTime from Woop's ISO format (e.g., "2025-12-14T08:11:19")
+                    let createTime = Math.floor(Date.now() / 1000);
+                    if (v.videoCreateTime) {
+                        createTime = Math.floor(new Date(v.videoCreateTime).getTime() / 1000);
+                    }
+
+                    // Map Woop API fields to our TikTokVideo interface
                     videos.push({
-                        id: v.id || v.videoId || "",
-                        desc: v.desc || v.description || v.title || "",
-                        createTime: v.createTime || v.created_at || Math.floor(Date.now() / 1000),
+                        id: v.videoId || v.id || "",
+                        desc: v.videoTitle || v.title || v.desc || "",
+                        createTime: createTime,
                         video: {
-                            duration: v.duration || v.videoDuration || 0,
+                            duration: v.videoDuration || v.duration || 0,
                             cover: v.coverUrl || v.cover || v.thumbnail || "",
-                            playAddr: v.playUrl || v.videoUrl || "",
+                            playAddr: v.videoUrl || v.playUrl || "",
                         },
                         author: {
-                            uniqueId: v.authorUniqueId || v.author?.uniqueId || v.username || "creator",
-                            nickname: v.authorName || v.author?.nickname || v.displayName || "Creator",
-                            avatarThumb: v.authorAvatar || v.author?.avatarThumb || "",
+                            uniqueId: v.user || v.authorName || v.username || "creator",
+                            nickname: v.authorName || v.user || "Creator",
+                            avatarThumb: v.authorAvatar || "",
                         },
                         stats: {
-                            playCount: v.playCount || v.views || v.stats?.playCount || 0,
-                            diggCount: v.likeCount || v.likes || v.stats?.diggCount || 0,
-                            commentCount: v.commentCount || v.comments || v.stats?.commentCount || 0,
-                            shareCount: v.shareCount || v.shares || v.stats?.shareCount || 0,
+                            playCount: v.playCount || v.views || 0,
+                            diggCount: v.likes || v.likeCount || 0,
+                            commentCount: v.commentsCount || v.commentCount || 0,
+                            shareCount: v.shares || v.shareCount || 0,
                         },
                     });
                 } catch (mapError) {
