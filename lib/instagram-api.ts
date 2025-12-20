@@ -374,14 +374,11 @@ export async function getInstagramReelsForNiche(niche: string): Promise<Instagra
 
     console.log(`[Instagram] Unique videos: ${uniqueVideos.length}`);
 
-    // For specific niches (gym/food/pets), use Vision AI to filter by thumbnail content
-    // This ensures only actual gym videos (not vlogs from gym creators) are shown
-    let filteredVideos = uniqueVideos;
-    if (specificNiches.includes(nicheKey)) {
-        console.log(`[Instagram] Running Vision AI classification for "${nicheKey}" niche...`);
-        filteredVideos = await classifyVideosWithVision(uniqueVideos, nicheKey);
-        console.log(`[Instagram] Vision AI kept ${filteredVideos.length}/${uniqueVideos.length} videos`);
-    }
+    // DISABLED: Vision AI classification - uses too many API calls and causes rate limits
+    // For now, we trust that gym-specific creators post mostly gym content
+    // TODO: Re-enable when we have better API quota management
+    const filteredVideos = uniqueVideos;
+    console.log(`[Instagram] Returning ${filteredVideos.length} videos from ${nicheKey} creators`);
 
     // Sort by views (highest first) and take top 8
     const sortedVideos = filteredVideos
