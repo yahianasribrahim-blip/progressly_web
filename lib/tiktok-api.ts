@@ -185,103 +185,100 @@ async function fetchTrendingVideos(niche: string, count: number = 30): Promise<T
     const allVideos: TikTokVideo[] = [];
     const nicheKey = niche.toLowerCase();
 
-    // Get hashtags for this niche - try first 3 hashtags
-    const hashtags = NICHE_HASHTAGS[nicheKey] || NICHE_HASHTAGS.deen;
-    const hashtagsToTry = hashtags.slice(0, 3);
+    // WOOP-FRIENDLY HASHTAGS: These are popular hashtags that Woop actually tracks
+    // Unlike NICHE_HASHTAGS which are too specific (e.g., "muslimfitness")
+    const WOOP_HASHTAGS: Record<string, string> = {
+        hijab: "hijab",
+        deen: "muslim",
+        cultural: "muslim",
+        food: "food",
+        gym: "gym",          // "gym" works, "muslimfitness" doesn't
+        pets: "cat",
+        storytelling: "storytime",
+    };
 
-    console.log("Trying hashtags:", hashtagsToTry);
+    // Use the single Woop-friendly hashtag for this niche
+    const hashtag = WOOP_HASHTAGS[nicheKey] || "muslim";
+    console.log(`Using Woop-friendly hashtag: #${hashtag} for niche "${nicheKey}"`);
 
-    for (const hashtag of hashtagsToTry) {
-        try {
-            // Build URL with hashtag parameter
-            // - hashtag: specific hashtag to filter by
-            // - sorting: "rise" = videos with biggest daily rise in views
-            // - days: 7 = last week (more results than just today)
-            // - order: "desc" = highest first
-            const params = new URLSearchParams({
-                hashtag: hashtag,
-                sorting: "rise",
-                days: "7",        // Expand to 7 days for more results
-                order: "desc",
-            });
+    try {
+        // Build URL with hashtag parameter
+        const params = new URLSearchParams({
+            hashtag: hashtag,
+            sorting: "rise",
+            days: "7",        // 7 days for more results
+            order: "desc",
+        });
 
-            const url = `https://${WOOP_API_HOST}/video?${params.toString()}`;
-            console.log(`Fetching #${hashtag} from Woop API:`, url);
+        const url = `https://${WOOP_API_HOST}/video?${params.toString()}`;
+        console.log(`Fetching from Woop API:`, url);
 
-            const response = await fetch(url, {
-                method: "GET",
-                cache: "no-store",
-                headers: {
-                    "x-rapidapi-host": WOOP_API_HOST,
-                    "x-rapidapi-key": RAPIDAPI_KEY,
-                    "Accept": "application/json",
-                },
-            });
+        const response = await fetch(url, {
+            method: "GET",
+            cache: "no-store",
+            headers: {
+                "x-rapidapi-host": WOOP_API_HOST,
+                "x-rapidapi-key": RAPIDAPI_KEY,
+                "Accept": "application/json",
+            },
+        });
 
-            if (!response.ok) {
-                const errorText = await response.text().catch(() => "");
-                console.error(`Woop API error for #${hashtag}: ${response.status} - ${errorText}`);
-                continue; // Try next hashtag
-            }
+        if (!response.ok) {
+            const errorText = await response.text().catch(() => "");
+            console.error(`Woop API error: ${response.status} - ${errorText}`);
+            return [];
+        }
 
-            const data = await response.json();
-            console.log(`#${hashtag} response keys:`, Object.keys(data));
+        const data = await response.json();
+        console.log(`#${hashtag} response keys:`, Object.keys(data));
 
-            // Map Woop API response to our TikTokVideo interface
-            // Woop API returns videos in data.stats (NOT data directly)
-            const rawVideos = data.data?.stats || data.stats || data.data || data.videos || [];
+        // Map Woop API response to our TikTokVideo interface
+        const rawVideos = data.data?.stats || data.stats || data.data || data.videos || [];
+        console.log(`#${hashtag}: found ${Array.isArray(rawVideos) ? rawVideos.length : 0} videos`);
 
-            console.log(`#${hashtag}: found ${Array.isArray(rawVideos) ? rawVideos.length : 0} videos`);
-
-            if (Array.isArray(rawVideos)) {
-                for (const v of rawVideos.slice(0, 15)) { // Take up to 15 per hashtag
-                    try {
-                        // Parse createTime from Woop's ISO format (e.g., "2025-12-14T08:11:19")
-                        let createTime = Math.floor(Date.now() / 1000);
-                        if (v.videoCreateTime) {
-                            createTime = Math.floor(new Date(v.videoCreateTime).getTime() / 1000);
-                        }
-
-                        // Map Woop API fields to our TikTokVideo interface
-                        allVideos.push({
-                            id: v.videoId || v.id || "",
-                            desc: v.videoTitle || v.title || v.desc || "",
-                            createTime: createTime,
-                            video: {
-                                duration: v.videoDuration || v.duration || 0,
-                                cover: v.coverUrl || v.cover || v.thumbnail || "",
-                                playAddr: v.videoUrl || v.playUrl || "",
-                            },
-                            author: {
-                                uniqueId: v.user || v.authorName || v.username || "creator",
-                                nickname: v.authorName || v.user || "Creator",
-                                avatarThumb: v.authorAvatar || "",
-                            },
-                            stats: {
-                                playCount: v.playCount || v.views || 0,
-                                diggCount: v.likes || v.likeCount || 0,
-                                commentCount: v.commentsCount || v.commentCount || 0,
-                                shareCount: v.shares || v.shareCount || 0,
-                            },
-                        });
-                    } catch (mapError) {
-                        console.warn("Error mapping video:", mapError);
+        if (Array.isArray(rawVideos)) {
+            for (const v of rawVideos.slice(0, count)) {
+                try {
+                    // Parse createTime from Woop's ISO format
+                    let createTime = Math.floor(Date.now() / 1000);
+                    if (v.videoCreateTime) {
+                        createTime = Math.floor(new Date(v.videoCreateTime).getTime() / 1000);
                     }
+
+                    // Map Woop API fields to our TikTokVideo interface
+                    allVideos.push({
+                        id: v.videoId || v.id || "",
+                        desc: v.videoTitle || v.title || v.desc || "",
+                        createTime: createTime,
+                        video: {
+                            duration: v.videoDuration || v.duration || 0,
+                            cover: v.coverUrl || v.cover || v.thumbnail || "",
+                            playAddr: v.videoUrl || v.playUrl || "",
+                        },
+                        author: {
+                            uniqueId: v.user || v.authorName || v.username || "creator",
+                            nickname: v.authorName || v.user || "Creator",
+                            avatarThumb: v.authorAvatar || "",
+                        },
+                        stats: {
+                            playCount: v.playCount || v.views || 0,
+                            diggCount: v.likes || v.likeCount || 0,
+                            commentCount: v.commentsCount || v.commentCount || 0,
+                            shareCount: v.shares || v.shareCount || 0,
+                        },
+                    });
+                } catch (mapError) {
+                    console.warn("Error mapping video:", mapError);
                 }
             }
-
-            // If we have enough videos, stop fetching more hashtags
-            if (allVideos.length >= count) {
-                break;
-            }
-        } catch (error) {
-            console.error(`Error fetching #${hashtag} from Woop API:`, error);
-            // Continue to next hashtag
         }
-    }
 
-    console.log(`Woop API returned ${allVideos.length} total videos across all hashtags`);
-    return allVideos;
+        console.log(`Woop API returned ${allVideos.length} videos for #${hashtag}`);
+        return allVideos;
+    } catch (error) {
+        console.error("Error fetching from Woop API:", error);
+        return [];
+    }
 }
 
 // =============================================================================
