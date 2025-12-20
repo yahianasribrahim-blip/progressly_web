@@ -58,6 +58,41 @@ const NICHE_CREATORS: Record<string, string[]> = {
     ],
 };
 
+// GENERAL MUSLIM CREATORS - Post various content, filter by niche keywords
+const GENERAL_CREATORS = [
+    "muslimgirl",
+    "hijabihousewives",
+    "thehijabilife",
+    "modestmuslimah",
+    "muslimahstyle",
+    "ramadan",
+    "islamicpage",
+    "mufti_menk",
+    "islam",
+];
+
+// NICHE KEYWORDS - Used to filter general creator content
+const NICHE_KEYWORDS: Record<string, string[]> = {
+    hijab: ["hijab", "scarf", "wrap", "modest", "style", "fashion", "outfit", "abaya", "dress"],
+    deen: ["quran", "allah", "prayer", "salah", "dua", "hadith", "sunnah", "reminder", "faith", "islam"],
+    cultural: ["ramadan", "eid", "culture", "tradition", "arab", "desi", "somali", "moroccan", "family"],
+    food: ["food", "recipe", "cook", "halal", "meal", "eat", "kitchen", "breakfast", "lunch", "dinner", "iftar", "suhoor"],
+    gym: ["gym", "workout", "fitness", "exercise", "muscle", "training", "cardio", "protein", "health", "active"],
+    pets: ["cat", "kitten", "pet", "dog", "animal", "cute", "fluffy"],
+    storytelling: ["story", "storytime", "grwm", "vlog", "routine", "journey", "experience", "pov", "day in"],
+};
+
+// Check if content matches the niche
+function isNicheRelevant(description: string, niche: string): boolean {
+    if (!description) return false;
+    const lowerDesc = description.toLowerCase();
+    const nicheKey = niche.toLowerCase();
+    const keywords = NICHE_KEYWORDS[nicheKey];
+
+    if (!keywords || keywords.length === 0) return true;
+    return keywords.some(keyword => lowerDesc.includes(keyword));
+}
+
 // Words to filter out inappropriate content
 const INAPPROPRIATE_KEYWORDS = [
     "sexy", "hot girl", "kiss", "hookup", "nsfw", "18+", "explicit",
@@ -207,22 +242,36 @@ export async function getInstagramReelsForNiche(niche: string): Promise<Instagra
     }
 
     const nicheKey = niche.toLowerCase();
-    const creators = NICHE_CREATORS[nicheKey] || NICHE_CREATORS.deen;
-
-    console.log(`[Instagram] Fetching from ${creators.length} creators:`, creators);
+    const nicheCreators = NICHE_CREATORS[nicheKey] || NICHE_CREATORS.deen;
 
     const allVideos: InstagramVideoExample[] = [];
 
-    // Fetch from each creator (limit to 3 to avoid rate limits)
-    for (const username of creators.slice(0, 3)) {
+    // 1. Fetch from NICHE-SPECIFIC creators (no keyword filtering needed)
+    console.log(`[Instagram] Fetching from ${nicheCreators.length} niche creators:`, nicheCreators);
+    for (const username of nicheCreators.slice(0, 2)) {
         try {
             const videos = await fetchUserReels(username);
             allVideos.push(...videos);
-
-            // Small delay between requests
             await new Promise(resolve => setTimeout(resolve, 300));
         } catch (error) {
-            console.error(`[Instagram] Error fetching @${username}:`, error);
+            console.error(`[Instagram] Error fetching niche creator @${username}:`, error);
+        }
+    }
+
+    // 2. Fetch from GENERAL creators and FILTER by niche keywords
+    console.log(`[Instagram] Fetching from ${GENERAL_CREATORS.length} general creators with filtering`);
+    for (const username of GENERAL_CREATORS.slice(0, 2)) {
+        try {
+            const videos = await fetchUserReels(username);
+
+            // Filter videos by niche keywords
+            const nicheRelevantVideos = videos.filter(v => isNicheRelevant(v.description, nicheKey));
+            console.log(`[Instagram] @${username}: ${videos.length} videos, ${nicheRelevantVideos.length} match niche "${nicheKey}"`);
+
+            allVideos.push(...nicheRelevantVideos);
+            await new Promise(resolve => setTimeout(resolve, 300));
+        } catch (error) {
+            console.error(`[Instagram] Error fetching general creator @${username}:`, error);
         }
     }
 
