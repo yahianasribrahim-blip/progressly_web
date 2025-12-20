@@ -11,64 +11,55 @@ const INSTAGRAM_API_HOST = "instagram-scraper-stable-api.p.rapidapi.com";
 // =============================================================================
 const NICHE_CREATORS: Record<string, string[]> = {
     hijab: [
-        "hijabfashion",
-        "modestfashionweek",
-        "modesty",
-        "hijabstyle",
-        "modeststreetfashion",
+        "omayazein",        // Hijab lifestyle
+        "tamaratomahy",     // Modest fashion
+        "abiresag",         // Hijab fashion
+        "theblondemuslim",  // Lifestyle + hijab
     ],
     deen: [
-        "islamicreminders",
-        "onepathnetwork",
-        "muslimcentral",
-        "islamicquotes_",
-        "quranrecitation",
+        "muftimenkofficla",     // Islamic scholar
+        "gemsofshaykhuthman",   // Islamic reminders
+        "wayoflifesq",          // Deen content
+        "farzyspeaks",          // Islamic lifestyle
     ],
     cultural: [
-        "muslimgirl",
-        "hejabnista",
-        "muslimahlifestyle",
-        "islamicart",
-        "arabesque.life",
+        "lifeofogaa",       // Muslim lifestyle
+        "canyonmimbs",      // Cultural content
+        "maisvault",        // Muslim lifestyle
+        "thegoldenbalance", // Balance/lifestyle
     ],
     food: [
-        "halalfoodguide",
-        "halalgirlsknow",
-        "halalfoodhunt",
-        "muslimfoodie",
-        "modesthalalfood",
+        "haddy_abdel",      // Food content
+        "islamifawzy_",     // Lifestyle/food
     ],
     gym: [
-        "hijabifitness",
-        "modestactivewear",
-        "muslimwomenwholift",
-        "hijabworkout",
-        "fitmuslimah",
+        "lilmobsss",        // Fitness
+        "aussiemammoth",    // Gym/fitness
+        "hussein.fht",      // Fitness
+        "ali_khan_fitness", // Fitness trainer
+        "active.ayesh",     // Active lifestyle
+        "lkgainss",         // Gym gains
+        "saberzamour",      // Fitness
     ],
     pets: [
-        "muslimswithcats",
-        "halalcatmom",
-        "muslimandpets",
+        "lifeofogaa",       // General lifestyle
     ],
     storytelling: [
-        "muslimwomensday",
-        "muslimstories",
-        "hijabistorytime",
-        "muslimlifestyle",
+        "its_danzy",        // Storytime/lifestyle
+        "akhi_ayman",       // Muslim content
+        "baraa_bolat",      // Lifestyle content
     ],
 };
 
-// GENERAL MUSLIM CREATORS - Post various content, filter by niche keywords
+// GENERAL MUSLIM CREATORS - Post various content across all niches
 const GENERAL_CREATORS = [
-    "muslimgirl",
-    "hijabihousewives",
-    "thehijabilife",
-    "modestmuslimah",
-    "muslimahstyle",
-    "ramadan",
-    "islamicpage",
-    "mufti_menk",
-    "islam",
+    "maryam_kamal_",    // General Muslim content
+    "akhi_ayman",       // Muslim lifestyle
+    "theblondemuslim",  // Lifestyle/hijab
+    "omayazein",        // Muslim lifestyle
+    "thegoldenbalance", // Balance/lifestyle
+    "lifeofogaa",       // Muslim lifestyle
+    "maisvault",        // Content creator
 ];
 
 // NICHE KEYWORDS - Used to filter general creator content
