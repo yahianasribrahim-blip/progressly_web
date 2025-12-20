@@ -168,6 +168,30 @@ function isMuslimRelevant(description: string): boolean {
     return MUSLIM_KEYWORDS.some(keyword => lowerDesc.includes(keyword));
 }
 
+// NICHE-SPECIFIC KEYWORDS: Videos must contain at least one of these for their niche
+const NICHE_KEYWORDS: Record<string, string[]> = {
+    hijab: ["hijab", "wrap", "scarf", "style", "fashion", "outfit", "tutorial", "modest"],
+    deen: ["allah", "quran", "prayer", "dua", "sunnah", "hadith", "reminder", "faith", "spiritual"],
+    cultural: ["culture", "tradition", "ramadan", "eid", "arab", "desi", "somali", "moroccan"],
+    food: ["food", "recipe", "cook", "meal", "eat", "kitchen", "halal", "breakfast", "lunch", "dinner"],
+    gym: ["gym", "workout", "fitness", "exercise", "muscle", "weight", "lift", "squat", "deadlift", "cardio", "training", "gains", "protein", "leg", "arm", "chest", "back", "glute", "abs", "core"],
+    pets: ["cat", "dog", "pet", "kitten", "puppy", "animal", "cute", "fluffy"],
+    storytelling: ["story", "storytime", "pov", "grwm", "vlog", "routine", "journey", "experience"],
+};
+
+// Check if video is relevant to the specific niche
+function isNicheRelevant(description: string, niche: string): boolean {
+    if (!description) return false;
+    const lowerDesc = description.toLowerCase();
+    const nicheKey = niche.toLowerCase();
+    const keywords = NICHE_KEYWORDS[nicheKey];
+
+    // If no niche keywords defined, accept all
+    if (!keywords || keywords.length === 0) return true;
+
+    return keywords.some(keyword => lowerDesc.includes(keyword));
+}
+
 interface WoopVideoResponse {
     id: string;
     desc: string;
@@ -700,16 +724,18 @@ export async function analyzeNiche(niche: string): Promise<{
     console.log(`Deduplicated: ${allVideos.length} → ${uniqueAllVideos.length} unique videos (removed ${allVideos.length - uniqueAllVideos.length} duplicates)`);
 
     // Start with all valid videos and add date info
-    // Filter for Muslim-related content to ensure relevance
+    // Filter for Muslim-related content AND niche-specific content
     const validVideos = uniqueAllVideos
         .filter((v) => v.stats?.playCount)
         .filter((v) => isContentAppropriate(v.desc, v.id))
-        // Note: We search by Muslim-specific hashtags directly, so no need for keyword filter
+        .filter((v) => isNicheRelevant(v.desc, nicheKey)) // Must match niche keywords (gym, fitness, etc.)
         .map(v => {
             const createDate = v.createTime ? new Date(v.createTime * 1000) : null;
             const daysAgo = v.createTime ? Math.floor((now - v.createTime) / (24 * 60 * 60)) : null;
             return { ...v, _createDate: createDate, _daysAgo: daysAgo };
         });
+
+    console.log(`After niche filter (${nicheKey}): ${validVideos.length} videos match niche keywords`);
 
     // Log video dates for debugging
     console.log("=== VIDEO DATES ===");
