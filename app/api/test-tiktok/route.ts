@@ -1,8 +1,7 @@
-// Check TikTok API with CORRECT host
+// Check TikTok API with CORRECT endpoint
 import { NextResponse } from "next/server";
 
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
-// CORRECT host from tiktok-api.ts
 const WOOP_API_HOST = "tiktok-most-trending-and-viral-content.p.rapidapi.com";
 
 export async function GET() {
@@ -10,25 +9,35 @@ export async function GET() {
 
     let testResult = null;
     try {
-        // Use the correct endpoint from tiktok-api.ts
-        const response = await fetch(`https://${WOOP_API_HOST}/api/v2/explore/video/hashtag`, {
-            method: "POST",
+        // CORRECT endpoint from tiktok-api.ts line 276
+        const params = new URLSearchParams({
+            hashtag: "gym",
+            sorting: "rise",
+            days: "7",
+            order: "desc",
+        });
+
+        const url = `https://${WOOP_API_HOST}/video?${params.toString()}`;
+
+        const response = await fetch(url, {
+            method: "GET",  // GET not POST!
+            cache: "no-store",
             headers: {
                 "x-rapidapi-host": WOOP_API_HOST,
                 "x-rapidapi-key": RAPIDAPI_KEY,
-                "Content-Type": "application/json",
+                "Accept": "application/json",
             },
-            body: JSON.stringify({
-                hashtag: "gym",
-                limit: 5,
-            }),
         });
 
         const text = await response.text();
+        let json;
+        try { json = JSON.parse(text); } catch { json = null; }
+
         testResult = {
-            host: WOOP_API_HOST,
+            url,
             status: response.status,
             isRateLimited: response.status === 429,
+            videoCount: json?.data?.stats?.length || json?.stats?.length || "unknown",
             responsePreview: text.substring(0, 300),
         };
     } catch (e) {
@@ -37,7 +46,6 @@ export async function GET() {
 
     return NextResponse.json({
         keyPrefix,
-        keyLength: RAPIDAPI_KEY.length,
         hasKey: RAPIDAPI_KEY.length > 0,
         testResult,
     });
