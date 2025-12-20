@@ -15,6 +15,7 @@ import { BenchmarkCard } from "@/components/dashboard/analysis/benchmark-card";
 import { AIInsightsCard } from "@/components/dashboard/analysis/ai-insights-card";
 import { VideoIdeaGenerator } from "@/components/dashboard/analysis/video-idea-generator";
 import { NicheSelector } from "@/components/dashboard/niche-selector";
+import { UnderperformingNicheCard } from "@/components/dashboard/analysis/underperforming-niche-card";
 import { AnalysisResult } from "@/lib/mock-analysis";
 
 interface AIInsights {
@@ -49,6 +50,7 @@ export function AnalyzeNicheSection({
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
     const [aiInsights, setAIInsights] = useState<AIInsights | null>(null);
     const [nicheWarning, setNicheWarning] = useState<string | null>(null);
+    const [isUnderperforming, setIsUnderperforming] = useState(false);
 
     const handleSaveAnalysis = async () => {
         if (!analysisResult || isSaving) return;
@@ -182,6 +184,9 @@ export function AnalyzeNicheSection({
                 setNicheWarning(null);
             }
 
+            // Set underperforming flag
+            setIsUnderperforming(data.isUnderperforming || false);
+
             // Set AI insights if available
             if (data.aiInsights) {
                 setAIInsights(data.aiInsights);
@@ -268,8 +273,23 @@ export function AnalyzeNicheSection({
             {/* Analysis Results */}
             {analysisResult && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    {/* Niche Warning Banner */}
-                    {nicheWarning && (
+                    {/* Underperforming Niche Card - Show special UI when limited content */}
+                    {isUnderperforming && aiInsights && (
+                        <UnderperformingNicheCard
+                            niche={analysisResult.niche}
+                            contentIdeas={aiInsights.contentIdeas}
+                            onTryAnotherNiche={() => {
+                                setAnalysisResult(null);
+                                setAIInsights(null);
+                                setIsUnderperforming(false);
+                                setNicheWarning(null);
+                                setSelectedNiche("");
+                            }}
+                        />
+                    )}
+
+                    {/* Niche Warning Banner (for non-underperforming warnings) */}
+                    {nicheWarning && !isUnderperforming && (
                         <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
                             <CardContent className="py-4">
                                 <div className="flex items-start gap-3">

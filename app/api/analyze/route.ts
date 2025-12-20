@@ -59,12 +59,20 @@ export async function POST(request: Request) {
             hasHookRecommendations: aiInsights.hookRecommendations.length,
         });
 
+        // Determine if niche is underperforming (less than 3 video examples)
+        const isUnderperforming = analysisResult.examples.length < 3;
+        const nicheWarning = isUnderperforming
+            ? `Limited trending content found for "${niche}". This is a less saturated niche, which means less competition but fewer proven examples. Use the AI-generated video ideas below to pioneer content in this space!`
+            : null;
+
         return NextResponse.json({
             success: true,
             data: {
                 niche,
                 ...analysisResult,
                 aiInsights,
+                isUnderperforming,
+                nicheWarning,
                 generatedAt: new Date().toISOString(),
             },
         });
