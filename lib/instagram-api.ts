@@ -32,13 +32,13 @@ const NICHE_CREATORS: Record<string, string[]> = {
         "haddy_abdel",      // Food content
     ],
     gym: [
-        "lilmobsss",        // Fitness
+        // Real gym/fitness creators only
         "aussiemammoth",    // Gym/fitness
         "hussein.fht",      // Fitness
         "ali_khan_fitness", // Fitness trainer
         "active.ayesh",     // Active lifestyle
+        "haddy_abdel",      // Also does fitness
         "lkgainss",         // Gym gains
-        "saberzamour",      // Fitness
     ],
     pets: [
         "lifeofogaa",       // General lifestyle
