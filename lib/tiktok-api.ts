@@ -513,36 +513,21 @@ export async function analyzeNiche(niche: string): Promise<{
     const hashtagStats: TrendingHashtag[] = [];
 
     // =========================================================================
-    // NEW: Use Woop API to get trending videos from last 7 days
+    // Use Woop API to get trending videos from last 7 days
     // =========================================================================
-    console.log("=== USING NEW WOOP API (date-filtered) ===");
+    console.log("=== USING WOOP API (date-filtered) ===");
+    console.log("RAPIDAPI_KEY exists:", !!RAPIDAPI_KEY, "length:", RAPIDAPI_KEY?.length || 0);
+
     const woopVideos = await fetchTrendingVideos(nicheKey, 30);
     allVideos.push(...woopVideos);
-    console.log(`Got ${woopVideos.length} videos from Woop API (already filtered to last 7 days)`);
+    console.log(`Got ${woopVideos.length} videos from Woop API`);
 
-    // If Woop API failed or returned too few videos, fall back to old hashtag approach
-    if (woopVideos.length < 5) {
-        console.log("Woop API returned too few videos, trying hashtag fallback...");
-        const hashtagsToQuery = hashtags.slice(0, 2);
-
-        for (const hashtag of hashtagsToQuery) {
-            console.log(`[Fallback] Processing hashtag: ${hashtag}`);
-            const info = await fetchHashtagInfo(hashtag);
-
-            if (info && info.id) {
-                console.log(`[Fallback] Got hashtag ID: ${info.id} for ${hashtag}`);
-                hashtagStats.push({
-                    tag: hashtag,
-                    viewCount: info.viewCount || 0,
-                    videoCount: info.videoCount || 0,
-                    category: categorizeHashtag(info.viewCount || 0),
-                });
-
-                const videos = await fetchHashtagVideos(info.id, 20);
-                console.log(`[Fallback] Fetched ${videos.length} videos for #${hashtag}`);
-                allVideos.push(...videos);
-            }
-        }
+    // If Woop API returned 0 videos, log a clear error
+    if (woopVideos.length === 0) {
+        console.error("WARNING: Woop API returned 0 videos. Check:");
+        console.error("  1. RAPIDAPI_KEY environment variable is set");
+        console.error("  2. You are subscribed to the Woop TikTok API");
+        console.error("  3. You haven't exceeded your API quota");
     }
 
     // Generate hashtag stats for display (using predefined niche hashtags)
