@@ -1,25 +1,43 @@
-// Test TikTok gym niche
+// Check TikTok API key and make single test request
 import { NextResponse } from "next/server";
-import { analyzeNiche } from "@/lib/tiktok-api";
+
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
+const WOOP_API_HOST = "woop-it-api.p.rapidapi.com";
 
 export async function GET() {
-    try {
-        const result = await analyzeNiche("gym");
+    // Show key prefix to verify correct key is deployed
+    const keyPrefix = RAPIDAPI_KEY.substring(0, 12);
 
-        return NextResponse.json({
-            success: true,
-            tiktokExamples: result.examples.map(v => ({
-                creator: v.creator,
-                views: v.views,
-                platform: v.platform,
-                url: v.url,
-            })),
-            totalExamples: result.examples.length,
+    // Make a single test request to Woop API
+    let testResult = null;
+    try {
+        const response = await fetch(`https://${WOOP_API_HOST}/api/v2/explore/video/hashtag`, {
+            method: "POST",
+            headers: {
+                "x-rapidapi-host": WOOP_API_HOST,
+                "x-rapidapi-key": RAPIDAPI_KEY,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                hashtag: "gym",
+                limit: 5,
+            }),
         });
-    } catch (error) {
-        return NextResponse.json({
-            success: false,
-            error: error instanceof Error ? error.message : String(error),
-        }, { status: 500 });
+
+        const text = await response.text();
+        testResult = {
+            status: response.status,
+            isRateLimited: response.status === 429,
+            responsePreview: text.substring(0, 200),
+        };
+    } catch (e) {
+        testResult = { error: String(e) };
     }
+
+    return NextResponse.json({
+        keyPrefix,
+        keyLength: RAPIDAPI_KEY.length,
+        hasKey: RAPIDAPI_KEY.length > 0,
+        testResult,
+    });
 }
