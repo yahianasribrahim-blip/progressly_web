@@ -37,6 +37,9 @@ const INAPPROPRIATE_KEYWORDS = [
     // Thirst trap indicators
     "thirst trap", "body count", "situationship", "fwb", "rate me", "am i hot",
     "would you date", "dms open",
+    // Gym thirst traps (suggestive gym content)
+    "gymgirl", "gym girl", "gyat", "rdl", "leggings", "tight pants",
+    "looking at her", "stay focus", "distracted", "gym crush",
     // Drugs/alcohol
     "weed", "420", "drunk", "alcohol", "high af", "stoned",
     "molly", "xanax", "drugs", "blunt", "joints", "edibles",
@@ -723,19 +726,20 @@ export async function analyzeNiche(niche: string): Promise<{
     });
     console.log(`Deduplicated: ${allVideos.length} → ${uniqueAllVideos.length} unique videos (removed ${allVideos.length - uniqueAllVideos.length} duplicates)`);
 
-    // Start with all valid videos and add date info
-    // Filter for Muslim-related content AND niche-specific content
+    // Filter videos for appropriateness
+    // NOTE: We removed the strict niche keyword filter because data showed NO videos have
+    // BOTH Muslim AND gym keywords. In reality, Muslim fitness content is rare on TikTok trends.
+    // We now accept ANY video from Muslim-specific hashtags (Tier 1) as they're already targeted.
     const validVideos = uniqueAllVideos
         .filter((v) => v.stats?.playCount)
-        .filter((v) => isContentAppropriate(v.desc, v.id))
-        .filter((v) => isNicheRelevant(v.desc, nicheKey)) // Must match niche keywords (gym, fitness, etc.)
+        .filter((v) => isContentAppropriate(v.desc, v.id)) // Filter out inappropriate content
         .map(v => {
             const createDate = v.createTime ? new Date(v.createTime * 1000) : null;
             const daysAgo = v.createTime ? Math.floor((now - v.createTime) / (24 * 60 * 60)) : null;
             return { ...v, _createDate: createDate, _daysAgo: daysAgo };
         });
 
-    console.log(`After niche filter (${nicheKey}): ${validVideos.length} videos match niche keywords`);
+    console.log(`Valid videos after content moderation: ${validVideos.length}`);
 
     // Log video dates for debugging
     console.log("=== VIDEO DATES ===");
