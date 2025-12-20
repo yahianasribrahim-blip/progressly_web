@@ -30,7 +30,6 @@ const NICHE_CREATORS: Record<string, string[]> = {
     ],
     food: [
         "haddy_abdel",      // Food content
-        "islamifawzy_",     // Lifestyle/food
     ],
     gym: [
         "lilmobsss",        // Fitness
@@ -48,6 +47,11 @@ const NICHE_CREATORS: Record<string, string[]> = {
         "its_danzy",        // Storytime/lifestyle
         "akhi_ayman",       // Muslim content
         "baraa_bolat",      // Lifestyle content
+    ],
+    comedy: [
+        "islamfawzy_",      // Muslim comedy
+        "akhi_ayman",       // Comedy/lifestyle
+        "its_danzy",        // Comedy/storytime
     ],
 };
 
@@ -71,6 +75,7 @@ const NICHE_KEYWORDS: Record<string, string[]> = {
     gym: ["gym", "workout", "fitness", "exercise", "muscle", "training", "cardio", "protein", "health", "active"],
     pets: ["cat", "kitten", "pet", "dog", "animal", "cute", "fluffy"],
     storytelling: ["story", "storytime", "grwm", "vlog", "routine", "journey", "experience", "pov", "day in"],
+    comedy: ["funny", "comedy", "skit", "joke", "laugh", "hilarious", "prank", "relatable", "humor"],
 };
 
 // Check if content matches the niche
