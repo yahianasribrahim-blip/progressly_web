@@ -1,34 +1,34 @@
-// Debug test with known working accounts + real Muslim fitness accounts
+// Test the exact gym accounts to see which ones work
 import { NextResponse } from "next/server";
 
 const INSTAGRAM_RAPIDAPI_KEY = process.env.INSTAGRAM_RAPIDAPI_KEY || process.env.RAPIDAPI_KEY || "";
 const INSTAGRAM_API_HOST = "instagram-scraper-stable-api.p.rapidapi.com";
 
 export async function GET() {
-    // Test with accounts we KNOW work + real fitness accounts
-    const testAccounts = [
-        // Known working account (tested earlier)
-        "hijabfashion",
-        // Real Muslim fitness influencers (verified on Instagram)
-        "sahadfit",  // Popular hijabi fitness
-        "thesetfit", // Modest fitness
-        "fitoverforty_uk", // Modest fitness
-        "muslimgirl", // General - known to work
+    // Exact accounts from NICHE_CREATORS.gym
+    const gymAccounts = [
+        "lilmobsss",
+        "aussiemammoth",
+        "hussein.fht",
+        "ali_khan_fitness",
+        "active.ayesh",
+        "lkgainss",
+        "saberzamour",
     ];
 
     const results: Array<{
         account: string;
         status: number;
         reelsCount: number;
+        error?: string;
         sample?: {
             code?: string;
             playCount?: number;
             caption?: string;
         };
-        error?: string;
     }> = [];
 
-    for (const account of testAccounts) {
+    for (const account of gymAccounts) {
         try {
             const response = await fetch(`https://${INSTAGRAM_API_HOST}/get_ig_user_reels.php`, {
                 method: "POST",
@@ -55,18 +55,16 @@ export async function GET() {
             const data = await response.json();
             const reels = data.reels || [];
 
-            // Get first reel sample
-            const firstReel = reels[0];
-            const media = firstReel?.node?.media || firstReel?.node || firstReel;
+            const sample = reels[0]?.node?.media;
 
             results.push({
                 account,
                 status: 200,
                 reelsCount: reels.length,
-                sample: reels.length > 0 ? {
-                    code: media?.code,
-                    playCount: media?.play_count || media?.view_count,
-                    caption: (media?.caption?.text || "").substring(0, 50),
+                sample: sample ? {
+                    code: sample.code,
+                    playCount: sample.play_count,
+                    caption: (sample.caption?.text || "").substring(0, 50),
                 } : undefined,
             });
         } catch (error) {
@@ -79,13 +77,14 @@ export async function GET() {
         }
     }
 
-    const workingAccounts = results.filter(r => r.reelsCount > 0);
+    const working = results.filter(r => r.reelsCount > 0);
 
     return NextResponse.json({
         summary: {
             tested: results.length,
-            working: workingAccounts.length,
-            workingNames: workingAccounts.map(a => a.account),
+            working: working.length,
+            workingAccounts: working.map(a => a.account),
+            brokenAccounts: results.filter(r => r.reelsCount === 0).map(a => a.account),
         },
         results,
     });
