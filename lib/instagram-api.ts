@@ -350,16 +350,22 @@ export async function getInstagramReelsForNiche(niche: string): Promise<Instagra
         }
     }
 
-    // 2. Fetch from GENERAL creators (will be AI-filtered later)
-    console.log(`[Instagram] Fetching from ${GENERAL_CREATORS.length} general creators`);
-    for (const username of GENERAL_CREATORS.slice(0, 2)) {
-        try {
-            const videos = await fetchUserReels(username);
-            allVideos.push(...videos);
-            await new Promise(resolve => setTimeout(resolve, 300));
-        } catch (error) {
-            console.error(`[Instagram] Error fetching general creator @${username}:`, error);
+    // 2. Fetch from GENERAL creators ONLY for general niches (not gym/food/pets)
+    // Gym/food/pets need specific content - general creators would add irrelevant videos
+    const specificNiches = ["gym", "food", "pets"];
+    if (!specificNiches.includes(nicheKey)) {
+        console.log(`[Instagram] Fetching from ${GENERAL_CREATORS.length} general creators for "${nicheKey}"`);
+        for (const username of GENERAL_CREATORS.slice(0, 2)) {
+            try {
+                const videos = await fetchUserReels(username);
+                allVideos.push(...videos);
+                await new Promise(resolve => setTimeout(resolve, 300));
+            } catch (error) {
+                console.error(`[Instagram] Error fetching general creator @${username}:`, error);
+            }
         }
+    } else {
+        console.log(`[Instagram] Skipping general creators for "${nicheKey}" niche (needs specific content)`);
     }
 
     console.log(`[Instagram] Total videos collected before filtering: ${allVideos.length}`);
