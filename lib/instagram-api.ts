@@ -374,14 +374,12 @@ export async function getInstagramReelsForNiche(niche: string): Promise<Instagra
 
     console.log(`[Instagram] Unique videos: ${uniqueVideos.length}`);
 
-    // 3. USE AI TO CLASSIFY ALL VIDEOS - only keep ones truly relevant to the niche
-    console.log(`[Instagram] Running AI classification for "${nicheKey}" niche...`);
-    const nicheRelevantVideos = await classifyVideosWithAI(uniqueVideos, nicheKey);
-
-    console.log(`[Instagram] After AI classification: ${nicheRelevantVideos.length} videos are relevant to "${nicheKey}"`);
+    // NOTE: Instagram API doesn't return captions, so we can't do AI classification.
+    // We rely on the fact that we're fetching from niche-specific creators.
+    // For gym niche: aussiemammoth, hussein.fht, ali_khan_fitness, etc.
 
     // Sort by views (highest first) and take top 8
-    const sortedVideos = nicheRelevantVideos
+    const sortedVideos = uniqueVideos
         .sort((a, b) => {
             const viewsA = parseFloat(a.views.replace(/[KMB]/g, "")) * (a.views.includes("M") ? 1000 : a.views.includes("B") ? 1000000 : 1);
             const viewsB = parseFloat(b.views.replace(/[KMB]/g, "")) * (b.views.includes("M") ? 1000 : b.views.includes("B") ? 1000000 : 1);
