@@ -54,6 +54,9 @@ const INAPPROPRIATE_KEYWORDS = [
     "hijab not required", "hijab is not fard", "don't need hijab", "hijab optional",
     "hijab not mandatory", "hijab not obligatory", "hijab is cultural",
     "not required in quran", "moderate muslim", "progressive muslim",
+    // Taboo topics (even if beneficial, too sensitive for casual content)
+    "masturbation", "masturbate", "masturbating", "nofap", "no fap",
+    "porn", "pornography", "p*rn", "zina", "fornication",
 ];
 
 // Specific video IDs that are permanently blocked
@@ -200,13 +203,13 @@ async function fetchTrendingVideos(niche: string, count: number = 30): Promise<T
     // Tier 2: Generic hashtags - only accept videos with Muslim keywords in description
 
     const TIER_1_MUSLIM_HASHTAGS: Record<string, string[]> = {
-        hijab: ["hijab", "hijabi", "modestfashion"],
-        deen: ["muslim", "islam", "quran"],
-        cultural: ["muslim", "ramadan", "eid"],
-        food: ["halal", "halalfood"],
-        gym: ["hijabfitness", "modestfitness", "muslimfitness"],
-        pets: ["muslimcat"],
-        storytelling: ["muslimstorytime", "muslim"],
+        hijab: ["hijab", "hijabi", "modestfashion", "modest", "muslimfashion"],
+        deen: ["muslim", "islam", "quran", "islamic", "ummah", "deen"],
+        cultural: ["muslim", "ramadan", "eid", "halal", "islamic"],
+        food: ["halal", "halalfood", "muslimfood"],
+        gym: ["hijab", "modest", "muslim", "hijabi", "modestworkout"], // More common terms Woop tracks
+        pets: ["muslim", "cat", "kitten"], // More generic to get results
+        storytelling: ["muslim", "storytime", "hijabi", "pov"],
     };
 
     const TIER_2_GENERIC_HASHTAGS: Record<string, string[]> = {
