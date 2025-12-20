@@ -89,100 +89,94 @@ function isNicheRelevantByKeywords(description: string, niche: string): boolean 
     return keywords.some(keyword => lowerDesc.includes(keyword));
 }
 
-// AI-based niche relevance classification
-// Uses OpenAI to determine if a video's caption is actually about the niche
-async function classifyVideosWithAI(
+// Vision-based niche relevance classification
+// Uses OpenAI Vision to analyze thumbnails and determine if video is about the niche
+async function classifyVideosWithVision(
     videos: InstagramVideoExample[],
     niche: string
 ): Promise<InstagramVideoExample[]> {
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
     if (!OPENAI_API_KEY || videos.length === 0) {
-        // Fallback to keyword matching if no OpenAI key
-        console.log("[Instagram] No OpenAI key, falling back to keyword matching");
-        return videos.filter(v => isNicheRelevantByKeywords(v.description, niche));
+        console.log("[Instagram Vision] No OpenAI key or no videos, returning all");
+        return videos;
     }
 
-    try {
-        // Create a batch prompt for efficiency
-        const videoCaptions = videos.map((v, i) =>
-            `Video ${i + 1}: "${v.description.substring(0, 200)}"`
-        ).join("\n");
+    const nicheDescriptions: Record<string, string> = {
+        gym: "gym, fitness, workout, exercise, weights, muscles, training, bodybuilding, running, sports",
+        food: "cooking, food, recipes, meals, kitchen, eating, ingredients",
+        hijab: "hijab, headscarf, modest fashion, Muslim women's fashion",
+        deen: "Islamic content, mosque, prayer, Quran, religious imagery",
+        cultural: "cultural events, family gatherings, Ramadan, Eid",
+        comedy: "comedy, funny skit, reaction, humor",
+        storytelling: "vlog style, talking to camera, personal story",
+        pets: "cats, dogs, pets, animals",
+    };
 
-        const nicheDescriptions: Record<string, string> = {
-            gym: "fitness, workout, exercise, gym, muscle building, weight training, cardio",
-            food: "cooking, recipes, halal food, meals, eating, kitchen",
-            hijab: "hijab styling, modest fashion, Muslim women's fashion, headscarves",
-            deen: "Islamic reminders, Quran, prayer, faith, spirituality, religious teachings",
-            cultural: "Muslim culture, Ramadan, Eid, traditions, family, heritage",
-            comedy: "funny content, jokes, skits, humor, comedy",
-            storytelling: "personal stories, vlogs, GRWM, day in my life, experiences",
-            pets: "cats, dogs, animals, pets",
-        };
+    const nicheDesc = nicheDescriptions[niche.toLowerCase()] || niche;
 
-        const nicheDesc = nicheDescriptions[niche.toLowerCase()] || niche;
+    const classifiedVideos: InstagramVideoExample[] = [];
 
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${OPENAI_API_KEY}`,
-            },
-            body: JSON.stringify({
-                model: "gpt-4o-mini",
-                messages: [
-                    {
-                        role: "system",
-                        content: `You are a content classifier for Muslim creators. Classify each video caption as RELEVANT or NOT RELEVANT to the "${niche}" niche.
-
-The "${niche}" niche includes: ${nicheDesc}
-
-For each video, respond with just the video number and YES or NO.
-Example format:
-1: YES
-2: NO
-3: YES
-
-Be strict - only say YES if the video is clearly about ${niche} content.`
-                    },
-                    {
-                        role: "user",
-                        content: `Classify these video captions for the "${niche}" niche:\n\n${videoCaptions}`
-                    }
-                ],
-                temperature: 0.1,
-                max_tokens: 200,
-            }),
-        });
-
-        if (!response.ok) {
-            console.error("[Instagram AI] OpenAI error:", response.status);
-            return videos.filter(v => isNicheRelevantByKeywords(v.description, niche));
+    // Process videos in batches to avoid rate limits
+    for (const video of videos.slice(0, 8)) {
+        if (!video.thumbnail) {
+            console.log(`[Instagram Vision] No thumbnail for video ${video.id}, skipping`);
+            continue;
         }
 
-        const data = await response.json();
-        const aiResponse = data.choices?.[0]?.message?.content || "";
+        try {
+            const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${OPENAI_API_KEY}`,
+                },
+                body: JSON.stringify({
+                    model: "gpt-4o-mini",
+                    messages: [
+                        {
+                            role: "user",
+                            content: [
+                                {
+                                    type: "text",
+                                    text: `Does this image show content related to: ${nicheDesc}? 
+Answer ONLY "YES" or "NO". Be strict - only say YES if the image clearly shows this type of content.`
+                                },
+                                {
+                                    type: "image_url",
+                                    image_url: { url: video.thumbnail }
+                                }
+                            ]
+                        }
+                    ],
+                    max_tokens: 10,
+                }),
+            });
 
-        console.log(`[Instagram AI] Classification response:\n${aiResponse}`);
-
-        // Parse AI response to get relevant video indices
-        const relevantIndices = new Set<number>();
-        const lines = aiResponse.split("\n");
-        for (const line of lines) {
-            const match = line.match(/(\d+):\s*(YES|yes)/);
-            if (match) {
-                relevantIndices.add(parseInt(match[1]) - 1); // Convert to 0-indexed
+            if (!response.ok) {
+                console.error(`[Instagram Vision] OpenAI error for video ${video.id}:`, response.status);
+                continue;
             }
+
+            const data = await response.json();
+            const answer = data.choices?.[0]?.message?.content?.trim().toUpperCase() || "";
+
+            if (answer.includes("YES")) {
+                console.log(`[Instagram Vision] ✓ Video ${video.id} matches "${niche}"`);
+                classifiedVideos.push(video);
+            } else {
+                console.log(`[Instagram Vision] ✗ Video ${video.id} does NOT match "${niche}"`);
+            }
+
+            // Small delay between API calls
+            await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (error) {
+            console.error(`[Instagram Vision] Error classifying video ${video.id}:`, error);
         }
-
-        const relevantVideos = videos.filter((_, i) => relevantIndices.has(i));
-        console.log(`[Instagram AI] ${relevantVideos.length}/${videos.length} videos classified as relevant to "${niche}"`);
-
-        return relevantVideos;
-    } catch (error) {
-        console.error("[Instagram AI] Classification error:", error);
-        return videos.filter(v => isNicheRelevantByKeywords(v.description, niche));
     }
+
+    console.log(`[Instagram Vision] ${classifiedVideos.length}/${videos.length} videos matched "${niche}" niche`);
+    return classifiedVideos;
 }
 
 // Words to filter out inappropriate content
@@ -380,12 +374,17 @@ export async function getInstagramReelsForNiche(niche: string): Promise<Instagra
 
     console.log(`[Instagram] Unique videos: ${uniqueVideos.length}`);
 
-    // NOTE: Instagram API doesn't return captions, so we can't do AI classification.
-    // We rely on the fact that we're fetching from niche-specific creators.
-    // For gym niche: aussiemammoth, hussein.fht, ali_khan_fitness, etc.
+    // For specific niches (gym/food/pets), use Vision AI to filter by thumbnail content
+    // This ensures only actual gym videos (not vlogs from gym creators) are shown
+    let filteredVideos = uniqueVideos;
+    if (specificNiches.includes(nicheKey)) {
+        console.log(`[Instagram] Running Vision AI classification for "${nicheKey}" niche...`);
+        filteredVideos = await classifyVideosWithVision(uniqueVideos, nicheKey);
+        console.log(`[Instagram] Vision AI kept ${filteredVideos.length}/${uniqueVideos.length} videos`);
+    }
 
     // Sort by views (highest first) and take top 8
-    const sortedVideos = uniqueVideos
+    const sortedVideos = filteredVideos
         .sort((a, b) => {
             const viewsA = parseFloat(a.views.replace(/[KMB]/g, "")) * (a.views.includes("M") ? 1000 : a.views.includes("B") ? 1000000 : 1);
             const viewsB = parseFloat(b.views.replace(/[KMB]/g, "")) * (b.views.includes("M") ? 1000 : b.views.includes("B") ? 1000000 : 1);
