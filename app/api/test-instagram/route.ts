@@ -1,4 +1,4 @@
-// Test endpoint based on actual API sidebar screenshot
+// Test endpoint with .php extension pattern
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -10,86 +10,63 @@ export async function GET() {
     }
 
     const hashtag = "hijab";
-    const username = "hijabfashion"; // Also test with username
+    const username = "hijabfashion";
 
-    // Endpoints based on the API sidebar: Search, Posts/Reels (Media), Hashtags
+    // Endpoints with .php extension pattern discovered from API docs
     const endpoints = [
+        // Hashtag endpoints (what we need)
+        { name: "get_ig_hashtag_posts.php", body: `hashtag=${hashtag}` },
+        { name: "get_hashtag_posts.php", body: `hashtag=${hashtag}` },
+        { name: "search_hashtag.php", body: `hashtag=${hashtag}` },
+        { name: "ig_hashtag_posts.php", body: `hashtag=${hashtag}` },
+        { name: "hashtag_posts.php", body: `hashtag=${hashtag}` },
+
         // Search endpoints
-        { name: "search (Users + Hashtags)", method: "POST", body: `search_query=${hashtag}` },
+        { name: "search.php", body: `search_query=${hashtag}` },
+        { name: "get_search.php", body: `search_query=${hashtag}` },
 
-        // Hashtags endpoint variations
-        { name: "hashtags", method: "POST", body: `hashtag=${hashtag}` },
-        { name: "hashtags", method: "GET", query: `?hashtag=${hashtag}` },
+        // User posts (confirmed working pattern)
+        { name: "get_ig_user_tagged_posts.php", body: `username_or_url=${username}` },
+        { name: "get_ig_user_posts.php", body: `username_or_url=${username}` },
+        { name: "get_user_posts.php", body: `username_or_url=${username}` },
 
-        // Posts/Reels endpoints
-        { name: "posts", method: "POST", body: `username_or_url=${username}` },
-        { name: "posts_reels", method: "POST", body: `username_or_url=${username}` },
-        { name: "reels", method: "POST", body: `username_or_url=${username}` },
-        { name: "media", method: "POST", body: `username_or_url=${username}` },
-
-        // User endpoints  
-        { name: "user", method: "POST", body: `username_or_url=${username}` },
-        { name: "user_info", method: "POST", body: `username_or_url=${username}` },
-        { name: "profile", method: "POST", body: `username_or_url=${username}` },
-
-        // Tagged posts
-        { name: "user_tagged_posts", method: "POST", body: `username_or_url=${username}` },
+        // Reels
+        { name: "get_ig_user_reels.php", body: `username_or_url=${username}` },
+        { name: "get_reels.php", body: `username_or_url=${username}` },
     ];
 
     const results: Array<{
         endpoint: string;
-        method: string;
         status: number;
         hasData: boolean;
-        keys?: string[];
-        preview?: string;
+        preview: string;
     }> = [];
 
     for (const endpoint of endpoints) {
         try {
-            const url = endpoint.query
-                ? `https://${INSTAGRAM_API_HOST}/${endpoint.name}${endpoint.query}`
-                : `https://${INSTAGRAM_API_HOST}/${endpoint.name}`;
-
-            const fetchOptions: RequestInit = {
-                method: endpoint.method,
+            const response = await fetch(`https://${INSTAGRAM_API_HOST}/${endpoint.name}`, {
+                method: "POST",
                 cache: "no-store",
                 headers: {
                     "x-rapidapi-host": INSTAGRAM_API_HOST,
                     "x-rapidapi-key": INSTAGRAM_RAPIDAPI_KEY,
                     "Content-Type": "application/x-www-form-urlencoded",
                 },
-            };
+                body: endpoint.body,
+            });
 
-            if (endpoint.method === "POST" && endpoint.body) {
-                fetchOptions.body = endpoint.body;
-            }
-
-            const response = await fetch(url, fetchOptions);
             const text = await response.text();
-
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch {
-                data = null;
-            }
-
-            const dataKeys = data && typeof data === "object" && !Array.isArray(data) ? Object.keys(data) : [];
-            const hasData = response.ok && (Array.isArray(data) ? data.length > 0 : dataKeys.length > 0);
+            const hasData = response.ok && !text.includes("does not exist") && text.length > 50;
 
             results.push({
                 endpoint: endpoint.name,
-                method: endpoint.method,
                 status: response.status,
                 hasData,
-                keys: dataKeys.slice(0, 5),
-                preview: text.substring(0, 150),
+                preview: text.substring(0, 200),
             });
         } catch (error) {
             results.push({
                 endpoint: endpoint.name,
-                method: endpoint.method,
                 status: 0,
                 hasData: false,
                 preview: error instanceof Error ? error.message : String(error),
@@ -101,8 +78,7 @@ export async function GET() {
     const working = results.filter(r => r.status === 200 && r.hasData);
 
     return NextResponse.json({
-        apiKeyPrefix: INSTAGRAM_RAPIDAPI_KEY.substring(0, 10),
-        workingEndpoints: working.map(e => `${e.method} /${e.endpoint}`),
+        workingEndpoints: working.map(e => e.endpoint),
         results,
     });
 }
