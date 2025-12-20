@@ -195,27 +195,41 @@ async function fetchTrendingVideos(niche: string, count: number = 30): Promise<T
     const allVideos: TikTokVideo[] = [];
     const nicheKey = niche.toLowerCase();
 
-    // EXPANDED MUSLIM HASHTAGS: Try multiple hashtags per niche to maximize coverage
-    // These are hashtags we'll try - prioritizing Muslim-specific over generic
-    const WOOP_HASHTAGS_BY_NICHE: Record<string, string[]> = {
-        hijab: ["hijab", "hijabi", "hijabstyle", "modestfashion", "muslim"],
-        deen: ["muslim", "islam", "quran", "islamic", "ramadan", "ummah"],
-        cultural: ["muslim", "ramadan", "eid", "halal", "islamic"],
-        food: ["halal", "halalfood", "food", "cooking", "recipe"],
-        gym: ["hijabfitness", "modestfitness", "muslimfitness", "fitness", "gym", "workout"],
-        pets: ["muslimcat", "cat", "catsoftiktok", "kitten", "pets"],
-        storytelling: ["muslimstorytime", "storytime", "muslim", "hijabi", "pov"],
+    // TWO-TIER HASHTAG SYSTEM:
+    // Tier 1: Muslim-specific hashtags - accept ANY videos from these (already targeted)
+    // Tier 2: Generic hashtags - only accept videos with Muslim keywords in description
+
+    const TIER_1_MUSLIM_HASHTAGS: Record<string, string[]> = {
+        hijab: ["hijab", "hijabi", "modestfashion"],
+        deen: ["muslim", "islam", "quran"],
+        cultural: ["muslim", "ramadan", "eid"],
+        food: ["halal", "halalfood"],
+        gym: ["hijabfitness", "modestfitness", "muslimfitness"],
+        pets: ["muslimcat"],
+        storytelling: ["muslimstorytime", "muslim"],
     };
 
-    // Get hashtags to try for this niche
-    const hashtagsToTry = WOOP_HASHTAGS_BY_NICHE[nicheKey] || WOOP_HASHTAGS_BY_NICHE.deen;
-    console.log(`Trying hashtags for "${nicheKey}":`, hashtagsToTry);
+    const TIER_2_GENERIC_HASHTAGS: Record<string, string[]> = {
+        hijab: ["fashion", "style", "outfit"],
+        deen: ["faith", "spiritual", "prayer"],
+        cultural: ["culture", "tradition"],
+        food: ["food", "cooking", "recipe"],
+        gym: ["fitness", "gym", "workout"],
+        pets: ["cat", "catsoftiktok", "pets"],
+        storytelling: ["storytime", "pov", "grwm"],
+    };
 
-    // Try each hashtag until we get enough videos
-    for (const hashtag of hashtagsToTry) {
-        if (allVideos.length >= count) break; // Got enough videos
+    // Get hashtags for both tiers
+    const tier1Hashtags = TIER_1_MUSLIM_HASHTAGS[nicheKey] || TIER_1_MUSLIM_HASHTAGS.deen;
+    const tier2Hashtags = TIER_2_GENERIC_HASHTAGS[nicheKey] || TIER_2_GENERIC_HASHTAGS.deen;
 
-        console.log(`Fetching #${hashtag}...`);
+    console.log(`=== TIER 1: Muslim-specific hashtags ===`);
+    console.log(`Trying:`, tier1Hashtags);
+
+    // TIER 1: Try Muslim-specific hashtags first (accept all videos from these)
+    for (const hashtag of tier1Hashtags) {
+        if (allVideos.length >= count) break;
+        console.log(`[Tier 1] Fetching #${hashtag}...`);
 
         try {
             // Build URL with hashtag parameter
@@ -294,7 +308,95 @@ async function fetchTrendingVideos(niche: string, count: number = 30): Promise<T
         }
     }
 
-    console.log(`Woop API returned ${allVideos.length} total videos across all hashtags`);
+    console.log(`Tier 1 complete: ${allVideos.length} videos from Muslim-specific hashtags`);
+
+    // TIER 2: If not enough videos, try generic hashtags but FILTER for Muslim keywords
+    if (allVideos.length < count) {
+        console.log(`=== TIER 2: Generic hashtags with Muslim keyword filter ===`);
+        console.log(`Trying:`, tier2Hashtags);
+
+        for (const hashtag of tier2Hashtags) {
+            if (allVideos.length >= count) break;
+            console.log(`[Tier 2] Fetching #${hashtag}...`);
+
+            try {
+                const params = new URLSearchParams({
+                    hashtag: hashtag,
+                    sorting: "rise",
+                    days: "7",
+                    order: "desc",
+                });
+
+                const url = `https://${WOOP_API_HOST}/video?${params.toString()}`;
+
+                const response = await fetch(url, {
+                    method: "GET",
+                    cache: "no-store",
+                    headers: {
+                        "x-rapidapi-host": WOOP_API_HOST,
+                        "x-rapidapi-key": RAPIDAPI_KEY,
+                        "Accept": "application/json",
+                    },
+                });
+
+                if (!response.ok) {
+                    console.error(`Tier 2 error for #${hashtag}: ${response.status}`);
+                    continue;
+                }
+
+                const data = await response.json();
+                const rawVideos = data.data?.stats || data.stats || data.data || data.videos || [];
+                console.log(`#${hashtag}: found ${Array.isArray(rawVideos) ? rawVideos.length : 0} videos`);
+
+                if (Array.isArray(rawVideos)) {
+                    for (const v of rawVideos.slice(0, 15)) {
+                        // FILTER: Only keep videos with Muslim keywords in description
+                        const desc = (v.videoTitle || v.title || v.desc || "").toLowerCase();
+                        if (!isMuslimRelevant(desc)) {
+                            continue; // Skip non-Muslim videos
+                        }
+
+                        try {
+                            let createTime = Math.floor(Date.now() / 1000);
+                            if (v.videoCreateTime) {
+                                createTime = Math.floor(new Date(v.videoCreateTime).getTime() / 1000);
+                            }
+
+                            allVideos.push({
+                                id: v.videoId || v.id || "",
+                                desc: v.videoTitle || v.title || v.desc || "",
+                                createTime: createTime,
+                                video: {
+                                    duration: v.videoDuration || v.duration || 0,
+                                    cover: v.coverUrl || v.cover || v.thumbnail || "",
+                                    playAddr: v.videoUrl || v.playUrl || "",
+                                },
+                                author: {
+                                    uniqueId: v.user || v.authorName || v.username || "creator",
+                                    nickname: v.authorName || v.user || "Creator",
+                                    avatarThumb: v.authorAvatar || "",
+                                },
+                                stats: {
+                                    playCount: v.playCount || v.views || 0,
+                                    diggCount: v.likes || v.likeCount || 0,
+                                    commentCount: v.commentsCount || v.commentCount || 0,
+                                    shareCount: v.shares || v.shareCount || 0,
+                                },
+                            });
+                        } catch (mapError) {
+                            console.warn("Error mapping video:", mapError);
+                        }
+                    }
+                }
+
+                console.log(`After Tier 2 #${hashtag}: ${allVideos.length} total videos`);
+            } catch (error) {
+                console.error(`Error fetching Tier 2 #${hashtag}:`, error);
+            }
+        }
+    }
+
+    console.log(`FINAL: ${allVideos.length} total videos from both tiers`);
     return allVideos;
 }
 
