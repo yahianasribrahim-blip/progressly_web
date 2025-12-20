@@ -1,72 +1,94 @@
-// Test endpoint to debug Instagram API response
-import { NextRequest, NextResponse } from "next/server";
+// Test endpoint to discover working Instagram API endpoints
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
-    const INSTAGRAM_RAPIDAPI_KEY = process.env.INSTAGRAM_RAPIDAPI_KEY || "";
+export async function GET() {
+    const INSTAGRAM_RAPIDAPI_KEY = process.env.INSTAGRAM_RAPIDAPI_KEY || process.env.RAPIDAPI_KEY || "";
     const INSTAGRAM_API_HOST = "instagram-scraper-stable-api.p.rapidapi.com";
 
     if (!INSTAGRAM_RAPIDAPI_KEY) {
         return NextResponse.json({ error: "INSTAGRAM_RAPIDAPI_KEY not set" }, { status: 500 });
     }
 
-    const hashtag = request.nextUrl.searchParams.get("hashtag") || "hijabfashion";
+    const hashtag = "hijab";
 
-    // Try multiple possible endpoint paths
-    const possibleEndpoints = [
-        { method: "POST", path: "/hashtag_posts", body: `hashtag=${encodeURIComponent(hashtag)}` },
-        { method: "POST", path: "/get_hashtag_posts", body: `hashtag=${encodeURIComponent(hashtag)}` },
-        { method: "POST", path: "/hashtag", body: `hashtag=${encodeURIComponent(hashtag)}` },
-        { method: "POST", path: "/search/hashtag", body: `hashtag=${encodeURIComponent(hashtag)}` },
-        { method: "GET", path: `/hashtag_posts?hashtag=${encodeURIComponent(hashtag)}`, body: null },
-        { method: "GET", path: `/hashtag?hashtag=${encodeURIComponent(hashtag)}`, body: null },
-        { method: "GET", path: `/tag/${encodeURIComponent(hashtag)}`, body: null },
-        { method: "POST", path: "/ig/posts_hashtag", body: `hashtag=${encodeURIComponent(hashtag)}` },
-        { method: "POST", path: "/v1/hashtag", body: `hashtag=${encodeURIComponent(hashtag)}` },
-        { method: "POST", path: "/get_posts_by_hashtag", body: `hashtag=${encodeURIComponent(hashtag)}` },
+    // Try different endpoints
+    const endpoints = [
+        { name: "search_hashtag.php GET", method: "GET", url: `https://${INSTAGRAM_API_HOST}/search_hashtag.php?hashtag=${hashtag}` },
+        { name: "search_hashtag.php POST", method: "POST", url: `https://${INSTAGRAM_API_HOST}/search_hashtag.php`, body: `hashtag=${hashtag}` },
+        { name: "posts_by_hashtag.php GET", method: "GET", url: `https://${INSTAGRAM_API_HOST}/posts_by_hashtag.php?hashtag=${hashtag}` },
+        { name: "hashtag_posts.php GET", method: "GET", url: `https://${INSTAGRAM_API_HOST}/hashtag_posts.php?hashtag=${hashtag}` },
+        { name: "hashtag/posts GET", method: "GET", url: `https://${INSTAGRAM_API_HOST}/hashtag/posts?hashtag=${hashtag}` },
+        { name: "tag_posts.php GET", method: "GET", url: `https://${INSTAGRAM_API_HOST}/tag_posts.php?hashtag=${hashtag}` },
     ];
 
-    const results: Array<{ endpoint: string; method: string; status: number; preview: string }> = [];
+    const results: Array<{
+        endpoint: string;
+        status: number;
+        hasData: boolean;
+        dataType: string;
+        sample?: unknown;
+        error?: string;
+    }> = [];
 
-    for (const ep of possibleEndpoints) {
+    for (const endpoint of endpoints) {
         try {
-            const url = `https://${INSTAGRAM_API_HOST}${ep.path}`;
-
-            const response = await fetch(url, {
-                method: ep.method,
+            const fetchOptions: RequestInit = {
+                method: endpoint.method,
                 cache: "no-store",
                 headers: {
                     "x-rapidapi-host": INSTAGRAM_API_HOST,
                     "x-rapidapi-key": INSTAGRAM_RAPIDAPI_KEY,
-                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Content-Type": endpoint.method === "POST" ? "application/x-www-form-urlencoded" : "application/json",
                 },
-                body: ep.body,
-            });
+            };
 
-            const text = await response.text();
+            if (endpoint.method === "POST" && endpoint.body) {
+                fetchOptions.body = endpoint.body;
+            }
+
+            const response = await fetch(endpoint.url, fetchOptions);
+
+            if (!response.ok) {
+                results.push({
+                    endpoint: endpoint.name,
+                    status: response.status,
+                    hasData: false,
+                    dataType: "error",
+                    error: `HTTP ${response.status}`,
+                });
+                continue;
+            }
+
+            const data = await response.json();
+            const dataType = Array.isArray(data) ? "array" : typeof data;
+            const hasData = dataType === "array" ? data.length > 0 : (dataType === "object" && Object.keys(data).length > 0);
 
             results.push({
-                endpoint: ep.path,
-                method: ep.method,
+                endpoint: endpoint.name,
                 status: response.status,
-                preview: text.substring(0, 300),
+                hasData,
+                dataType,
+                sample: Array.isArray(data) ? data.slice(0, 1) : { keys: Object.keys(data) },
             });
-
-            // If we found a working endpoint (not 404), stop searching
-            if (response.status !== 404) {
-                break;
-            }
         } catch (error) {
             results.push({
-                endpoint: ep.path,
-                method: ep.method,
+                endpoint: endpoint.name,
                 status: 0,
-                preview: `Error: ${error instanceof Error ? error.message : String(error)}`,
+                hasData: false,
+                dataType: "exception",
+                error: error instanceof Error ? error.message : String(error),
             });
         }
     }
 
+    // Find working endpoint
+    const workingEndpoints = results.filter(r => r.status === 200 && r.hasData);
+
     return NextResponse.json({
-        hashtag,
-        testedEndpoints: results,
+        summary: {
+            workingEndpoints: workingEndpoints.map(e => e.endpoint),
+            testedCount: results.length,
+        },
+        results,
     });
 }
