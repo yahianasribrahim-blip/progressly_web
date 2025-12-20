@@ -78,8 +78,8 @@ const NICHE_KEYWORDS: Record<string, string[]> = {
     comedy: ["funny", "comedy", "skit", "joke", "laugh", "hilarious", "prank", "relatable", "humor"],
 };
 
-// Check if content matches the niche
-function isNicheRelevant(description: string, niche: string): boolean {
+// Check if content matches the niche (keyword-based fallback)
+function isNicheRelevantByKeywords(description: string, niche: string): boolean {
     if (!description) return false;
     const lowerDesc = description.toLowerCase();
     const nicheKey = niche.toLowerCase();
@@ -87,6 +87,102 @@ function isNicheRelevant(description: string, niche: string): boolean {
 
     if (!keywords || keywords.length === 0) return true;
     return keywords.some(keyword => lowerDesc.includes(keyword));
+}
+
+// AI-based niche relevance classification
+// Uses OpenAI to determine if a video's caption is actually about the niche
+async function classifyVideosWithAI(
+    videos: InstagramVideoExample[],
+    niche: string
+): Promise<InstagramVideoExample[]> {
+    const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+    if (!OPENAI_API_KEY || videos.length === 0) {
+        // Fallback to keyword matching if no OpenAI key
+        console.log("[Instagram] No OpenAI key, falling back to keyword matching");
+        return videos.filter(v => isNicheRelevantByKeywords(v.description, niche));
+    }
+
+    try {
+        // Create a batch prompt for efficiency
+        const videoCaptions = videos.map((v, i) =>
+            `Video ${i + 1}: "${v.description.substring(0, 200)}"`
+        ).join("\n");
+
+        const nicheDescriptions: Record<string, string> = {
+            gym: "fitness, workout, exercise, gym, muscle building, weight training, cardio",
+            food: "cooking, recipes, halal food, meals, eating, kitchen",
+            hijab: "hijab styling, modest fashion, Muslim women's fashion, headscarves",
+            deen: "Islamic reminders, Quran, prayer, faith, spirituality, religious teachings",
+            cultural: "Muslim culture, Ramadan, Eid, traditions, family, heritage",
+            comedy: "funny content, jokes, skits, humor, comedy",
+            storytelling: "personal stories, vlogs, GRWM, day in my life, experiences",
+            pets: "cats, dogs, animals, pets",
+        };
+
+        const nicheDesc = nicheDescriptions[niche.toLowerCase()] || niche;
+
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${OPENAI_API_KEY}`,
+            },
+            body: JSON.stringify({
+                model: "gpt-4o-mini",
+                messages: [
+                    {
+                        role: "system",
+                        content: `You are a content classifier for Muslim creators. Classify each video caption as RELEVANT or NOT RELEVANT to the "${niche}" niche.
+
+The "${niche}" niche includes: ${nicheDesc}
+
+For each video, respond with just the video number and YES or NO.
+Example format:
+1: YES
+2: NO
+3: YES
+
+Be strict - only say YES if the video is clearly about ${niche} content.`
+                    },
+                    {
+                        role: "user",
+                        content: `Classify these video captions for the "${niche}" niche:\n\n${videoCaptions}`
+                    }
+                ],
+                temperature: 0.1,
+                max_tokens: 200,
+            }),
+        });
+
+        if (!response.ok) {
+            console.error("[Instagram AI] OpenAI error:", response.status);
+            return videos.filter(v => isNicheRelevantByKeywords(v.description, niche));
+        }
+
+        const data = await response.json();
+        const aiResponse = data.choices?.[0]?.message?.content || "";
+
+        console.log(`[Instagram AI] Classification response:\n${aiResponse}`);
+
+        // Parse AI response to get relevant video indices
+        const relevantIndices = new Set<number>();
+        const lines = aiResponse.split("\n");
+        for (const line of lines) {
+            const match = line.match(/(\d+):\s*(YES|yes)/);
+            if (match) {
+                relevantIndices.add(parseInt(match[1]) - 1); // Convert to 0-indexed
+            }
+        }
+
+        const relevantVideos = videos.filter((_, i) => relevantIndices.has(i));
+        console.log(`[Instagram AI] ${relevantVideos.length}/${videos.length} videos classified as relevant to "${niche}"`);
+
+        return relevantVideos;
+    } catch (error) {
+        console.error("[Instagram AI] Classification error:", error);
+        return videos.filter(v => isNicheRelevantByKeywords(v.description, niche));
+    }
 }
 
 // Words to filter out inappropriate content
@@ -242,9 +338,9 @@ export async function getInstagramReelsForNiche(niche: string): Promise<Instagra
 
     const allVideos: InstagramVideoExample[] = [];
 
-    // 1. Fetch from NICHE-SPECIFIC creators (no keyword filtering needed)
+    // 1. Fetch from NICHE-SPECIFIC creators
     console.log(`[Instagram] Fetching from ${nicheCreators.length} niche creators:`, nicheCreators);
-    for (const username of nicheCreators.slice(0, 2)) {
+    for (const username of nicheCreators.slice(0, 3)) {
         try {
             const videos = await fetchUserReels(username);
             allVideos.push(...videos);
@@ -254,24 +350,19 @@ export async function getInstagramReelsForNiche(niche: string): Promise<Instagra
         }
     }
 
-    // 2. Fetch from GENERAL creators and FILTER by niche keywords
-    console.log(`[Instagram] Fetching from ${GENERAL_CREATORS.length} general creators with filtering`);
+    // 2. Fetch from GENERAL creators (will be AI-filtered later)
+    console.log(`[Instagram] Fetching from ${GENERAL_CREATORS.length} general creators`);
     for (const username of GENERAL_CREATORS.slice(0, 2)) {
         try {
             const videos = await fetchUserReels(username);
-
-            // Filter videos by niche keywords
-            const nicheRelevantVideos = videos.filter(v => isNicheRelevant(v.description, nicheKey));
-            console.log(`[Instagram] @${username}: ${videos.length} videos, ${nicheRelevantVideos.length} match niche "${nicheKey}"`);
-
-            allVideos.push(...nicheRelevantVideos);
+            allVideos.push(...videos);
             await new Promise(resolve => setTimeout(resolve, 300));
         } catch (error) {
             console.error(`[Instagram] Error fetching general creator @${username}:`, error);
         }
     }
 
-    console.log(`[Instagram] Total videos collected: ${allVideos.length}`);
+    console.log(`[Instagram] Total videos collected before filtering: ${allVideos.length}`);
 
     // Deduplicate by ID
     const seenIds = new Set<string>();
@@ -281,8 +372,16 @@ export async function getInstagramReelsForNiche(niche: string): Promise<Instagra
         return true;
     });
 
+    console.log(`[Instagram] Unique videos: ${uniqueVideos.length}`);
+
+    // 3. USE AI TO CLASSIFY ALL VIDEOS - only keep ones truly relevant to the niche
+    console.log(`[Instagram] Running AI classification for "${nicheKey}" niche...`);
+    const nicheRelevantVideos = await classifyVideosWithAI(uniqueVideos, nicheKey);
+
+    console.log(`[Instagram] After AI classification: ${nicheRelevantVideos.length} videos are relevant to "${nicheKey}"`);
+
     // Sort by views (highest first) and take top 8
-    const sortedVideos = uniqueVideos
+    const sortedVideos = nicheRelevantVideos
         .sort((a, b) => {
             const viewsA = parseFloat(a.views.replace(/[KMB]/g, "")) * (a.views.includes("M") ? 1000 : a.views.includes("B") ? 1000000 : 1);
             const viewsB = parseFloat(b.views.replace(/[KMB]/g, "")) * (b.views.includes("M") ? 1000 : b.views.includes("B") ? 1000000 : 1);
