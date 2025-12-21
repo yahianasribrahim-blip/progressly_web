@@ -143,6 +143,11 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
             return;
         }
 
+        if (!videoIntention.trim()) {
+            toast.error("Please describe the video's intention");
+            return;
+        }
+
         setIsAnalyzing(true);
         setError(null);
         setVideo(null);
@@ -325,7 +330,8 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                             <Target className="h-4 w-4" />
-                            Video Intention (Optional)
+                            Video Intention
+                            <span className="text-red-500">*</span>
                         </label>
                         <Input
                             placeholder="e.g., ASMR/Satisfying, Educational, Comedy, Storytelling, Product Review, Day in the Life..."
@@ -335,7 +341,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                             className="text-sm"
                         />
                         <p className="text-xs text-muted-foreground">
-                            Helps the AI understand the video&apos;s purpose and give more relevant feedback
+                            Required - helps the AI understand the video&apos;s purpose and give relevant feedback
                         </p>
                     </div>
                 </CardContent>

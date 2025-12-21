@@ -67,34 +67,21 @@ async function analyzeCoverWithVision(imageData: string, platform: string) {
             messages: [
                 {
                     role: "system",
-                    content: `You are an expert ${platform} thumbnail/cover image analyst.
+                    content: `You are an expert ${platform} thumbnail analyst.
 
-CRITICAL RULES - READ CAREFULLY:
+CRITICAL: You MUST actually analyze the image. Do NOT suggest fixes for problems that don't exist.
 
-1. CHECK WHAT ALREADY EXISTS:
-   - If text already has an outline, shadow, or background box, do NOT suggest "add shadow" or "increase contrast"
-   - If the image already shows action (car driving, person mid-motion), do NOT suggest "add action"
-   - Actually LOOK at the image before suggesting improvements
+BEFORE suggesting anything, you must verify:
+1. TEXT POSITION: Does the text actually overlap with the main subject, or is it positioned separately?
+2. TEXT STYLING: Does the text already have an outline, shadow, or contrasting background?
+3. COMPOSITION: Is the image already well-composed?
 
-2. NO VAGUE SUGGESTIONS:
-   - Do NOT say "add dynamic element" - this means nothing. Be SPECIFIC about what exactly to add.
-   - Do NOT say "action angle" without explaining what that means for this specific image
-   - Do NOT say "emphasize features" without saying WHICH features and HOW
-   - Every suggestion must be something the creator can actually DO
-
-3. DETECT ALL COLORS:
-   - List ALL visible colors, including: asphalt, road markings, sky, walls, etc.
-   - Don't just mention the main subject's colors
-
-4. IF IMAGE IS GOOD, SAY SO:
-   - Not every image needs improvement
-   - If the thumbnail is well-designed, score it 8-9 and say it's good
-   - Don't force suggestions where none are needed
-
-5. IMPROVEMENTS vs QUICK FIXES:
-   - Improvements: Major changes (only if truly needed)
-   - Quick Fixes: Minor tweaks (only if worth mentioning)
-   - These MUST be different, not the same thing reworded
+RULES:
+- If text does NOT overlap the subject, don't suggest repositioning
+- If text already HAS an outline/shadow, don't suggest adding one
+- If you suggest "reduce text", specify WHICH words to remove
+- Empty arrays are fine if no changes needed
+- Be SPECIFIC: "Move the top text 20px left" not "adjust positioning"
 
 Return JSON only.`
                 },
@@ -105,15 +92,17 @@ Return JSON only.`
                             type: "text",
                             text: `Analyze this ${platform} thumbnail.
 
-BEFORE suggesting improvements:
-- Check if text already has contrast/outline/shadow
-- Check if the image already shows action or dynamic movement
-- Check if the composition is already good
+FIRST, describe what you actually see:
+- Where is the text positioned relative to the main subject?
+- Does the text have any outline, shadow, or background?
+- What is the overall composition?
+
+THEN, only suggest improvements for REAL problems. If something is already done well, don't suggest it.
 
 Respond in JSON:
 {
-    "overallScore": <1-10, give 8-9 if genuinely good>,
-    "verdict": "<honest one sentence>",
+    "overallScore": <1-10>,
+    "verdict": "<one sentence>",
     "scores": {
         "attention": <1-10>,
         "clarity": <1-10>,
@@ -122,11 +111,13 @@ Respond in JSON:
         "emotionalImpact": <1-10>
     },
     "hasText": <boolean>,
-    "textContent": "<detected text or null>",
+    "textContent": "<exact text you see>",
+    "textHasOutlineOrShadow": <boolean - does the text already have styling?>,
+    "textOverlapsSubject": <boolean - does text actually overlap the main subject?>,
     "strengths": ["<what works well>"],
-    "improvements": ["<SPECIFIC actionable suggestions - only if truly needed, empty array if image is good>"],
-    "quickFixes": ["<minor tweaks only - must be DIFFERENT from improvements, empty if not needed>"],
-    "colorPalette": ["<ALL visible colors including background, road, sky, etc>"]
+    "improvements": ["<ONLY suggest if truly needed - empty array if image is good>"],
+    "quickFixes": ["<minor tweaks ONLY if needed - be SPECIFIC about what exactly to change>"],
+    "colorPalette": ["<all visible colors>"]
 }`
                         },
                         {
