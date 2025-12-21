@@ -20,6 +20,38 @@ export const getUserByEmail = async (email: string) => {
   }
 };
 
+// Get user's onboarding status
+export const getOnboardingStatus = async (userId: string) => {
+  try {
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId },
+      select: { onboardingCompleted: true },
+    });
+
+    return {
+      hasProfile: !!profile,
+      onboardingCompleted: profile?.onboardingCompleted ?? false,
+    };
+  } catch {
+    return { hasProfile: false, onboardingCompleted: false };
+  }
+};
+
+// Get creator setup for personalized recommendations
+export const getCreatorSetup = async (userId: string) => {
+  try {
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId },
+      include: { creatorSetup: true },
+    });
+
+    return profile?.creatorSetup ?? null;
+  } catch {
+    return null;
+  }
+};
+
+
 export const getUserById = async (id: string) => {
   try {
     const user = await prisma.user.findUnique({ where: { id } });

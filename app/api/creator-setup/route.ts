@@ -1,0 +1,133 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
+
+// GET: Retrieve creator setup for current user
+export async function GET() {
+    try {
+        const session = await auth();
+
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Get user profile with creator setup
+        const profile = await prisma.userProfile.findUnique({
+            where: { userId: session.user.id },
+            include: { creatorSetup: true },
+        });
+
+        if (!profile) {
+            return NextResponse.json({
+                hasProfile: false,
+                onboardingCompleted: false,
+                creatorSetup: null
+            });
+        }
+
+        return NextResponse.json({
+            hasProfile: true,
+            onboardingCompleted: profile.onboardingCompleted,
+            creatorSetup: profile.creatorSetup,
+        });
+    } catch (error) {
+        console.error("Error fetching creator setup:", error);
+        return NextResponse.json(
+            { error: "Failed to fetch creator setup" },
+            { status: 500 }
+        );
+    }
+}
+
+// POST: Save creator setup (onboarding)
+export async function POST(request: Request) {
+    try {
+        const session = await auth();
+
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const body = await request.json();
+        const {
+            teamSize,
+            primaryDevice,
+            hasExternalMic,
+            hasLighting,
+            hasGreenScreen,
+            availableProps,
+            filmingLocations,
+            hoursPerVideo,
+            videosPerWeek,
+            isMuslimCreator,
+            prefersNoMusic,
+            experienceLevel,
+        } = body;
+
+        // First, ensure user has a profile
+        let profile = await prisma.userProfile.findUnique({
+            where: { userId: session.user.id },
+        });
+
+        if (!profile) {
+            // Create profile if it doesn't exist
+            profile = await prisma.userProfile.create({
+                data: {
+                    userId: session.user.id,
+                    onboardingCompleted: false,
+                },
+            });
+        }
+
+        // Upsert creator setup
+        const creatorSetup = await prisma.creatorSetup.upsert({
+            where: { profileId: profile.id },
+            update: {
+                teamSize: teamSize || 1,
+                primaryDevice: primaryDevice || null,
+                hasExternalMic: hasExternalMic || false,
+                hasLighting: hasLighting || false,
+                hasGreenScreen: hasGreenScreen || false,
+                availableProps: availableProps || [],
+                filmingLocations: filmingLocations || [],
+                hoursPerVideo: hoursPerVideo || 2,
+                videosPerWeek: videosPerWeek || 3,
+                isMuslimCreator: isMuslimCreator || false,
+                prefersNoMusic: prefersNoMusic || false,
+                experienceLevel: experienceLevel || "beginner",
+            },
+            create: {
+                profileId: profile.id,
+                teamSize: teamSize || 1,
+                primaryDevice: primaryDevice || null,
+                hasExternalMic: hasExternalMic || false,
+                hasLighting: hasLighting || false,
+                hasGreenScreen: hasGreenScreen || false,
+                availableProps: availableProps || [],
+                filmingLocations: filmingLocations || [],
+                hoursPerVideo: hoursPerVideo || 2,
+                videosPerWeek: videosPerWeek || 3,
+                isMuslimCreator: isMuslimCreator || false,
+                prefersNoMusic: prefersNoMusic || false,
+                experienceLevel: experienceLevel || "beginner",
+            },
+        });
+
+        // Mark onboarding as completed
+        await prisma.userProfile.update({
+            where: { id: profile.id },
+            data: { onboardingCompleted: true },
+        });
+
+        return NextResponse.json({
+            success: true,
+            creatorSetup,
+        });
+    } catch (error) {
+        console.error("Error saving creator setup:", error);
+        return NextResponse.json(
+            { error: "Failed to save creator setup" },
+            { status: 500 }
+        );
+    }
+}

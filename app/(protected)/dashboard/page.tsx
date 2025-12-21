@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/session";
-import { getUserSubscription, getUserProfile, canPerformAnalysis } from "@/lib/user";
+import { getUserSubscription, getUserProfile, canPerformAnalysis, getOnboardingStatus } from "@/lib/user";
 import { constructMetadata } from "@/lib/utils";
-import { AnalyzeNicheSection } from "@/components/dashboard/analyze-niche-section";
+import { OnboardingWrapper } from "@/components/dashboard/onboarding-wrapper";
+import { DashboardHome } from "@/components/dashboard/dashboard-home";
 
 export const metadata = constructMetadata({
   title: "Dashboard – Progressly",
-  description: "What's working right now in your niche.",
+  description: "Optimize your content and post with confidence.",
 });
 
 export default async function DashboardPage() {
@@ -17,17 +18,18 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const [subscription, profile] = await Promise.all([
+  const [subscription, profile, onboardingStatus] = await Promise.all([
     getUserSubscription(user.id),
     getUserProfile(user.id),
+    getOnboardingStatus(user.id),
   ]);
 
   const plan = subscription?.plan || "free";
   const analysisStatus = await canPerformAnalysis(user.id, plan);
 
   return (
-    <div className="flex flex-col gap-8">
-      <AnalyzeNicheSection
+    <OnboardingWrapper onboardingCompleted={onboardingStatus.onboardingCompleted}>
+      <DashboardHome
         userId={user.id}
         userName={user.name || "Creator"}
         plan={plan}
@@ -35,6 +37,6 @@ export default async function DashboardPage() {
         remaining={analysisStatus.remaining}
         limitMessage={analysisStatus.message}
       />
-    </div>
+    </OnboardingWrapper>
   );
 }

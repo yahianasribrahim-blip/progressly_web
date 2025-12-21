@@ -149,8 +149,45 @@ model UserProfile {
   savedInsights      SavedInsight[]
   notifications      Notification[]
   recommendations    ContentRecommendation[]
+  creatorSetup       CreatorSetup?
 
   @@map(name: "user_profiles")
+}
+
+// Creator's equipment and constraints for personalized recommendations
+model CreatorSetup {
+  id            String       @id @default(cuid())
+  profileId     String       @unique
+  profile       UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  // Team size
+  teamSize          Int          @default(1)  // 1 = solo creator
+  
+  // Equipment
+  primaryDevice     String?      // "iPhone 11", "Canon EOS R5", etc.
+  hasExternalMic    Boolean      @default(false)
+  hasLighting       Boolean      @default(false)
+  hasGreenScreen    Boolean      @default(false)
+  
+  // Props and resources
+  availableProps    String[]     // ["ring light", "whiteboard", "plants", etc.]
+  filmingLocations  String[]     // ["bedroom", "office", "outdoors", etc.]
+  
+  // Time commitment
+  hoursPerVideo     Int          @default(2)  // Hours willing to spend per video
+  videosPerWeek     Int          @default(3)  // Target posting frequency
+  
+  // Content preferences
+  isMuslimCreator   Boolean      @default(false)  // Halal-friendly recommendations
+  prefersNoMusic    Boolean      @default(false)  // No music, nasheeds as alternative
+  
+  // Experience level
+  experienceLevel   String       @default("beginner")  // beginner, intermediate, advanced
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@map(name: "creator_setups")
 }
 
 // Connected social media accounts

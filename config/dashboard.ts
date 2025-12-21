@@ -2,10 +2,24 @@ import { SidebarNavItem } from "types";
 
 export const sidebarLinks: SidebarNavItem[] = [
   {
-    title: "MAIN",
+    title: "ANALYZE",
     items: [
-      { href: "/dashboard", icon: "dashboard", title: "Dashboard" },
-      { href: "/dashboard/analyze-video", icon: "video", title: "Analyze Video" },
+      { href: "/dashboard", icon: "home", title: "Home" },
+      { href: "/dashboard/analyze-video", icon: "video", title: "Video Breakdown" },
+    ],
+  },
+  {
+    title: "OPTIMIZE",
+    items: [
+      { href: "/dashboard/script-optimizer", icon: "fileText", title: "Script Optimizer" },
+      { href: "/dashboard/caption-optimizer", icon: "messageSquare", title: "Caption Optimizer" },
+      { href: "/dashboard/cover-grader", icon: "image", title: "Cover Grader" },
+      { href: "/dashboard/pre-post-checklist", icon: "checkSquare", title: "Pre-Post Checklist" },
+    ],
+  },
+  {
+    title: "LIBRARY",
+    items: [
       { href: "/dashboard/saved", icon: "bookmark", title: "Saved Analyses" },
     ],
   },
