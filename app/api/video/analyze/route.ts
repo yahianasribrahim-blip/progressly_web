@@ -67,6 +67,40 @@ export async function POST(request: Request) {
         const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
         const RAPIDAPI_HOST = "tiktok-scraper2.p.rapidapi.com";
 
+        // First, try to get a working video download URL using the user's URL directly
+        let videoDownloadUrl = "";
+        try {
+            console.log("Attempting to get video download URL...");
+            const downloadResponse = await fetch(
+                `https://${RAPIDAPI_HOST}/video/no_watermark?video_url=${encodeURIComponent(videoUrl)}`,
+                {
+                    method: "GET",
+                    headers: {
+                        "x-rapidapi-key": RAPIDAPI_KEY,
+                        "x-rapidapi-host": RAPIDAPI_HOST,
+                    },
+                }
+            );
+
+            if (downloadResponse.ok) {
+                const downloadData = await downloadResponse.json();
+                console.log("Download response keys:", Object.keys(downloadData));
+
+                // Try different paths where video URL might be
+                videoDownloadUrl = downloadData.video_url ||
+                    downloadData.nwm_video_url ||
+                    downloadData.video?.playAddr ||
+                    downloadData.data?.play ||
+                    downloadData.data?.wmplay ||
+                    downloadData.data?.hdplay ||
+                    "";
+
+                console.log("Video download URL found:", !!videoDownloadUrl);
+            }
+        } catch (e) {
+            console.log("Download endpoint failed:", e);
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let videoData: any = null;
 
@@ -167,7 +201,12 @@ export async function POST(request: Request) {
 
         console.log("Creator:", creatorName);
         console.log("Views:", views, "Duration:", duration);
-        console.log("Video Play URL found:", !!videoPlayUrl);
+        console.log("Video Play URL from API:", !!videoPlayUrl);
+        console.log("Video Download URL from download endpoint:", !!videoDownloadUrl);
+
+        // Use the download endpoint URL if available, otherwise fall back to API URL
+        const actualVideoUrl = videoDownloadUrl || videoPlayUrl;
+        console.log("Using video URL:", actualVideoUrl ? actualVideoUrl.substring(0, 80) + "..." : "none");
 
         // Calculate engagement WITH view count factor
         const engagementMetrics = calculateEngagementWithViews(views, likes, comments, shares);
@@ -177,9 +216,9 @@ export async function POST(request: Request) {
         try {
             console.log("Starting video frame analysis...");
 
-            if (videoPlayUrl) {
+            if (actualVideoUrl) {
                 // Download video and extract frames
-                const frames = await extractVideoFrames(videoPlayUrl, duration);
+                const frames = await extractVideoFrames(actualVideoUrl, duration);
 
                 if (frames.length > 0) {
                     console.log(`Extracted ${frames.length} frames, analyzing...`);
