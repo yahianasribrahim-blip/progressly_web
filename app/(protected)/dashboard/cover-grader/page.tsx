@@ -3,10 +3,11 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { constructMetadata } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard/header";
+import { CoverGrader } from "@/components/dashboard/cover-grader";
 
 export const metadata = constructMetadata({
     title: "Cover Grader – Progressly",
-    description: "Get feedback on your thumbnail before posting.",
+    description: "Get AI-powered feedback on your thumbnail before posting.",
 });
 
 export default async function CoverGraderPage() {
@@ -20,11 +21,9 @@ export default async function CoverGraderPage() {
         <div className="space-y-6">
             <DashboardHeader
                 heading="Cover Grader"
-                text="Get feedback on your thumbnail before posting."
+                text="Get AI-powered feedback on your thumbnail before posting."
             />
-            <div className="rounded-lg border p-8 text-center">
-                <p className="text-muted-foreground">Coming soon...</p>
-            </div>
+            <CoverGrader />
         </div>
     );
 }

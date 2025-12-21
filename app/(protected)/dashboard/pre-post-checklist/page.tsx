@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { constructMetadata } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard/header";
+import { PrePostChecklist } from "@/components/dashboard/pre-post-checklist";
+import { prisma } from "@/lib/db";
 
 export const metadata = constructMetadata({
     title: "Pre-Post Checklist – Progressly",
@@ -16,15 +18,25 @@ export default async function PrePostChecklistPage() {
         redirect("/login");
     }
 
+    // Check if user is Muslim creator
+    let isMuslimCreator = false;
+    try {
+        const profile = await prisma.userProfile.findUnique({
+            where: { userId: user.id },
+            include: { creatorSetup: true },
+        });
+        isMuslimCreator = profile?.creatorSetup?.isMuslimCreator ?? false;
+    } catch (e) {
+        console.log("Could not fetch creator setup:", e);
+    }
+
     return (
         <div className="space-y-6">
             <DashboardHeader
                 heading="Pre-Post Checklist"
-                text="Final quality check before hitting publish."
+                text="Make sure your video is ready before hitting publish."
             />
-            <div className="rounded-lg border p-8 text-center">
-                <p className="text-muted-foreground">Coming soon...</p>
-            </div>
+            <PrePostChecklist isMuslimCreator={isMuslimCreator} />
         </div>
     );
 }
