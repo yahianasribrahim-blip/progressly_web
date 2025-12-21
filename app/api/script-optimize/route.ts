@@ -203,12 +203,34 @@ You help creators optimize their scripts for maximum engagement, retention, and 
 
 ${creatorContext}
 
+CRITICAL CONTEXT DETECTION RULES:
+First, analyze the script to determine:
+- VIDEO FORMAT: Is this a talking-to-camera script, action/showcase, meme/relatable, narration, etc.?
+- TARGET AUDIENCE: Does it seem aimed at kids/teens, young adults, professionals, or niche community?
+- CONTENT TYPE: Comedy skit, documentary, tutorial, meme/relatable, ASMR, teaser, storytime, product review?
+
+THEN apply these rules:
+
+FOR HOOKS:
+- If it's a TALKING VIDEO (person speaking to camera), suggest hooks someone would naturally SAY
+- If it's an ACTION VIDEO (showing something), suggest hooks that match that format
+- Make all hooks feel NATURAL and HUMAN - never use AI-sounding words like "defies", "unleashing", "game-changing"
+- Match the hook style to the content type (memes use relatable hooks, tutorials use curiosity hooks)
+
+FOR CTAs:
+- For MEME/RELATABLE content for young audiences: "Comment/tag" CTAs are APPROPRIATE
+- For PROFESSIONAL/ADULT content: Statement CTAs that trigger natural engagement
+- For EDUCATIONAL: "Save this" works better than "comment below"
+- For ASMR/SATISFYING: Often NO CTA is better
+- DO NOT blindly suggest "let me know in the comments" unless the audience/content warrants it
+
 IMPORTANT RULES:
 1. All suggestions MUST be realistic for this specific creator's setup (team size, equipment, time)
 2. If the creator is Muslim and prefers no music, NEVER suggest background music
 3. Be specific and actionable - no generic advice
 4. Focus on what they can actually do with their resources
-5. Keep the script's original voice and message intact`;
+5. Keep the script's original voice and message intact
+6. Score HONESTLY based on actual quality - don't always give 5/10 or 7/10`;
 
         const userPrompt = `Analyze this ${platform} script (target length: ${targetSeconds} seconds${niche ? `, niche: ${niche}` : ""}):
 
@@ -216,14 +238,21 @@ IMPORTANT RULES:
 ${script}
 """
 
+First, silently identify:
+1. What's the video format? (talking to camera, action, meme, narration, etc.)
+2. Who's the target audience? (kids, teens, young adults, professionals)
+3. What's the content type? (comedy, educational, meme, documentary, ASMR, tutorial)
+
+Then provide analysis that matches this context. Don't suggest action-video hooks for talking videos. Don't suggest "comment below" CTAs for professional adult content unless it fits.
+
 Respond in this exact JSON format:
 {
-    "aiScore": <number 1-10>,
+    "aiScore": <number 1-10, give honest varied scores based on actual quality>,
     "aiVerdict": "<one sentence verdict>",
-    "suggestions": ["<specific improvement 1>", "<specific improvement 2>", "<specific improvement 3>"],
-    "alternativeHooks": ["<better hook option 1>", "<better hook option 2>"],
-    "improvedScript": "<rewritten version of the script with improvements>",
-    "ctaSuggestion": "<specific call-to-action they should add or improve>"
+    "suggestions": ["<specific improvement that matches video format>", "<context-appropriate suggestion>", "<another specific improvement>"],
+    "alternativeHooks": ["<natural-sounding hook that matches video format>", "<alternative that feels human, not AI-generated>"],
+    "improvedScript": "<rewritten version with natural hooks and context-appropriate CTA>",
+    "ctaSuggestion": "<CONTEXT-APPROPRIATE CTA based on detected audience and content type>"
 }`;
 
         const response = await openai.chat.completions.create({

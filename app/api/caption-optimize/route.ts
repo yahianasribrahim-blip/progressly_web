@@ -153,27 +153,54 @@ async function getAICaptionAnalysis(
 1. Stop the scroll with the first line (hook)
 2. Drive engagement (likes, comments, shares, saves)
 3. Use optimal hashtags for discoverability
-4. Include effective calls-to-action
+4. Include effective calls-to-action WHEN APPROPRIATE
 
 ${contextInfo}
 
+CRITICAL CONTEXT AWARENESS RULES:
+First, detect from the caption and content topic:
+- VIDEO FORMAT: Is this a talking-to-camera video, action/showcase video, meme/relatable moment, slideshow, etc.?
+- TARGET AUDIENCE: Kids/teens (under 16), young adults, professionals, niche community?
+- CONTENT TYPE: Educational, comedy, meme, documentary, tutorial, ASMR/satisfying, relatable moment, product showcase?
+
+Then apply these CTA rules:
+- For MEME/RELATABLE content for young audiences: "Comment below", "Tag a friend" CTAs are FINE
+- For Reddit stories, Daily Dopamine Dose style: Comment/tag CTAs work well
+- For PROFESSIONAL/ADULT content: Use statement CTAs that trigger engagement naturally, NOT "let me know in comments"
+- For EDUCATIONAL content: "Save this for later" works better than "comment"
+- For ASMR/SATISFYING content: Often NO CTA is better - let the content speak
+
+HOOK RULES:
+- Match the hook style to the video format
+- If it's a talking video, don't suggest hooks that imply action ("Watch me do X")
+- If it's a meme compilation, use relatable hooks
+- Make hooks feel NATURAL and HUMAN, not AI-generated (avoid words like "defies", "unleashing")
+
 Be specific and actionable. Return JSON only.`;
 
-        const userPrompt = `Analyze and optimize this ${platform} caption${contentTopic ? ` for content about: ${contentTopic}` : ""}:
+        const userPrompt = `Analyze and optimize this ${platform} caption for content about: ${contentTopic}
 
+CAPTION:
 """
 ${caption}
 """
 
+First, silently determine:
+1. What's the likely video format? (talking to camera, action, meme, slideshow, etc.)
+2. Who's the likely target audience? (kids, teens, young adults, professionals)
+3. What's the content type? (comedy, educational, meme, documentary, ASMR, relatable)
+
+Then provide analysis that matches this context. Don't suggest CTAs like "comment below" for professional content, but DO suggest them for meme/kid content if appropriate.
+
 Respond in this exact JSON format:
 {
-    "aiScore": <number 1-10>,
+    "aiScore": <number 1-10, give honest varied scores based on actual quality>,
     "aiVerdict": "<one sentence summary>",
-    "suggestedHookLines": ["<better first line 1>", "<better first line 2>"],
+    "suggestedHookLines": ["<hook that matches the video format and feels natural>", "<alternative>"],
     "hashtagSuggestions": ["#hashtag1", "#hashtag2", "#hashtag3"],
     "hashtagsToRemove": ["#overused1"],
-    "ctaSuggestions": ["<specific CTA 1>", "<specific CTA 2>"],
-    "optimizedCaption": "<fully rewritten optimized caption with better hook, body, hashtags, and CTA>",
+    "ctaSuggestions": ["<CONTEXT-APPROPRIATE CTA based on detected audience and content type>"],
+    "optimizedCaption": "<fully rewritten optimized caption with context-appropriate hook, body, hashtags, and CTA>",
     "improvements": ["<specific change 1>", "<specific change 2>", "<specific change 3>"]
 }`;
 

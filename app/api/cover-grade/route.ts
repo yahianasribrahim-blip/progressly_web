@@ -73,6 +73,15 @@ async function analyzeCoverWithVision(imageData: string, platform: string) {
 3. Be readable at small sizes on mobile
 4. Stand out from other content in the feed
 
+CRITICAL RULES:
+- Detect ALL major colors in the image, including backgrounds, roads, walls, sky, etc. - not just the main subject
+- BEFORE suggesting improvements, carefully analyze what the image ALREADY has
+- Do NOT suggest "increase contrast" if text is already on a solid contrasting background
+- Do NOT suggest "bolder font" if font is already bold
+- Do NOT suggest generic things like "add dynamic element" - be SPECIFIC about what exactly
+- Only suggest improvements for things the image is actually MISSING
+- If the image is already well-designed, say so - don't force suggestions
+
 Be specific, actionable, and honest. Return JSON only.`
                 },
                 {
@@ -81,6 +90,11 @@ Be specific, actionable, and honest. Return JSON only.`
                         {
                             type: "text",
                             text: `Analyze this ${platform} video cover/thumbnail image and provide detailed feedback.
+
+IMPORTANT:
+- For colorPalette: List ALL DOMINANT colors you can see INCLUDING background colors, asphalt, walls, sky, lines, etc.
+- For improvements: Only list things the image is genuinely MISSING. If contrast is already good, don't mention it.
+- For quickFixes: These should be DIFFERENT from improvements - small tweaks that build on what's already good.
 
 Respond in this exact JSON format:
 {
@@ -96,9 +110,9 @@ Respond in this exact JSON format:
     "hasText": <boolean>,
     "textContent": "<detected text if any, else null>",
     "strengths": ["<strength 1>", "<strength 2>"],
-    "improvements": ["<specific improvement 1>", "<specific improvement 2>", "<specific improvement 3>"],
-    "quickFixes": ["<easy fix 1>", "<easy fix 2>"],
-    "colorPalette": ["<color 1>", "<color 2>", "<color 3>"]
+    "improvements": ["<specific improvement the image is MISSING>", "<only if truly needed>"],
+    "quickFixes": ["<small tweak 1>", "<small tweak 2 - DIFFERENT from improvements>"],
+    "colorPalette": ["<ALL dominant colors including background/environment>"]
 }`
                         },
                         {

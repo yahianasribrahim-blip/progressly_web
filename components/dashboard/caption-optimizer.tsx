@@ -62,6 +62,11 @@ export function CaptionOptimizer() {
             return;
         }
 
+        if (!contentTopic.trim()) {
+            toast.error("Please describe what your video is about");
+            return;
+        }
+
         setIsOptimizing(true);
         setAnalysis(null);
 
@@ -187,22 +192,25 @@ What's your biggest challenge with content creation? Comment below! 👇
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="topic">What&apos;s the video about? (optional)</Label>
+                            <Label htmlFor="topic" className="flex items-center gap-1">
+                                What&apos;s the video about?
+                                <span className="text-red-500">*</span>
+                            </Label>
                             <Input
                                 id="topic"
-                                placeholder="e.g., morning routine, cooking hack, fitness tip"
+                                placeholder="e.g., morning routine, cooking hack, fitness tip, meme compilation..."
                                 value={contentTopic}
                                 onChange={(e) => setContentTopic(e.target.value)}
                                 disabled={isOptimizing}
                             />
                             <p className="text-xs text-muted-foreground">
-                                Helps us suggest more relevant hashtags
+                                Helps us suggest context-appropriate hooks and hashtags
                             </p>
                         </div>
 
                         <Button
                             onClick={handleOptimize}
-                            disabled={isOptimizing || !caption.trim()}
+                            disabled={isOptimizing || !caption.trim() || !contentTopic.trim()}
                             className="w-full gap-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700"
                             size="lg"
                         >
@@ -450,15 +458,6 @@ What's your biggest challenge with content creation? Comment below! 👇
                                     >
                                         {copiedOptimized ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                                         Copy
-                                    </Button>
-                                    <Button
-                                        variant="default"
-                                        size="sm"
-                                        onClick={useOptimizedCaption}
-                                        className="gap-1 bg-emerald-600 hover:bg-emerald-700"
-                                    >
-                                        <RefreshCw className="h-4 w-4" />
-                                        Use This
                                     </Button>
                                 </div>
                             </div>

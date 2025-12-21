@@ -242,10 +242,10 @@ Follow for more tips like this!"
                             <CardContent className="p-6">
                                 <div className="flex items-center gap-4">
                                     <div className={cn(
-                                        "relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r",
+                                        "relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-r shrink-0",
                                         getScoreGradient(analysis.aiScore)
                                     )}>
-                                        <div className="absolute inset-1 rounded-full bg-background flex items-center justify-center">
+                                        <div className="absolute inset-1.5 rounded-full bg-background flex items-center justify-center">
                                             <span className={cn("text-2xl font-bold", getScoreColor(analysis.aiScore))}>
                                                 {analysis.aiScore}
                                             </span>
@@ -410,15 +410,6 @@ Follow for more tips like this!"
                                     >
                                         {copiedImproved ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                                         Copy
-                                    </Button>
-                                    <Button
-                                        variant="default"
-                                        size="sm"
-                                        onClick={useImprovedScript}
-                                        className="gap-1 bg-emerald-600 hover:bg-emerald-700"
-                                    >
-                                        <RefreshCw className="h-4 w-4" />
-                                        Use This
                                     </Button>
                                 </div>
                             </div>
