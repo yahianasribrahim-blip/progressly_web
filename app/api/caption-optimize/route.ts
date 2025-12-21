@@ -156,7 +156,7 @@ ${contextInfo}
 BANNED WORDS/PHRASES (never use these - they sound AI-generated):
 - "powerhouse", "game-changer", "revolutionary", "industry-leading"
 - "dive into", "unleashing", "defies", "meet the", "discover what makes"
-- "embark on", "world of", "ever felt", "ever wondered", "truly"
+- "embark on", "world of", "truly"
 
 YOUR JOB IS TO HELP IMPROVE THE CAPTION. Always provide feedback on:
 - Hook effectiveness (is the first line compelling? could it be stronger?)
@@ -165,14 +165,19 @@ YOUR JOB IS TO HELP IMPROVE THE CAPTION. Always provide feedback on:
 - Caption structure (is it easy to read?)
 
 RULES FOR HOOKS:
-- Even if the hook is good, suggest 1-2 alternatives using SIMPLE, natural language
-- Use words real creators actually say, not fancy vocabulary
-- "The best V12 ever made" is better than "Discover what makes this V12 a game-changer"
+- Good hooks spark either INTRIGUE or CURIOSITY:
+  * INTRIGUE: Bold claims like "I genuinely think this is the best V12 ever made"
+  * CURIOSITY: Questions like "Have you ever wondered what the sun really is?"
+- Hooks that usually don't work (unless context makes them fit):
+  * "Let's talk about X" - often flat, but can work for casual content
+  * "Today I'm showing you..." - generic
+- If the original hook ALREADY sparks curiosity or intrigue, keep it
+- Only suggest alternatives that are genuinely BETTER for the content
+- Match the hook style to the audience and content type
 
 RULES FOR CTAs:
 - For adult audiences (16+): Don't suggest "save this for later" or "comment below"
 - Adult content should just END naturally without asking questions
-- Never suggest "What's your dream car?" type endings
 - Only suggest interactive CTAs for very young audiences (<12)
 
 RULES FOR LANGUAGE:
