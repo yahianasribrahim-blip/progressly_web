@@ -12,14 +12,14 @@ import {
     CheckCircle,
     AlertCircle,
     Lightbulb,
-    Sparkles,
     Link as LinkIcon,
     Target,
     Users,
-    Music,
     MapPin,
     Film,
     Brain,
+    TrendingUp,
+    TrendingDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,34 +38,32 @@ interface VideoStats {
 
 interface EngagementMetrics {
     engagementRate: number;
-    engagementRating: "exceptional" | "above_average" | "average" | "below_average" | "poor";
+    engagementRating: "viral" | "strong" | "good" | "average" | "below_average" | "low";
     engagementFeedback: string;
+    viewsRating: "viral" | "high" | "moderate" | "low" | "very_low";
+    viewsFeedback: string;
     likeRate: number;
     commentRate: number;
     shareRate: number;
-    likeRating: string;
-    commentRating: string;
-    shareRating: string;
+    overallVerdict: string;
 }
 
-interface VisionAnalysis {
+interface VideoAnalysis {
     contentType: string;
     contentDescription: string;
-    sceneBreakdown: string[];
+    detailedBreakdown: string[];
     peopleCount: string;
     settingType: string;
-    hasMusic: boolean;
-    musicType: string | null;
-    emotionalTone: string;
-    productionLevel: string;
-    specificStrengths: string[];
-    specificImprovements: string[];
+    audioType: string;
+    productionQuality: string;
+    whatWorked: string[];
+    whatToImprove: string[];
     hookAnalysis: {
         hookType: string;
-        hookEffectiveness: string;
-        hookScore: number;
+        effectiveness: string;
+        score: number;
     };
-    replicabilityNotes: string[];
+    replicabilityRequirements: string[];
 }
 
 interface Analysis {
@@ -95,7 +93,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
     const [video, setVideo] = useState<AnalyzedVideo | null>(null);
     const [stats, setStats] = useState<VideoStats | null>(null);
     const [engagement, setEngagement] = useState<EngagementMetrics | null>(null);
-    const [visionAnalysis, setVisionAnalysis] = useState<VisionAnalysis | null>(null);
+    const [videoAnalysis, setVideoAnalysis] = useState<VideoAnalysis | null>(null);
     const [analysis, setAnalysis] = useState<Analysis | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -121,7 +119,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
         setVideo(null);
         setStats(null);
         setEngagement(null);
-        setVisionAnalysis(null);
+        setVideoAnalysis(null);
         setAnalysis(null);
 
         try {
@@ -140,9 +138,9 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
             setVideo(data.video);
             setStats(data.stats);
             setEngagement(data.engagement);
-            setVisionAnalysis(data.visionAnalysis);
+            setVideoAnalysis(data.videoAnalysis);
             setAnalysis(data.analysis);
-            toast.success("Video analyzed successfully!");
+            toast.success("Video analyzed!");
         } catch (err) {
             console.error("Analysis error:", err);
             setError(err instanceof Error ? err.message : "Failed to analyze video");
@@ -166,23 +164,44 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
         return "from-red-500 to-rose-500";
     };
 
+    const getViewsColor = (rating: string) => {
+        switch (rating) {
+            case "viral": return "text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30";
+            case "high": return "text-blue-500 bg-blue-100 dark:bg-blue-900/30";
+            case "moderate": return "text-amber-500 bg-amber-100 dark:bg-amber-900/30";
+            case "low": return "text-orange-500 bg-orange-100 dark:bg-orange-900/30";
+            default: return "text-red-500 bg-red-100 dark:bg-red-900/30";
+        }
+    };
+
+    const getViewsLabel = (rating: string) => {
+        switch (rating) {
+            case "viral": return "Viral";
+            case "high": return "High Reach";
+            case "moderate": return "Moderate Reach";
+            case "low": return "Low Reach";
+            default: return "Flopped";
+        }
+    };
+
     const getEngagementColor = (rating: string) => {
         switch (rating) {
-            case "exceptional": return "text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30";
-            case "above_average": return "text-blue-500 bg-blue-100 dark:bg-blue-900/30";
+            case "viral":
+            case "strong": return "text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30";
+            case "good": return "text-blue-500 bg-blue-100 dark:bg-blue-900/30";
             case "average": return "text-amber-500 bg-amber-100 dark:bg-amber-900/30";
-            case "below_average": return "text-orange-500 bg-orange-100 dark:bg-orange-900/30";
-            default: return "text-red-500 bg-red-100 dark:bg-red-900/30";
+            default: return "text-orange-500 bg-orange-100 dark:bg-orange-900/30";
         }
     };
 
     const getEngagementLabel = (rating: string) => {
         switch (rating) {
-            case "exceptional": return "Exceptional";
-            case "above_average": return "Above Average";
+            case "viral": return "Viral Engagement";
+            case "strong": return "Strong Engagement";
+            case "good": return "Good Engagement";
             case "average": return "Average";
             case "below_average": return "Below Average";
-            default: return "Needs Work";
+            default: return "Low";
         }
     };
 
@@ -196,7 +215,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                         Video Breakdown
                     </CardTitle>
                     <CardDescription>
-                        Paste any TikTok video URL. Our AI will watch the video and give you specific, actionable feedback.
+                        Paste any TikTok video URL. Our AI analyzes the content and gives you specific, actionable feedback.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -246,160 +265,167 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
             {video && stats && engagement && analysis && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-                    {/* Video Info + Performance Score */}
-                    <div className="grid gap-4 md:grid-cols-3">
-                        {/* Video Preview */}
-                        <Card className="md:col-span-2">
-                            <CardContent className="p-4">
-                                <div className="flex gap-4">
-                                    {video.coverUrl && (
-                                        <img
-                                            src={video.coverUrl}
-                                            alt="Video thumbnail"
-                                            className="w-24 h-32 object-cover rounded-lg"
-                                        />
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-semibold">@{video.creator}</p>
-                                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                                            {video.description || "No description"}
-                                        </p>
-                                        <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                                            <Clock className="h-4 w-4" />
-                                            {video.duration}s
-                                        </div>
+                    {/* Overall Verdict Banner */}
+                    <Card className={cn(
+                        "border-2",
+                        analysis.performanceScore >= 80 ? "border-emerald-300 bg-emerald-50/50 dark:border-emerald-700 dark:bg-emerald-950/20" :
+                            analysis.performanceScore >= 60 ? "border-blue-300 bg-blue-50/50 dark:border-blue-700 dark:bg-blue-950/20" :
+                                analysis.performanceScore >= 40 ? "border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/20" :
+                                    "border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-950/20"
+                    )}>
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-4">
+                                <div className={cn(
+                                    "relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r shrink-0",
+                                    getScoreGradient(analysis.performanceScore)
+                                )}>
+                                    <div className="absolute inset-1 rounded-full bg-background flex items-center justify-center">
+                                        <span className={cn("text-2xl font-bold", getScoreColor(analysis.performanceScore))}>
+                                            {analysis.performanceScore}
+                                        </span>
                                     </div>
                                 </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Performance Score */}
-                        <Card>
-                            <CardContent className="p-4 flex items-center justify-center">
-                                <div className="text-center">
-                                    <div className={cn(
-                                        "relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-r",
-                                        getScoreGradient(analysis.performanceScore)
-                                    )}>
-                                        <div className="absolute inset-1 rounded-full bg-background flex items-center justify-center">
-                                            <span className={cn("text-2xl font-bold", getScoreColor(analysis.performanceScore))}>
-                                                {analysis.performanceScore}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <p className="mt-2 font-medium">{analysis.verdict}</p>
+                                <div>
+                                    <p className="font-bold text-lg">{analysis.verdict}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {formatNumber(stats.views)} views • {engagement.engagementRate}% engagement
+                                    </p>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                    {/* Stats + Engagement */}
-                    <div className="grid gap-4 md:grid-cols-5">
+                    {/* Video Info */}
+                    <Card>
+                        <CardContent className="p-4">
+                            <div className="flex gap-4">
+                                {video.coverUrl && (
+                                    <img
+                                        src={video.coverUrl}
+                                        alt="Video thumbnail"
+                                        className="w-20 h-28 object-cover rounded-lg shrink-0"
+                                    />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold">@{video.creator}</p>
+                                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                                        {video.description || "No description"}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                                        <Clock className="h-4 w-4" />
+                                        {video.duration}s
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Stats Grid */}
+                    <div className="grid gap-3 grid-cols-2 md:grid-cols-6">
                         <Card>
-                            <CardContent className="p-4 text-center">
-                                <Eye className="h-5 w-5 mx-auto text-blue-500 mb-1" />
+                            <CardContent className="p-3 text-center">
+                                <Eye className="h-4 w-4 mx-auto text-blue-500 mb-1" />
                                 <p className="text-lg font-bold">{formatNumber(stats.views)}</p>
                                 <p className="text-xs text-muted-foreground">Views</p>
                             </CardContent>
                         </Card>
+                        <Card className={getViewsColor(engagement.viewsRating)}>
+                            <CardContent className="p-3 text-center">
+                                {engagement.viewsRating === "viral" || engagement.viewsRating === "high" ?
+                                    <TrendingUp className="h-4 w-4 mx-auto mb-1" /> :
+                                    <TrendingDown className="h-4 w-4 mx-auto mb-1" />
+                                }
+                                <p className="text-sm font-bold">{getViewsLabel(engagement.viewsRating)}</p>
+                                <p className="text-xs opacity-80">Reach</p>
+                            </CardContent>
+                        </Card>
                         <Card>
-                            <CardContent className="p-4 text-center">
-                                <Heart className="h-5 w-5 mx-auto text-rose-500 mb-1" />
+                            <CardContent className="p-3 text-center">
+                                <Heart className="h-4 w-4 mx-auto text-rose-500 mb-1" />
                                 <p className="text-lg font-bold">{formatNumber(stats.likes)}</p>
-                                <p className="text-xs text-muted-foreground">Likes ({engagement.likeRate}%)</p>
+                                <p className="text-xs text-muted-foreground">{engagement.likeRate}%</p>
                             </CardContent>
                         </Card>
                         <Card>
-                            <CardContent className="p-4 text-center">
-                                <MessageCircle className="h-5 w-5 mx-auto text-violet-500 mb-1" />
+                            <CardContent className="p-3 text-center">
+                                <MessageCircle className="h-4 w-4 mx-auto text-violet-500 mb-1" />
                                 <p className="text-lg font-bold">{formatNumber(stats.comments)}</p>
-                                <p className="text-xs text-muted-foreground">Comments</p>
+                                <p className="text-xs text-muted-foreground">{engagement.commentRate}%</p>
                             </CardContent>
                         </Card>
                         <Card>
-                            <CardContent className="p-4 text-center">
-                                <Share2 className="h-5 w-5 mx-auto text-emerald-500 mb-1" />
+                            <CardContent className="p-3 text-center">
+                                <Share2 className="h-4 w-4 mx-auto text-emerald-500 mb-1" />
                                 <p className="text-lg font-bold">{formatNumber(stats.shares)}</p>
-                                <p className="text-xs text-muted-foreground">Shares</p>
+                                <p className="text-xs text-muted-foreground">{engagement.shareRate}%</p>
                             </CardContent>
                         </Card>
                         <Card className={getEngagementColor(engagement.engagementRating)}>
-                            <CardContent className="p-4 text-center">
-                                <Sparkles className="h-5 w-5 mx-auto mb-1" />
-                                <p className="text-lg font-bold">{engagement.engagementRate}%</p>
-                                <p className="text-xs">{getEngagementLabel(engagement.engagementRating)}</p>
+                            <CardContent className="p-3 text-center">
+                                <Target className="h-4 w-4 mx-auto mb-1" />
+                                <p className="text-sm font-bold">{engagement.engagementRate}%</p>
+                                <p className="text-xs opacity-80">{getEngagementLabel(engagement.engagementRating)}</p>
                             </CardContent>
                         </Card>
                     </div>
 
-                    {/* Engagement Feedback */}
-                    <Card>
-                        <CardContent className="p-4">
-                            <p className="text-sm">{engagement.engagementFeedback}</p>
-                        </CardContent>
-                    </Card>
+                    {/* Context Cards */}
+                    <div className="grid gap-3 md:grid-cols-2">
+                        <Card>
+                            <CardContent className="p-3">
+                                <p className="text-sm">{engagement.viewsFeedback}</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-3">
+                                <p className="text-sm">{engagement.engagementFeedback}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
 
-                    {/* Vision AI Analysis: What's Actually In The Video */}
-                    {visionAnalysis && (
+                    {/* Video Content Analysis */}
+                    {videoAnalysis && (
                         <Card className="border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-950/20">
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-lg">
                                     <Brain className="h-5 w-5 text-violet-600" />
-                                    AI Video Analysis
+                                    Video Content Analysis
                                 </CardTitle>
-                                <CardDescription>
-                                    Our AI analyzed the actual video content
-                                </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {/* Content Type & Description */}
                                 <div className="p-3 bg-background rounded-lg border">
-                                    <Badge className="mb-2">{visionAnalysis.contentType}</Badge>
-                                    <p className="text-sm">{visionAnalysis.contentDescription}</p>
+                                    <Badge className="mb-2">{videoAnalysis.contentType}</Badge>
+                                    <p className="text-sm">{videoAnalysis.contentDescription}</p>
                                 </div>
 
                                 {/* Video Details Grid */}
-                                <div className="grid gap-3 md:grid-cols-4">
+                                <div className="grid gap-2 md:grid-cols-4">
                                     <div className="flex items-center gap-2 p-2 bg-background rounded-lg border">
-                                        <Users className="h-4 w-4 text-blue-500" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">People</p>
-                                            <p className="text-sm font-medium">{visionAnalysis.peopleCount}</p>
-                                        </div>
+                                        <Users className="h-4 w-4 text-blue-500 shrink-0" />
+                                        <span className="text-sm truncate">{videoAnalysis.peopleCount}</span>
                                     </div>
                                     <div className="flex items-center gap-2 p-2 bg-background rounded-lg border">
-                                        <MapPin className="h-4 w-4 text-emerald-500" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Setting</p>
-                                            <p className="text-sm font-medium">{visionAnalysis.settingType}</p>
-                                        </div>
+                                        <MapPin className="h-4 w-4 text-emerald-500 shrink-0" />
+                                        <span className="text-sm truncate">{videoAnalysis.settingType}</span>
                                     </div>
                                     <div className="flex items-center gap-2 p-2 bg-background rounded-lg border">
-                                        <Music className="h-4 w-4 text-rose-500" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Audio</p>
-                                            <p className="text-sm font-medium">
-                                                {visionAnalysis.hasMusic ? (visionAnalysis.musicType || "Music") : "No music"}
-                                            </p>
-                                        </div>
+                                        <Film className="h-4 w-4 text-amber-500 shrink-0" />
+                                        <span className="text-sm truncate">{videoAnalysis.productionQuality}</span>
                                     </div>
                                     <div className="flex items-center gap-2 p-2 bg-background rounded-lg border">
-                                        <Film className="h-4 w-4 text-amber-500" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Production</p>
-                                            <p className="text-sm font-medium capitalize">{visionAnalysis.productionLevel}</p>
-                                        </div>
+                                        <span className="text-sm truncate">{videoAnalysis.audioType}</span>
                                     </div>
                                 </div>
 
                                 {/* Scene Breakdown */}
-                                {visionAnalysis.sceneBreakdown.length > 0 && (
+                                {videoAnalysis.detailedBreakdown.length > 0 && (
                                     <div>
-                                        <p className="text-sm font-medium mb-2">Scene Breakdown:</p>
+                                        <p className="text-sm font-medium mb-2">What Happens:</p>
                                         <div className="space-y-1">
-                                            {visionAnalysis.sceneBreakdown.map((scene, i) => (
-                                                <div key={i} className="flex items-start gap-2 text-sm">
-                                                    <span className="text-muted-foreground">{i + 1}.</span>
+                                            {videoAnalysis.detailedBreakdown.map((scene, i) => (
+                                                <div key={i} className="flex items-start gap-2 text-sm p-2 bg-background rounded border">
+                                                    <span className="text-muted-foreground font-medium">{i + 1}.</span>
                                                     {scene}
                                                 </div>
                                             ))}
@@ -411,7 +437,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                     )}
 
                     {/* Hook Analysis */}
-                    {visionAnalysis && (
+                    {videoAnalysis && (
                         <Card>
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -421,17 +447,17 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <Badge variant="outline">{visionAnalysis.hookAnalysis.hookType}</Badge>
+                                    <Badge variant="outline">{videoAnalysis.hookAnalysis.hookType}</Badge>
                                     <div className="flex items-center gap-2">
                                         <Progress
-                                            value={visionAnalysis.hookAnalysis.hookScore * 10}
+                                            value={videoAnalysis.hookAnalysis.score * 10}
                                             className="w-24 h-2"
                                         />
-                                        <span className="text-sm font-medium">{visionAnalysis.hookAnalysis.hookScore}/10</span>
+                                        <span className="text-sm font-medium">{videoAnalysis.hookAnalysis.score}/10</span>
                                     </div>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    {visionAnalysis.hookAnalysis.hookEffectiveness}
+                                    {videoAnalysis.hookAnalysis.effectiveness}
                                 </p>
                             </CardContent>
                         </Card>
@@ -443,7 +469,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-lg">
                                     <Lightbulb className="h-5 w-5 text-blue-600" />
-                                    What You Can Learn (Personalized)
+                                    Key Insights
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -460,7 +486,6 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
 
                     {/* Strengths & Improvements */}
                     <div className="grid gap-4 md:grid-cols-2">
-                        {/* Strengths */}
                         {analysis.strengths.length > 0 && (
                             <Card>
                                 <CardHeader className="pb-3">
@@ -482,7 +507,6 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                             </Card>
                         )}
 
-                        {/* Improvements */}
                         {analysis.improvements.length > 0 && (
                             <Card>
                                 <CardHeader className="pb-3">
@@ -505,18 +529,18 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                         )}
                     </div>
 
-                    {/* Replicability Notes */}
-                    {visionAnalysis && visionAnalysis.replicabilityNotes.length > 0 && (
+                    {/* What You Need to Replicate */}
+                    {videoAnalysis && videoAnalysis.replicabilityRequirements.length > 0 && (
                         <Card>
                             <CardHeader className="pb-3">
-                                <CardTitle className="text-lg">Can You Replicate This?</CardTitle>
+                                <CardTitle className="text-lg">What You Need to Replicate This</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <ul className="space-y-1">
-                                    {visionAnalysis.replicabilityNotes.map((note, i) => (
+                                    {videoAnalysis.replicabilityRequirements.map((req, i) => (
                                         <li key={i} className="text-sm flex items-start gap-2">
                                             <span className="text-muted-foreground">•</span>
-                                            {note}
+                                            {req}
                                         </li>
                                     ))}
                                 </ul>
