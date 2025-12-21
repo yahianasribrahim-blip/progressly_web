@@ -136,8 +136,10 @@ async function getAICaptionAnalysis(
     creatorContext: CreatorContext | null
 ): Promise<{
     aiScore: number;
+    hookScore?: number;
     aiVerdict: string;
     suggestedHookLines: string[];
+    hookRanking?: { recommended: string; reasoning: string };
     hashtagSuggestions: string[];
     hashtagsToRemove: string[];
     ctaSuggestions: string[];
@@ -266,10 +268,29 @@ Respond in JSON:
         }
 
         const parsed = JSON.parse(content);
+
+        // Convert new hookAlternatives format to suggestedHookLines array for frontend compatibility
+        let suggestedHookLines: string[] = [];
+        if (parsed.hookAlternatives) {
+            const ha = parsed.hookAlternatives;
+            const recommended = parsed.hookRanking?.recommended;
+            if (recommended === "boldStatement") {
+                suggestedHookLines = [ha.boldStatement, ha.curiosityQuestion, ha.patternInterrupt].filter(Boolean);
+            } else if (recommended === "curiosityQuestion") {
+                suggestedHookLines = [ha.curiosityQuestion, ha.boldStatement, ha.patternInterrupt].filter(Boolean);
+            } else {
+                suggestedHookLines = [ha.patternInterrupt, ha.boldStatement, ha.curiosityQuestion].filter(Boolean);
+            }
+        } else if (parsed.suggestedHookLines) {
+            suggestedHookLines = parsed.suggestedHookLines;
+        }
+
         return {
             aiScore: parsed.aiScore || 5,
+            hookScore: parsed.hookScore,
             aiVerdict: parsed.aiVerdict || "Caption analyzed",
-            suggestedHookLines: parsed.suggestedHookLines || [],
+            suggestedHookLines,
+            hookRanking: parsed.hookRanking,
             hashtagSuggestions: parsed.hashtagSuggestions || [],
             hashtagsToRemove: parsed.hashtagsToRemove || [],
             ctaSuggestions: parsed.ctaSuggestions || [],

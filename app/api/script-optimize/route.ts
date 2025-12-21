@@ -191,9 +191,12 @@ async function getAIScriptAnalysis(
     creatorContext: string
 ): Promise<{
     aiScore: number;
+    hookScore?: number;
     aiVerdict: string;
     suggestions: string[];
     alternativeHooks: string[];
+    hookRanking?: { recommended: string; reasoning: string };
+    audienceClassification?: { energyLevel: string; motivation: string; reasoning: string };
     improvedScript: string;
     ctaSuggestion: string;
 }> {
@@ -314,7 +317,7 @@ Respond in JSON:
         "recommended": "<boldStatement | curiosityQuestion | patternInterrupt>",
         "reasoning": "This works for this content because..."
     },
-    "improvedScript": "<rewrite with suggestions applied - keep ending natural>",
+    "improvedScript": "<rewrite with suggestions - use line breaks between sections for readability>",
     "ctaSuggestion": "<for adult: 'No CTA needed' or how to strengthen ending>"
 }`;
 
@@ -334,11 +337,32 @@ Respond in JSON:
         }
 
         const parsed = JSON.parse(content);
+
+        // Convert new hookAlternatives format to alternativeHooks array for frontend compatibility
+        let alternativeHooks: string[] = [];
+        if (parsed.hookAlternatives) {
+            const ha = parsed.hookAlternatives;
+            // Order by ranking if available
+            const recommended = parsed.hookRanking?.recommended;
+            if (recommended === "boldStatement") {
+                alternativeHooks = [ha.boldStatement, ha.curiosityQuestion, ha.patternInterrupt].filter(Boolean);
+            } else if (recommended === "curiosityQuestion") {
+                alternativeHooks = [ha.curiosityQuestion, ha.boldStatement, ha.patternInterrupt].filter(Boolean);
+            } else {
+                alternativeHooks = [ha.patternInterrupt, ha.boldStatement, ha.curiosityQuestion].filter(Boolean);
+            }
+        } else if (parsed.alternativeHooks) {
+            alternativeHooks = parsed.alternativeHooks;
+        }
+
         return {
             aiScore: parsed.aiScore || 5,
+            hookScore: parsed.hookScore,
             aiVerdict: parsed.aiVerdict || "Script analyzed",
             suggestions: parsed.suggestions || [],
-            alternativeHooks: parsed.alternativeHooks || [],
+            alternativeHooks,
+            hookRanking: parsed.hookRanking,
+            audienceClassification: parsed.audienceClassification,
             improvedScript: parsed.improvedScript || script,
             ctaSuggestion: parsed.ctaSuggestion || "Add a call-to-action at the end",
         };
