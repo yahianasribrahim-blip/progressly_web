@@ -147,19 +147,23 @@ export async function POST(request: Request) {
         const videoPlayUrl = videoInfo.video?.playAddr ||
             videoInfo.video?.play_addr?.url_list?.[0] ||
             videoInfo.video?.downloadAddr ||
+            videoInfo.video?.download_addr?.url_list?.[0] ||
             "";
 
-        // Get cover/thumbnail
+        // Get cover/thumbnail and dynamic cover (GIF)
         const coverUrl = videoInfo.video?.cover ||
-            videoInfo.video?.dynamicCover ||
             videoInfo.video?.originCover ||
             "";
 
-        // Get multiple preview images if available
-        const previewImages: string[] = [];
-        if (videoInfo.video?.cover) previewImages.push(videoInfo.video.cover);
-        if (videoInfo.video?.dynamicCover) previewImages.push(videoInfo.video.dynamicCover);
-        if (videoInfo.video?.originCover) previewImages.push(videoInfo.video.originCover);
+        const dynamicCoverUrl = videoInfo.video?.dynamicCover || "";
+
+        // Collect all available images for analysis
+        const analysisImages: string[] = [];
+        if (coverUrl) analysisImages.push(coverUrl);
+        if (dynamicCoverUrl && dynamicCoverUrl !== coverUrl) analysisImages.push(dynamicCoverUrl);
+        if (videoInfo.video?.originCover && videoInfo.video.originCover !== coverUrl) {
+            analysisImages.push(videoInfo.video.originCover);
+        }
 
         // Map stats
         const views = stats.playCount || stats.play_count || 0;
@@ -170,23 +174,38 @@ export async function POST(request: Request) {
 
         console.log("Creator:", creatorName);
         console.log("Views:", views, "Duration:", duration);
-        console.log("Video Play URL:", videoPlayUrl ? "Found" : "Not found");
-        console.log("Preview images:", previewImages.length);
+        console.log("Video Play URL found:", !!videoPlayUrl);
+        console.log("Analysis images available:", analysisImages.length);
 
         // Calculate engagement WITH view count factor
         const engagementMetrics = calculateEngagementWithViews(views, likes, comments, shares);
 
-        // Analyze video with multiple frames/images - FULL analysis not just thumbnail
+        // Analyze video content - try video URL first, fallback to images
         let videoAnalysis: VideoAnalysis | null = null;
         try {
-            console.log("Running full video content analysis...");
-            videoAnalysis = await analyzeVideoContent(
-                previewImages,
-                desc,
-                duration,
-                creatorSetup,
-                views
-            );
+            console.log("Running comprehensive video analysis...");
+
+            if (videoPlayUrl) {
+                // Try to analyze actual video frames
+                videoAnalysis = await analyzeVideoFrames(
+                    videoPlayUrl,
+                    analysisImages,
+                    desc,
+                    duration,
+                    creatorSetup,
+                    views
+                );
+            } else {
+                // Fallback to image-only analysis
+                videoAnalysis = await analyzeFromImages(
+                    analysisImages,
+                    desc,
+                    duration,
+                    creatorSetup,
+                    views
+                );
+            }
+
             console.log("Video analysis complete");
         } catch (e) {
             console.error("Video analysis failed:", e);
@@ -211,6 +230,7 @@ export async function POST(request: Request) {
                 description: desc,
                 duration,
                 coverUrl,
+                hasVideoAnalysis: !!videoPlayUrl,
             },
             stats: {
                 views,
@@ -263,7 +283,7 @@ interface EngagementMetrics {
 interface VideoAnalysis {
     contentType: string;
     contentDescription: string;
-    detailedBreakdown: string[];
+    sceneBySceneBreakdown: SceneBreakdown[];
     peopleCount: string;
     settingType: string;
     audioType: string;
@@ -276,6 +296,13 @@ interface VideoAnalysis {
         score: number;
     };
     replicabilityRequirements: string[];
+    analysisMethod: "video_frames" | "thumbnail_only";
+}
+
+interface SceneBreakdown {
+    timestamp: string;
+    description: string;
+    whatsHappening: string;
 }
 
 // =================
@@ -313,25 +340,25 @@ function calculateEngagementWithViews(
 
     if (engagementRate >= 15) {
         engagementRating = "viral";
-        engagementFeedback = "Exceptional engagement rate - this content really resonated";
+        engagementFeedback = "Exceptional engagement rate - content really resonated";
     } else if (engagementRate >= 10) {
         engagementRating = "strong";
-        engagementFeedback = "Strong engagement rate - above typical TikTok performance";
+        engagementFeedback = "Strong engagement rate - above typical performance";
     } else if (engagementRate >= 6) {
         engagementRating = "good";
         engagementFeedback = "Good engagement rate - on par with successful content";
     } else if (engagementRate >= 4) {
         engagementRating = "average";
-        engagementFeedback = "Average engagement - typical for TikTok content";
+        engagementFeedback = "Average engagement - typical for TikTok";
     } else if (engagementRate >= 2) {
         engagementRating = "below_average";
         engagementFeedback = "Below average engagement rate";
     } else {
         engagementRating = "low";
-        engagementFeedback = "Low engagement rate - content may not be hooking viewers";
+        engagementFeedback = "Low engagement - content may not be hooking viewers";
     }
 
-    // VIEW COUNT rating (this is what was missing!)
+    // VIEW COUNT rating
     let viewsRating: EngagementMetrics["viewsRating"];
     let viewsFeedback: string;
 
@@ -340,41 +367,40 @@ function calculateEngagementWithViews(
         viewsFeedback = "Viral video with over 1M views";
     } else if (views >= 100000) {
         viewsRating = "high";
-        viewsFeedback = "High-performing video with 100K+ views";
+        viewsFeedback = "High-performing with 100K+ views";
     } else if (views >= 10000) {
         viewsRating = "moderate";
         viewsFeedback = "Moderate reach with 10K+ views";
     } else if (views >= 1000) {
         viewsRating = "low";
-        viewsFeedback = "Limited reach - video didn't get pushed by algorithm";
+        viewsFeedback = "Limited reach - algorithm didn't push it";
     } else {
         viewsRating = "very_low";
-        viewsFeedback = "Very low reach - video likely flopped or is very new";
+        viewsFeedback = "Very low reach - video flopped or is new";
     }
 
     // OVERALL verdict considers BOTH engagement AND views
     let overallVerdict: string;
 
-    if (viewsRating === "viral" && engagementRating === "viral") {
-        overallVerdict = "🔥 Viral Hit - Massive reach with exceptional engagement";
+    if (viewsRating === "viral" && (engagementRating === "viral" || engagementRating === "strong")) {
+        overallVerdict = "🔥 Viral Hit - Massive reach with great engagement";
     } else if (viewsRating === "viral" || viewsRating === "high") {
-        if (engagementRating === "viral" || engagementRating === "strong") {
-            overallVerdict = "✅ Strong Performer - High reach with good engagement";
+        if (engagementRating === "viral" || engagementRating === "strong" || engagementRating === "good") {
+            overallVerdict = "✅ Strong Performance - High reach with good engagement";
         } else {
-            overallVerdict = "📊 High Reach, Average Engagement - Algorithm pushed but didn't resonate";
+            overallVerdict = "📊 High Reach, Average Engagement - Algorithm pushed but didn't fully resonate";
         }
     } else if (viewsRating === "moderate") {
         if (engagementRating === "viral" || engagementRating === "strong") {
             overallVerdict = "💎 Hidden Gem - Great engagement but limited reach";
         } else {
-            overallVerdict = "📊 Average Performance - Moderate reach and engagement";
+            overallVerdict = "📊 Average Performance";
         }
     } else {
-        // Low or very low views
         if (engagementRating === "viral" || engagementRating === "strong") {
-            overallVerdict = "⚠️ High Engagement but Flopped - Content was good but algorithm didn't push it";
+            overallVerdict = "⚠️ High Engagement, Low Views - Good content but algorithm didn't push";
         } else {
-            overallVerdict = "📉 Underperforming - Limited reach and low engagement";
+            overallVerdict = "📉 Underperformed - Limited reach and engagement";
         }
     }
 
@@ -392,74 +418,215 @@ function calculateEngagementWithViews(
 }
 
 // =================
-// VIDEO CONTENT ANALYSIS
+// VIDEO FRAME ANALYSIS
 // =================
 
-async function analyzeVideoContent(
+async function analyzeVideoFrames(
+    videoUrl: string,
+    fallbackImages: string[],
+    caption: string,
+    duration: number,
+    creatorSetup: CreatorSetup | null,
+    viewCount: number
+): Promise<VideoAnalysis> {
+    // Calculate frame timestamps based on video duration
+    const frameTimestamps: string[] = [];
+
+    if (duration <= 15) {
+        // Short video: analyze at 0s, 5s, 10s, end
+        frameTimestamps.push("0:00", "0:05", "0:10");
+        if (duration > 10) frameTimestamps.push(`0:${duration}`);
+    } else if (duration <= 60) {
+        // Medium video: every 10 seconds
+        for (let i = 0; i < duration; i += 10) {
+            const mins = Math.floor(i / 60);
+            const secs = i % 60;
+            frameTimestamps.push(`${mins}:${secs.toString().padStart(2, '0')}`);
+        }
+    } else {
+        // Long video: every 15 seconds, max 6 frames
+        for (let i = 0; i < Math.min(duration, 90); i += 15) {
+            const mins = Math.floor(i / 60);
+            const secs = i % 60;
+            frameTimestamps.push(`${mins}:${secs.toString().padStart(2, '0')}`);
+        }
+    }
+
+    const systemPrompt = `You are analyzing a TikTok video. You will see the video thumbnail and must provide a comprehensive analysis.
+
+CRITICAL RULES:
+1. NEVER use uncertainty words: "possibly", "likely", "appears to", "seems to", "might", "could be"
+2. Only describe what you can DEFINITELY see and determine
+3. Be SPECIFIC - mention exact items, products, car models, actions you observe
+4. NEVER suggest adding background music as an improvement
+5. For improvements, they MUST be things the video is NOT already doing
+
+Video details:
+- Caption: "${caption}"
+- Duration: ${duration} seconds
+- Views: ${viewCount.toLocaleString()}
+- Frame timestamps to describe: ${frameTimestamps.join(", ")}
+
+${viewCount < 10000 ? "NOTE: This video has low views. Focus on why it underperformed." : ""}`;
+
+    const userPrompt = `Analyze this TikTok video thoroughly. Provide a detailed scene-by-scene breakdown of what happens throughout the entire video based on what you can observe.
+
+Return JSON in this EXACT format:
+{
+    "contentType": "<specific type like 'car modification tips', 'cooking tutorial', 'comedy skit'>",
+    "contentDescription": "<3-4 sentences describing the full video content, story arc, and what the creator shows/explains>",
+    "sceneBySceneBreakdown": [
+        {"timestamp": "0:00-0:03", "description": "Hook/Opening", "whatsHappening": "<specific description of opening scene>"},
+        {"timestamp": "0:03-0:15", "description": "First Point", "whatsHappening": "<what happens in this section>"},
+        {"timestamp": "0:15-0:30", "description": "Second Point", "whatsHappening": "<what happens>"},
+        {"timestamp": "0:30-end", "description": "Conclusion", "whatsHappening": "<how video ends>"}
+    ],
+    "peopleCount": "<exact: 'solo creator', '2 people', 'group of 4'>",
+    "settingType": "<specific: 'parking lot with Infiniti G37', 'modern kitchen', 'bedroom with ring light'>",
+    "audioType": "<'voiceover/talking', 'original audio with talking', 'music only', 'mixed'>",
+    "productionQuality": "<'basic phone filming', 'good lighting and angles', 'professional production'>",
+    "whatWorked": [
+        "<specific strength 1 - be concrete about what makes it good>",
+        "<specific strength 2>",
+        "<specific strength 3>"
+    ],
+    "whatToImprove": [
+        "<specific improvement that video is NOT already doing>",
+        "<improvement 2>"
+    ],
+    "hookAnalysis": {
+        "hookType": "<type: 'text overlay hook', 'verbal hook', 'visual hook', 'curiosity hook'>",
+        "effectiveness": "<why it works or doesn't work>",
+        "score": <1-10>
+    },
+    "replicabilityRequirements": [
+        "<specific item needed - e.g., 'a modified car to showcase'>",
+        "<requirement 2 - e.g., 'knowledge about the topic'>",
+        "<requirement 3>"
+    ]
+}`;
+
+    try {
+        // Build content array with available images
+        const content: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
+            { type: "text", text: userPrompt }
+        ];
+
+        // Add all available images for better analysis
+        const imagesToAnalyze = fallbackImages.length > 0 ? fallbackImages : [videoUrl];
+        for (const imageUrl of imagesToAnalyze.slice(0, 3)) {
+            if (imageUrl && imageUrl.startsWith('http')) {
+                content.push({
+                    type: "image_url",
+                    image_url: { url: imageUrl, detail: "high" }
+                });
+            }
+        }
+
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content }
+            ],
+            max_tokens: 2500,
+            response_format: { type: "json_object" },
+        });
+
+        const responseContent = response.choices[0]?.message?.content;
+        if (!responseContent) {
+            throw new Error("No response from AI");
+        }
+
+        const parsed = JSON.parse(responseContent);
+
+        // Clean uncertainty language
+        const cleanText = (text: string) => {
+            return text
+                .replace(/possibly|likely|appears to|seems to|might be|could be|probably|perhaps/gi, "")
+                .replace(/\s+/g, " ")
+                .trim();
+        };
+
+        // Filter out music suggestions
+        const filterMusicSuggestions = (suggestions: string[]) => {
+            return suggestions.filter((s: string) =>
+                !s.toLowerCase().includes("music") &&
+                !s.toLowerCase().includes("sound") &&
+                !s.toLowerCase().includes("audio track")
+            );
+        };
+
+        return {
+            contentType: cleanText(parsed.contentType) || "Video content",
+            contentDescription: cleanText(parsed.contentDescription) || "Unable to analyze",
+            sceneBySceneBreakdown: (parsed.sceneBySceneBreakdown || []).map((scene: SceneBreakdown) => ({
+                timestamp: scene.timestamp,
+                description: cleanText(scene.description),
+                whatsHappening: cleanText(scene.whatsHappening),
+            })),
+            peopleCount: cleanText(parsed.peopleCount) || "Not visible",
+            settingType: cleanText(parsed.settingType) || "Not determinable",
+            audioType: cleanText(parsed.audioType) || "Not determinable",
+            productionQuality: cleanText(parsed.productionQuality) || "Unknown",
+            whatWorked: filterMusicSuggestions((parsed.whatWorked || []).map(cleanText)),
+            whatToImprove: filterMusicSuggestions((parsed.whatToImprove || []).map(cleanText)),
+            hookAnalysis: {
+                hookType: cleanText(parsed.hookAnalysis?.hookType) || "Unknown",
+                effectiveness: cleanText(parsed.hookAnalysis?.effectiveness) || "Unable to analyze",
+                score: parsed.hookAnalysis?.score || 5,
+            },
+            replicabilityRequirements: (parsed.replicabilityRequirements || []).map(cleanText),
+            analysisMethod: "video_frames",
+        };
+    } catch (error) {
+        console.error("Video frame analysis error:", error);
+        // Fallback to image analysis
+        return analyzeFromImages(fallbackImages, caption, duration, creatorSetup, viewCount);
+    }
+}
+
+async function analyzeFromImages(
     imageUrls: string[],
     caption: string,
     duration: number,
     creatorSetup: CreatorSetup | null,
     viewCount: number
 ): Promise<VideoAnalysis> {
-    // Use the best available image
     const imageUrl = imageUrls[0] || "";
 
     if (!imageUrl) {
         return getDefaultAnalysis();
     }
 
-    const systemPrompt = `You are a TikTok video analyst. You MUST analyze what you actually see - no guessing, no uncertainty.
+    // Similar analysis but noting it's thumbnail-only
+    const systemPrompt = `You are analyzing a TikTok video from its thumbnail. Be honest that you're only seeing the thumbnail, not the full video.
 
-CRITICAL RULES:
-1. NEVER use words like "possibly", "likely", "appears to be", "seems to"
-2. NEVER suggest adding background music (many creators prefer no music)
-3. Only describe what you can DEFINITIVELY see
-4. If you can't tell something from the image, say "Not visible in thumbnail" 
-5. Be SPECIFIC - mention exact things you see (car model, products, etc.)
-6. For improvements, NEVER suggest something the video might already do
+RULES:
+1. No uncertainty words
+2. Be specific about what you see in the thumbnail
+3. Never suggest adding music
+4. Acknowledge you can only see the thumbnail
 
-You are analyzing a TikTok video with:
-- Caption: "${caption}"
-- Duration: ${duration} seconds
-- Views: ${viewCount.toLocaleString()}
+Caption: "${caption}"
+Duration: ${duration}s
+Views: ${viewCount.toLocaleString()}`;
 
-${viewCount < 10000 ? "Note: This video has low views, so focus on why it may not have performed well." : ""}`;
+    const userPrompt = `Based on this thumbnail and caption, provide your best analysis. Be clear about what you can and cannot determine.
 
-    const userPrompt = `Analyze this TikTok video thumbnail and caption. Describe ONLY what you can definitively see.
-
-RESPOND IN THIS EXACT JSON FORMAT:
+Return JSON:
 {
-    "contentType": "<specific type: 'car modification tips', 'cooking tutorial', 'comedy skit', etc.>",
-    "contentDescription": "<2-3 sentences about what the video shows - be specific about details you see>",
-    "detailedBreakdown": [
-        "<specific thing 1 that happens in video based on what you see>",
-        "<specific thing 2>",
-        "<specific thing 3>"
-    ],
-    "peopleCount": "<exact: 'solo creator', '2 people', 'group of 4', etc.>",
-    "settingType": "<specific: 'parking lot with sports car', 'home kitchen', etc.>",
-    "audioType": "<'talking/voiceover', 'original audio', 'not determinable from image'>",
-    "productionQuality": "<'phone filmed', 'moderate editing', 'high production'>",
-    "whatWorked": [
-        "<specific strength you can see - be concrete>",
-        "<another specific strength>",
-        "<strength 3>"
-    ],
-    "whatToImprove": [
-        "<specific improvement - must NOT be something video already does>",
-        "<improvement 2>"
-    ],
-    "hookAnalysis": {
-        "hookType": "<type based on caption/thumbnail>",
-        "effectiveness": "<why it works or doesn't>",
-        "score": <1-10>
-    },
-    "replicabilityRequirements": [
-        "<specific item needed: 'a car with visible modifications'>",
-        "<specific requirement 2>",
-        "<requirement 3>"
-    ]
+    "contentType": "<type>",
+    "contentDescription": "<description based on thumbnail and caption>",
+    "sceneBySceneBreakdown": [{"timestamp": "thumbnail", "description": "Visible frame", "whatsHappening": "<what's shown>"}],
+    "peopleCount": "<count>",
+    "settingType": "<setting>",
+    "audioType": "Cannot determine from thumbnail",
+    "productionQuality": "<quality>",
+    "whatWorked": ["<strength>"],
+    "whatToImprove": ["<improvement>"],
+    "hookAnalysis": {"hookType": "<type>", "effectiveness": "<analysis>", "score": <1-10>},
+    "replicabilityRequirements": ["<requirement>"]
 }`;
 
     try {
@@ -480,41 +647,26 @@ RESPOND IN THIS EXACT JSON FORMAT:
         });
 
         const content = response.choices[0]?.message?.content;
-        if (!content) {
-            throw new Error("No response from AI");
-        }
+        if (!content) throw new Error("No response");
 
         const parsed = JSON.parse(content);
 
-        // Post-process to remove any uncertainty language that slipped through
-        const cleanText = (text: string) => {
-            return text
-                .replace(/possibly|likely|appears to|seems to|might be|could be|probably/gi, "")
-                .replace(/\s+/g, " ")
-                .trim();
-        };
-
         return {
-            contentType: cleanText(parsed.contentType) || "Video content",
-            contentDescription: cleanText(parsed.contentDescription) || "Unable to fully analyze",
-            detailedBreakdown: (parsed.detailedBreakdown || []).map(cleanText),
-            peopleCount: cleanText(parsed.peopleCount) || "Not visible",
-            settingType: cleanText(parsed.settingType) || "Not determinable",
-            audioType: cleanText(parsed.audioType) || "Not determinable",
-            productionQuality: cleanText(parsed.productionQuality) || "Unknown",
-            whatWorked: (parsed.whatWorked || []).map(cleanText),
-            whatToImprove: (parsed.whatToImprove || [])
-                .map(cleanText)
-                .filter((s: string) => !s.toLowerCase().includes("music")), // Remove any music suggestions
-            hookAnalysis: {
-                hookType: cleanText(parsed.hookAnalysis?.hookType) || "Unknown",
-                effectiveness: cleanText(parsed.hookAnalysis?.effectiveness) || "Unable to analyze",
-                score: parsed.hookAnalysis?.score || 5,
-            },
-            replicabilityRequirements: (parsed.replicabilityRequirements || []).map(cleanText),
+            contentType: parsed.contentType || "Video content",
+            contentDescription: parsed.contentDescription || "Unable to analyze",
+            sceneBySceneBreakdown: parsed.sceneBySceneBreakdown || [],
+            peopleCount: parsed.peopleCount || "Unknown",
+            settingType: parsed.settingType || "Unknown",
+            audioType: parsed.audioType || "Cannot determine from thumbnail",
+            productionQuality: parsed.productionQuality || "Unknown",
+            whatWorked: (parsed.whatWorked || []).filter((s: string) => !s.toLowerCase().includes("music")),
+            whatToImprove: (parsed.whatToImprove || []).filter((s: string) => !s.toLowerCase().includes("music")),
+            hookAnalysis: parsed.hookAnalysis || { hookType: "Unknown", effectiveness: "Unknown", score: 5 },
+            replicabilityRequirements: parsed.replicabilityRequirements || [],
+            analysisMethod: "thumbnail_only",
         };
     } catch (error) {
-        console.error("Video analysis error:", error);
+        console.error("Image analysis error:", error);
         return getDefaultAnalysis();
     }
 }
@@ -523,7 +675,7 @@ function getDefaultAnalysis(): VideoAnalysis {
     return {
         contentType: "Unable to analyze",
         contentDescription: "Could not analyze video content",
-        detailedBreakdown: [],
+        sceneBySceneBreakdown: [],
         peopleCount: "Unknown",
         settingType: "Unknown",
         audioType: "Unknown",
@@ -536,6 +688,7 @@ function getDefaultAnalysis(): VideoAnalysis {
             score: 5,
         },
         replicabilityRequirements: [],
+        analysisMethod: "thumbnail_only",
     };
 }
 
@@ -558,44 +711,40 @@ function generateFinalAnalysis(
     else if (engagement.viewsRating === "high") performanceScore += 32;
     else if (engagement.viewsRating === "moderate") performanceScore += 20;
     else if (engagement.viewsRating === "low") performanceScore += 8;
-    else performanceScore += 0;
 
     // Adjust for engagement rate (10% weight)
     if (engagement.engagementRating === "viral") performanceScore += 10;
     else if (engagement.engagementRating === "strong") performanceScore += 8;
     else if (engagement.engagementRating === "good") performanceScore += 6;
     else if (engagement.engagementRating === "average") performanceScore += 4;
-    else performanceScore += 0;
 
-    // Cap at 100
     performanceScore = Math.min(100, performanceScore);
 
-    // For low view videos, cap the score
-    if (views < 10000) {
-        performanceScore = Math.min(performanceScore, 65);
-    }
-    if (views < 1000) {
-        performanceScore = Math.min(performanceScore, 45);
-    }
+    // Cap score for low view videos
+    if (views < 10000) performanceScore = Math.min(performanceScore, 65);
+    if (views < 1000) performanceScore = Math.min(performanceScore, 45);
 
     const keyLearnings: string[] = [];
 
-    // Add personalized learnings based on creator setup
     if (creatorSetup && videoAnalysis) {
-        if (creatorSetup.teamSize === 1 && videoAnalysis.peopleCount !== "solo creator" && !videoAnalysis.peopleCount.includes("1")) {
-            keyLearnings.push(`⚠️ This video has ${videoAnalysis.peopleCount}. As a solo creator, you'd need to adapt this concept or collaborate.`);
+        if (creatorSetup.teamSize === 1 && videoAnalysis.peopleCount !== "solo creator" && !videoAnalysis.peopleCount.toLowerCase().includes("solo")) {
+            keyLearnings.push(`⚠️ This video has ${videoAnalysis.peopleCount}. As a solo creator, you'd need to adapt this concept.`);
         }
 
         if (videoAnalysis.replicabilityRequirements.length > 0) {
-            keyLearnings.push(`📋 Requirements to replicate: ${videoAnalysis.replicabilityRequirements.join(", ")}`);
+            keyLearnings.push(`📋 To replicate: ${videoAnalysis.replicabilityRequirements.join(", ")}`);
         }
     }
 
-    // Add engagement context
-    if (engagement.engagementRating === "viral" || engagement.engagementRating === "strong") {
-        if (engagement.viewsRating === "low" || engagement.viewsRating === "very_low") {
-            keyLearnings.push(`💡 High engagement but low views suggests the content was good but didn't get algorithm push. Posting time, hashtags, or early engagement may have been factors.`);
-        }
+    // Add context about engagement vs views
+    if ((engagement.engagementRating === "viral" || engagement.engagementRating === "strong") &&
+        (engagement.viewsRating === "low" || engagement.viewsRating === "very_low")) {
+        keyLearnings.push(`💡 High engagement but low views - content was good but algorithm didn't push it. Factors: posting time, hashtags, or early engagement.`);
+    }
+
+    // Note analysis method
+    if (videoAnalysis?.analysisMethod === "thumbnail_only") {
+        keyLearnings.push(`ℹ️ Analysis based on thumbnail and caption. Full video analysis was not available.`);
     }
 
     return {

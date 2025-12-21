@@ -48,10 +48,16 @@ interface EngagementMetrics {
     overallVerdict: string;
 }
 
+interface SceneBreakdown {
+    timestamp: string;
+    description: string;
+    whatsHappening: string;
+}
+
 interface VideoAnalysis {
     contentType: string;
     contentDescription: string;
-    detailedBreakdown: string[];
+    sceneBySceneBreakdown: SceneBreakdown[];
     peopleCount: string;
     settingType: string;
     audioType: string;
@@ -64,6 +70,7 @@ interface VideoAnalysis {
         score: number;
     };
     replicabilityRequirements: string[];
+    analysisMethod: "video_frames" | "thumbnail_only";
 }
 
 interface Analysis {
@@ -418,15 +425,25 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                     </div>
                                 </div>
 
-                                {/* Scene Breakdown */}
-                                {videoAnalysis.detailedBreakdown.length > 0 && (
+                                {/* Scene-by-Scene Breakdown */}
+                                {videoAnalysis.sceneBySceneBreakdown.length > 0 && (
                                     <div>
-                                        <p className="text-sm font-medium mb-2">What Happens:</p>
-                                        <div className="space-y-1">
-                                            {videoAnalysis.detailedBreakdown.map((scene, i) => (
-                                                <div key={i} className="flex items-start gap-2 text-sm p-2 bg-background rounded border">
-                                                    <span className="text-muted-foreground font-medium">{i + 1}.</span>
-                                                    {scene}
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-sm font-medium">Scene-by-Scene Breakdown:</p>
+                                            <Badge variant="outline" className="text-xs">
+                                                {videoAnalysis.analysisMethod === "video_frames" ? "Full Analysis" : "Thumbnail Only"}
+                                            </Badge>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {videoAnalysis.sceneBySceneBreakdown.map((scene, i) => (
+                                                <div key={i} className="p-3 bg-background rounded-lg border">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <Badge variant="secondary" className="text-xs font-mono">
+                                                            {scene.timestamp}
+                                                        </Badge>
+                                                        <span className="text-sm font-medium">{scene.description}</span>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground">{scene.whatsHappening}</p>
                                                 </div>
                                             ))}
                                         </div>
