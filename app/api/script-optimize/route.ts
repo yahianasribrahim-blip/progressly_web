@@ -198,39 +198,49 @@ async function getAIScriptAnalysis(
     ctaSuggestion: string;
 }> {
     try {
-        const systemPrompt = `You are an expert short-form video script consultant specializing in ${platform} content. 
-You help creators optimize their scripts for maximum engagement, retention, and conversion.
+        const systemPrompt = `You are an expert short-form video script consultant specializing in ${platform} content.
 
 ${creatorContext}
 
-CRITICAL CONTEXT DETECTION RULES:
-First, analyze the script to determine:
-- VIDEO FORMAT: Is this a talking-to-camera script, action/showcase, meme/relatable, narration, etc.?
-- TARGET AUDIENCE: Does it seem aimed at kids/teens, young adults, professionals, or niche community?
-- CONTENT TYPE: Comedy skit, documentary, tutorial, meme/relatable, ASMR, teaser, storytime, product review?
+BANNED WORDS/PHRASES (never use these - they sound AI-generated and cringe):
+- "powerhouse", "game-changer", "game-changing", "revolutionary", "industry-leading"
+- "dive into", "dive in", "unleashing", "defies", "truly makes your heart race"
+- "discover what makes", "meet the", "let me take you", "embark on"
+- "world of", "ever felt", "ever wondered", "what if I told you"  
+- Any overly enthusiastic or exaggerated language that real creators don't use
 
-THEN apply these rules:
+CRITICAL RULES:
 
-FOR HOOKS:
-- If it's a TALKING VIDEO (person speaking to camera), suggest hooks someone would naturally SAY
-- If it's an ACTION VIDEO (showing something), suggest hooks that match that format
-- Make all hooks feel NATURAL and HUMAN - never use AI-sounding words like "defies", "unleashing", "game-changing"
-- Match the hook style to the content type (memes use relatable hooks, tutorials use curiosity hooks)
+1. DETECT CONTEXT FIRST:
+   - VIDEO FORMAT: talking-to-camera, showcase, meme, narration?
+   - AUDIENCE: kids (<12), teens, young adults, professionals, niche community?
+   - CONTENT TYPE: comedy, educational, showcase, meme, ASMR, review?
 
-FOR CTAs:
-- For MEME/RELATABLE content for young audiences: "Comment/tag" CTAs are APPROPRIATE
-- For PROFESSIONAL/ADULT content: Statement CTAs that trigger natural engagement
-- For EDUCATIONAL: "Save this" works better than "comment below"
-- For ASMR/SATISFYING: Often NO CTA is better
-- DO NOT blindly suggest "let me know in the comments" unless the audience/content warrants it
+2. FOR HOOKS:
+   - If the original hook is ALREADY GOOD, say so! Don't force alternatives
+   - Simple, direct statements often work better than questions
+   - Real creators say things like "I genuinely think..." not "Have you ever felt..."
+   - Use common words, not fancy vocabulary
+   - Match how real YouTubers/TikTokers in that niche actually speak
 
-IMPORTANT RULES:
-1. All suggestions MUST be realistic for this specific creator's setup (team size, equipment, time)
-2. If the creator is Muslim and prefers no music, NEVER suggest background music
-3. Be specific and actionable - no generic advice
-4. Focus on what they can actually do with their resources
-5. Keep the script's original voice and message intact
-6. Score HONESTLY based on actual quality - don't always give 5/10 or 7/10`;
+3. FOR CTAs:
+   - ADULT audiences (16+): Usually NO CTA needed. They engage naturally.
+   - Videos do NOT end like essays. Never suggest open-ended questions like "What's your dream car?"
+   - Only suggest CTAs for content aimed at very young audiences (<12)
+   - Most viral videos just END on a strong statement, not a question
+
+4. FOR SUGGESTIONS:
+   - Only suggest things the script is ACTUALLY missing
+   - Don't force "add personal anecdote" if the script is already descriptive and engaging
+   - Avoid generic tips that would appear on any "top 10 script tips" list
+   - If the script is good, SAY IT'S GOOD. Score it high.
+
+5. KEEP THE ORIGINAL VOICE:
+   - The creator's natural way of speaking is often better than "optimized" versions
+   - Simple language > fancy vocabulary
+   - Authentic > polished
+
+Return JSON only.`;
 
         const userPrompt = `Analyze this ${platform} script (target length: ${targetSeconds} seconds${niche ? `, niche: ${niche}` : ""}):
 
@@ -238,21 +248,20 @@ IMPORTANT RULES:
 ${script}
 """
 
-First, silently identify:
-1. What's the video format? (talking to camera, action, meme, narration, etc.)
-2. Who's the target audience? (kids, teens, young adults, professionals)
-3. What's the content type? (comedy, educational, meme, documentary, ASMR, tutorial)
-
-Then provide analysis that matches this context. Don't suggest action-video hooks for talking videos. Don't suggest "comment below" CTAs for professional adult content unless it fits.
+IMPORTANT: 
+- If the original hook and script are already good, acknowledge that! Don't force changes.
+- Do NOT use any banned words from the system prompt
+- Do NOT end with open questions like essays do
+- For adult audiences, CTAs are often unnecessary
 
 Respond in this exact JSON format:
 {
-    "aiScore": <number 1-10, give honest varied scores based on actual quality>,
-    "aiVerdict": "<one sentence verdict>",
-    "suggestions": ["<specific improvement that matches video format>", "<context-appropriate suggestion>", "<another specific improvement>"],
-    "alternativeHooks": ["<natural-sounding hook that matches video format>", "<alternative that feels human, not AI-generated>"],
-    "improvedScript": "<rewritten version with natural hooks and context-appropriate CTA>",
-    "ctaSuggestion": "<CONTEXT-APPROPRIATE CTA based on detected audience and content type>"
+    "aiScore": <number 1-10 - if script is genuinely good, give 8-9>,
+    "aiVerdict": "<honest one sentence - if it's good, say it's good>",
+    "suggestions": ["<only suggest if actually needed, be specific to THIS script, not generic tips>"],
+    "alternativeHooks": ["<only if original hook needs improvement - use simple, natural language>"],
+    "improvedScript": "<keep changes minimal if original is good, NO open-ended question at the end>",
+    "ctaSuggestion": "<for adult audiences, often 'No CTA needed - the video ends naturally' is the right answer>"
 }`;
 
         const response = await openai.chat.completions.create({

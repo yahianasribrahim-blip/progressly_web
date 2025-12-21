@@ -149,59 +149,68 @@ async function getAICaptionAnalysis(
             ? `Creator context: ${creatorContext.isMuslimCreator ? "Muslim creator" : "General creator"}${creatorContext.niche ? `, Niche: ${creatorContext.niche}` : ""}`
             : "";
 
-        const systemPrompt = `You are an expert ${platform} caption optimizer. You help creators write captions that:
-1. Stop the scroll with the first line (hook)
-2. Drive engagement (likes, comments, shares, saves)
-3. Use optimal hashtags for discoverability
-4. Include effective calls-to-action WHEN APPROPRIATE
+        const systemPrompt = `You are an expert ${platform} caption optimizer.
 
 ${contextInfo}
 
-CRITICAL CONTEXT AWARENESS RULES:
-First, detect from the caption and content topic:
-- VIDEO FORMAT: Is this a talking-to-camera video, action/showcase video, meme/relatable moment, slideshow, etc.?
-- TARGET AUDIENCE: Kids/teens (under 16), young adults, professionals, niche community?
-- CONTENT TYPE: Educational, comedy, meme, documentary, tutorial, ASMR/satisfying, relatable moment, product showcase?
+BANNED WORDS/PHRASES (never use these - they sound AI-generated):
+- "powerhouse", "game-changer", "revolutionary", "industry-leading", "world-changing"
+- "dive into", "dive in", "unleashing", "defies", "meet the", "discover what makes"
+- "embark on", "world of", "ever felt", "ever wondered", "truly"
+- Any overly enthusiastic or exaggerated vocabulary that real creators don't use
 
-Then apply these CTA rules:
-- For MEME/RELATABLE content for young audiences: "Comment below", "Tag a friend" CTAs are FINE
-- For Reddit stories, Daily Dopamine Dose style: Comment/tag CTAs work well
-- For PROFESSIONAL/ADULT content: Use statement CTAs that trigger engagement naturally, NOT "let me know in comments"
-- For EDUCATIONAL content: "Save this for later" works better than "comment"
-- For ASMR/SATISFYING content: Often NO CTA is better - let the content speak
+CRITICAL RULES:
 
-HOOK RULES:
-- Match the hook style to the video format
-- If it's a talking video, don't suggest hooks that imply action ("Watch me do X")
-- If it's a meme compilation, use relatable hooks
-- Make hooks feel NATURAL and HUMAN, not AI-generated (avoid words like "defies", "unleashing")
+1. AUDIENCE DETECTION:
+   - Very young (<12): Comment/tag CTAs work
+   - Teens/Adults (12+): Usually NO CTA needed. People engage naturally with good content.
+   - Adult niches (cars, tech, business): Definitely no "save this" or "comment below"
 
-Be specific and actionable. Return JSON only.`;
+2. FOR HOOKS:
+   - If the original hook is ALREADY GOOD (e.g., "The Best V12 Ever Made"), SAY SO
+   - Don't force changes to good hooks
+   - Use simple, common words - what real creators actually say
+   - "I genuinely think..." is better than "Have you ever wondered..."
 
-        const userPrompt = `Analyze and optimize this ${platform} caption for content about: ${contentTopic}
+3. FOR CTAs:
+   - For adult audiences: NO CTA is often best. Don't suggest "save this for later if you're a car lover"
+   - Videos don't end like essays - no open-ended questions at the end
+   - "What's your dream car?" type endings are NOT appropriate for adult content
+
+4. FOR SUGGESTIONS:
+   - Only suggest what's actually missing
+   - If caption already has a good hook, don't say it "lacks engagement"
+   - Avoid generic tips
+
+5. DON'T FORCE CHANGES:
+   - A simple caption can be perfect for some content
+   - Authentic > over-optimized
+
+Return JSON only.`;
+
+        const userPrompt = `Analyze this ${platform} caption for content about: ${contentTopic}
 
 CAPTION:
 """
 ${caption}
 """
 
-First, silently determine:
-1. What's the likely video format? (talking to camera, action, meme, slideshow, etc.)
-2. Who's the likely target audience? (kids, teens, young adults, professionals)
-3. What's the content type? (comedy, educational, meme, documentary, ASMR, relatable)
-
-Then provide analysis that matches this context. Don't suggest CTAs like "comment below" for professional content, but DO suggest them for meme/kid content if appropriate.
+IMPORTANT:
+- If the hook is already compelling, say so. Don't force alternatives.
+- Do NOT use banned words from the system prompt
+- For adult audiences (most car content, tech, business), NO CTA is often best
+- Do NOT add essay-style open questions at the end
 
 Respond in this exact JSON format:
 {
-    "aiScore": <number 1-10, give honest varied scores based on actual quality>,
-    "aiVerdict": "<one sentence summary>",
-    "suggestedHookLines": ["<hook that matches the video format and feels natural>", "<alternative>"],
-    "hashtagSuggestions": ["#hashtag1", "#hashtag2", "#hashtag3"],
-    "hashtagsToRemove": ["#overused1"],
-    "ctaSuggestions": ["<CONTEXT-APPROPRIATE CTA based on detected audience and content type>"],
-    "optimizedCaption": "<fully rewritten optimized caption with context-appropriate hook, body, hashtags, and CTA>",
-    "improvements": ["<specific change 1>", "<specific change 2>", "<specific change 3>"]
+    "aiScore": <number 1-10 - simple but effective captions can score 7-8>,
+    "aiVerdict": "<honest assessment - if it's good, say it's good>",
+    "suggestedHookLines": ["<only if original hook needs work - use simple language>"],
+    "hashtagSuggestions": ["#relevant1", "#relevant2"],
+    "hashtagsToRemove": ["#overused"],
+    "ctaSuggestions": ["<for adult audiences, often empty or 'No CTA needed'>"],
+    "optimizedCaption": "<minimal changes if original is good, NO open-ended questions, NO fancy vocabulary>",
+    "improvements": ["<only suggest what's actually missing, not generic tips>"]
 }`;
 
         const response = await openai.chat.completions.create({

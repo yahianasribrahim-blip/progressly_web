@@ -67,39 +67,53 @@ async function analyzeCoverWithVision(imageData: string, platform: string) {
             messages: [
                 {
                     role: "system",
-                    content: `You are an expert ${platform} thumbnail/cover image analyst. You evaluate cover images for their ability to:
-1. Stop viewers from scrolling (attention-grabbing)
-2. Clearly communicate what the video is about
-3. Be readable at small sizes on mobile
-4. Stand out from other content in the feed
+                    content: `You are an expert ${platform} thumbnail/cover image analyst.
 
-CRITICAL RULES:
-- Detect ALL major colors in the image, including backgrounds, roads, walls, sky, etc. - not just the main subject
-- BEFORE suggesting improvements, carefully analyze what the image ALREADY has
-- Do NOT suggest "increase contrast" if text is already on a solid contrasting background
-- Do NOT suggest "bolder font" if font is already bold
-- Do NOT suggest generic things like "add dynamic element" - be SPECIFIC about what exactly
-- Only suggest improvements for things the image is actually MISSING
-- If the image is already well-designed, say so - don't force suggestions
+CRITICAL RULES - READ CAREFULLY:
 
-Be specific, actionable, and honest. Return JSON only.`
+1. CHECK WHAT ALREADY EXISTS:
+   - If text already has an outline, shadow, or background box, do NOT suggest "add shadow" or "increase contrast"
+   - If the image already shows action (car driving, person mid-motion), do NOT suggest "add action"
+   - Actually LOOK at the image before suggesting improvements
+
+2. NO VAGUE SUGGESTIONS:
+   - Do NOT say "add dynamic element" - this means nothing. Be SPECIFIC about what exactly to add.
+   - Do NOT say "action angle" without explaining what that means for this specific image
+   - Do NOT say "emphasize features" without saying WHICH features and HOW
+   - Every suggestion must be something the creator can actually DO
+
+3. DETECT ALL COLORS:
+   - List ALL visible colors, including: asphalt, road markings, sky, walls, etc.
+   - Don't just mention the main subject's colors
+
+4. IF IMAGE IS GOOD, SAY SO:
+   - Not every image needs improvement
+   - If the thumbnail is well-designed, score it 8-9 and say it's good
+   - Don't force suggestions where none are needed
+
+5. IMPROVEMENTS vs QUICK FIXES:
+   - Improvements: Major changes (only if truly needed)
+   - Quick Fixes: Minor tweaks (only if worth mentioning)
+   - These MUST be different, not the same thing reworded
+
+Return JSON only.`
                 },
                 {
                     role: "user",
                     content: [
                         {
                             type: "text",
-                            text: `Analyze this ${platform} video cover/thumbnail image and provide detailed feedback.
+                            text: `Analyze this ${platform} thumbnail.
 
-IMPORTANT:
-- For colorPalette: List ALL DOMINANT colors you can see INCLUDING background colors, asphalt, walls, sky, lines, etc.
-- For improvements: Only list things the image is genuinely MISSING. If contrast is already good, don't mention it.
-- For quickFixes: These should be DIFFERENT from improvements - small tweaks that build on what's already good.
+BEFORE suggesting improvements:
+- Check if text already has contrast/outline/shadow
+- Check if the image already shows action or dynamic movement
+- Check if the composition is already good
 
-Respond in this exact JSON format:
+Respond in JSON:
 {
-    "overallScore": <number 1-10>,
-    "verdict": "<one sentence overall assessment>",
+    "overallScore": <1-10, give 8-9 if genuinely good>,
+    "verdict": "<honest one sentence>",
     "scores": {
         "attention": <1-10>,
         "clarity": <1-10>,
@@ -108,11 +122,11 @@ Respond in this exact JSON format:
         "emotionalImpact": <1-10>
     },
     "hasText": <boolean>,
-    "textContent": "<detected text if any, else null>",
-    "strengths": ["<strength 1>", "<strength 2>"],
-    "improvements": ["<specific improvement the image is MISSING>", "<only if truly needed>"],
-    "quickFixes": ["<small tweak 1>", "<small tweak 2 - DIFFERENT from improvements>"],
-    "colorPalette": ["<ALL dominant colors including background/environment>"]
+    "textContent": "<detected text or null>",
+    "strengths": ["<what works well>"],
+    "improvements": ["<SPECIFIC actionable suggestions - only if truly needed, empty array if image is good>"],
+    "quickFixes": ["<minor tweaks only - must be DIFFERENT from improvements, empty if not needed>"],
+    "colorPalette": ["<ALL visible colors including background, road, sky, etc>"]
 }`
                         },
                         {
