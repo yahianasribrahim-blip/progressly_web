@@ -202,43 +202,33 @@ async function getAIScriptAnalysis(
 
 ${creatorContext}
 
-BANNED WORDS/PHRASES (never use these - they sound AI-generated and cringe):
-- "powerhouse", "game-changer", "game-changing", "revolutionary", "industry-leading"
-- "dive into", "dive in", "unleashing", "defies", "truly makes your heart race"
-- "discover what makes", "meet the", "let me take you", "embark on"
-- "world of", "ever felt", "ever wondered", "what if I told you"  
-- Any overly enthusiastic or exaggerated language that real creators don't use
+BANNED WORDS/PHRASES (never use these - they sound AI-generated):
+- "powerhouse", "game-changer", "revolutionary", "industry-leading"
+- "dive into", "unleashing", "defies", "truly makes your heart race"
+- "discover what makes", "meet the", "embark on", "world of"
+- "ever felt", "ever wondered", "what if I told you"
 
-CRITICAL RULES:
+YOUR JOB IS TO HELP IMPROVE THE SCRIPT. Always provide feedback on:
+- Word choices (simpler alternatives, more impactful words)
+- Flow and pacing (are some parts too long, too short, awkward?)
+- Clarity (are any parts confusing?)
+- Structure (does the middle section work? transitions?)
+- Specific phrases that could be reworded better
 
-1. DETECT CONTEXT FIRST:
-   - VIDEO FORMAT: talking-to-camera, showcase, meme, narration?
-   - AUDIENCE: kids (<12), teens, young adults, professionals, niche community?
-   - CONTENT TYPE: comedy, educational, showcase, meme, ASMR, review?
+RULES FOR HOOKS:
+- If the hook is already strong, acknowledge it but still suggest 1-2 alternatives using SIMPLE language
+- Use words real creators actually say, not fancy vocabulary
+- Direct statements often work better than questions
 
-2. FOR HOOKS:
-   - If the original hook is ALREADY GOOD, say so! Don't force alternatives
-   - Simple, direct statements often work better than questions
-   - Real creators say things like "I genuinely think..." not "Have you ever felt..."
-   - Use common words, not fancy vocabulary
-   - Match how real YouTubers/TikTokers in that niche actually speak
+RULES FOR CTAs:
+- For adult audiences (16+): Don't suggest CTAs like "What's your dream car?" or "Let me know in the comments"
+- Adult content should just END naturally without asking questions
+- Only suggest interactive CTAs for very young audiences (<12)
 
-3. FOR CTAs:
-   - ADULT audiences (16+): Usually NO CTA needed. They engage naturally.
-   - Videos do NOT end like essays. Never suggest open-ended questions like "What's your dream car?"
-   - Only suggest CTAs for content aimed at very young audiences (<12)
-   - Most viral videos just END on a strong statement, not a question
-
-4. FOR SUGGESTIONS:
-   - Only suggest things the script is ACTUALLY missing
-   - Don't force "add personal anecdote" if the script is already descriptive and engaging
-   - Avoid generic tips that would appear on any "top 10 script tips" list
-   - If the script is good, SAY IT'S GOOD. Score it high.
-
-5. KEEP THE ORIGINAL VOICE:
-   - The creator's natural way of speaking is often better than "optimized" versions
-   - Simple language > fancy vocabulary
-   - Authentic > polished
+RULES FOR LANGUAGE:
+- Use the banned words list - never include those phrases
+- Keep language simple and natural
+- Match how real TikTokers/YouTubers in this niche actually talk
 
 Return JSON only.`;
 
@@ -248,20 +238,32 @@ Return JSON only.`;
 ${script}
 """
 
-IMPORTANT: 
-- If the original hook and script are already good, acknowledge that! Don't force changes.
-- Do NOT use any banned words from the system prompt
-- Do NOT end with open questions like essays do
-- For adult audiences, CTAs are often unnecessary
+Provide helpful feedback on:
+1. Word choices - any words that could be more impactful or clearer?
+2. Flow - any parts that feel slow, rushed, or awkward?
+3. Clarity - any parts that might confuse viewers?
+4. Structure - does the middle work well? Good transitions?
 
-Respond in this exact JSON format:
+Remember:
+- Do NOT use banned AI-sounding words
+- Do NOT suggest essay-style endings ("What's your dream car?")
+- For adult content, no CTA is often best - it should just END naturally
+
+Respond in JSON:
 {
-    "aiScore": <number 1-10 - if script is genuinely good, give 8-9>,
-    "aiVerdict": "<honest one sentence - if it's good, say it's good>",
-    "suggestions": ["<only suggest if actually needed, be specific to THIS script, not generic tips>"],
-    "alternativeHooks": ["<only if original hook needs improvement - use simple, natural language>"],
-    "improvedScript": "<keep changes minimal if original is good, NO open-ended question at the end>",
-    "ctaSuggestion": "<for adult audiences, often 'No CTA needed - the video ends naturally' is the right answer>"
+    "aiScore": <1-10>,
+    "aiVerdict": "<one sentence assessment>",
+    "suggestions": [
+        "<specific suggestion about word choice, flow, clarity, or structure>",
+        "<another specific suggestion>",
+        "<third suggestion if relevant>"
+    ],
+    "alternativeHooks": [
+        "<alternative hook using simple, natural language>",
+        "<second alternative - what a real creator in this niche would say>"
+    ],
+    "improvedScript": "<rewrite with your suggestions applied - improve word choices, flow, clarity BUT keep the ending natural, no questions>",
+    "ctaSuggestion": "<for adult audiences: 'The script ends naturally - no CTA needed' OR suggest how to make the ending statement stronger>"
 }`;
 
         const response = await openai.chat.completions.create({

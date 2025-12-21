@@ -154,37 +154,31 @@ async function getAICaptionAnalysis(
 ${contextInfo}
 
 BANNED WORDS/PHRASES (never use these - they sound AI-generated):
-- "powerhouse", "game-changer", "revolutionary", "industry-leading", "world-changing"
-- "dive into", "dive in", "unleashing", "defies", "meet the", "discover what makes"
+- "powerhouse", "game-changer", "revolutionary", "industry-leading"
+- "dive into", "unleashing", "defies", "meet the", "discover what makes"
 - "embark on", "world of", "ever felt", "ever wondered", "truly"
-- Any overly enthusiastic or exaggerated vocabulary that real creators don't use
 
-CRITICAL RULES:
+YOUR JOB IS TO HELP IMPROVE THE CAPTION. Always provide feedback on:
+- Hook effectiveness (is the first line compelling? could it be stronger?)
+- Word choices (simpler, punchier alternatives?)
+- Hashtag strategy (relevant hashtags, overused ones to remove)
+- Caption structure (is it easy to read?)
 
-1. AUDIENCE DETECTION:
-   - Very young (<12): Comment/tag CTAs work
-   - Teens/Adults (12+): Usually NO CTA needed. People engage naturally with good content.
-   - Adult niches (cars, tech, business): Definitely no "save this" or "comment below"
+RULES FOR HOOKS:
+- Even if the hook is good, suggest 1-2 alternatives using SIMPLE, natural language
+- Use words real creators actually say, not fancy vocabulary
+- "The best V12 ever made" is better than "Discover what makes this V12 a game-changer"
 
-2. FOR HOOKS:
-   - If the original hook is ALREADY GOOD (e.g., "The Best V12 Ever Made"), SAY SO
-   - Don't force changes to good hooks
-   - Use simple, common words - what real creators actually say
-   - "I genuinely think..." is better than "Have you ever wondered..."
+RULES FOR CTAs:
+- For adult audiences (16+): Don't suggest "save this for later" or "comment below"
+- Adult content should just END naturally without asking questions
+- Never suggest "What's your dream car?" type endings
+- Only suggest interactive CTAs for very young audiences (<12)
 
-3. FOR CTAs:
-   - For adult audiences: NO CTA is often best. Don't suggest "save this for later if you're a car lover"
-   - Videos don't end like essays - no open-ended questions at the end
-   - "What's your dream car?" type endings are NOT appropriate for adult content
-
-4. FOR SUGGESTIONS:
-   - Only suggest what's actually missing
-   - If caption already has a good hook, don't say it "lacks engagement"
-   - Avoid generic tips
-
-5. DON'T FORCE CHANGES:
-   - A simple caption can be perfect for some content
-   - Authentic > over-optimized
+RULES FOR LANGUAGE:
+- Never use words from the banned list
+- Keep it simple and natural
+- Match how real TikTokers/YouTubers actually caption their videos
 
 Return JSON only.`;
 
@@ -195,22 +189,32 @@ CAPTION:
 ${caption}
 """
 
-IMPORTANT:
-- If the hook is already compelling, say so. Don't force alternatives.
-- Do NOT use banned words from the system prompt
-- For adult audiences (most car content, tech, business), NO CTA is often best
-- Do NOT add essay-style open questions at the end
+Provide helpful feedback on:
+1. Hook - is it compelling? suggest alternatives using SIMPLE language
+2. Hashtags - which are good? which are overused? what's missing?
+3. Structure - easy to read?
 
-Respond in this exact JSON format:
+Remember:
+- Do NOT use banned AI-sounding words
+- Do NOT suggest essay-style endings
+- For adult content, no CTA is often best
+
+Respond in JSON:
 {
-    "aiScore": <number 1-10 - simple but effective captions can score 7-8>,
-    "aiVerdict": "<honest assessment - if it's good, say it's good>",
-    "suggestedHookLines": ["<only if original hook needs work - use simple language>"],
-    "hashtagSuggestions": ["#relevant1", "#relevant2"],
-    "hashtagsToRemove": ["#overused"],
-    "ctaSuggestions": ["<for adult audiences, often empty or 'No CTA needed'>"],
-    "optimizedCaption": "<minimal changes if original is good, NO open-ended questions, NO fancy vocabulary>",
-    "improvements": ["<only suggest what's actually missing, not generic tips>"]
+    "aiScore": <1-10>,
+    "aiVerdict": "<one sentence assessment>",
+    "suggestedHookLines": [
+        "<alternative hook using simple, natural language>",
+        "<second alternative>"
+    ],
+    "hashtagSuggestions": ["#relevant1", "#relevant2", "#relevant3"],
+    "hashtagsToRemove": ["#overused1"],
+    "ctaSuggestions": ["<for adult audiences: 'No CTA needed - caption works as is' OR leave empty>"],
+    "optimizedCaption": "<improved caption with better hooks/structure - NO essay-style questions, use SIMPLE words>",
+    "improvements": [
+        "<specific suggestion about hook or structure>",
+        "<another specific suggestion>"
+    ]
 }`;
 
         const response = await openai.chat.completions.create({
