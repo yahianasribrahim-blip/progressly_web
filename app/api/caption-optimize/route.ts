@@ -159,41 +159,52 @@ BANNED WORDS/PHRASES (never use these - they sound AI-generated):
 - "embark on", "world of", "truly", "redefine", "redefines", "transcends", "elevates"
 
 YOUR JOB IS TO HELP IMPROVE THE CAPTION. Always provide feedback on:
-- Hook effectiveness (is the first line compelling? could it be stronger?)
+- Hook effectiveness (is the first line compelling?)
 - Word choices (simpler, punchier alternatives?)
 - Hashtag strategy (relevant hashtags, overused ones to remove)
 - Caption structure (is it easy to read?)
 
-RULES FOR HOOKS - ALGORITHM BASED ON AUDIENCE:
+=== NON-BINARY CAPTION OPTIMIZATION SYSTEM ===
 
-Analyze the content and identify which audience it targets:
+IMPORTANT: Captions are NOT mini-scripts. Keep them SHORT with one emotional job.
 
-GROUP 1 (BOLD STATEMENTS WORK BEST):
-- Active, dominant, energetic audiences
-- Supercar addicts, gym lifters, hustle culture, exotic car lovers
-- Content signals: aggressive energy, power/speed focus, dominant tone
+STEP 1: CLASSIFY THE AUDIENCE
+A) Energy Level: HIGH (dominant, hype, flex) or LOW/MEDIUM (curious, relaxed, learning)
+B) Motivation: impress/dominate | learn/discover | laugh/relate | suspense
 
-GROUP 2 (CURIOSITY QUESTIONS WORK BEST):
-- Docile, casual, relaxed, curious audiences
-- Fun fact lovers, science kids, vintage car fans, educational content fans
-- Content signals: calm tone, informative, learning style, gentle entertainment
+STEP 2: CAPTION STYLE BY AUDIENCE
 
-RECOMMENDATION:
-- If GROUP 1 → Put BOLD STATEMENT first, question second
-- If GROUP 2 → Put QUESTION first, bold statement second
-- Same niche varies: aggressive Aventador = bold, classic Ferrari = question
-- Favor the winning style but STILL offer both alternatives
-- If original hook matches right style and works, acknowledge it
+🔴 HIGH-ENERGY AUDIENCE CAPTIONS:
+- Reinforcing statement, flex, confidence, emphasis
+- Minimal or no CTA
+- Example: "Naturally aspirated. No debate."
+
+🔵 CURIOSITY AUDIENCE CAPTIONS:
+- Soft question or teaser, emotional intrigue
+- Example: "This is way bigger than it looks."
+
+🟡 NEUTRAL/MIXED CAPTIONS:
+- Pattern-interrupt style
+- Example: "Nobody talks about this part..."
+
+STEP 3: GENERATE 3 HOOK/CAPTION OPTIONS
+- One bold statement style
+- One curiosity style  
+- One pattern-interrupt style
+Then RANK them and explain WHY the top choice fits THIS content.
+
+ANTI-BINARY RULE:
+- Never say "X works better" without "for this audience/content"
+- Always include "This works because..."
+
+SCORING:
+- Use FULL 1-10 range based on fit for THIS specific content
+- Perfect fit: 8-10 | Okay fit: 5-7 | Wrong fit: 1-4
 
 RULES FOR CTAs:
-- For adult audiences (16+): Don't suggest "save this for later" or "comment below"
-- Adult content should just END naturally without asking questions
-- Only suggest interactive CTAs for very young audiences (<12)
-
-RULES FOR SCORING - BE HONEST:
-- Use the FULL 1-10 range, don't default to safe middle scores
-- Excellent hooks: 8-10 | Mediocre hooks: 4-6 | Poor hooks: 1-3
-- Same for overall score - genuinely good captions get 8-10
+- CTAs only when: audience is very young, or script doesn't already prompt action
+- Otherwise: NO CTA or implicit CTA
+- Never force CTAs on adult content
 
 RULES FOR LANGUAGE:
 - Never use words from the banned list
@@ -209,32 +220,34 @@ CAPTION:
 ${caption}
 """
 
-Provide helpful feedback on:
-1. Hook - is it compelling? suggest alternatives using SIMPLE language
-2. Hashtags - which are good? which are overused? what's missing?
-3. Structure - easy to read?
-
-Remember:
-- Do NOT use banned AI-sounding words
-- Do NOT suggest essay-style endings
-- For adult content, no CTA is often best
+STEP 1: Classify the audience (energy level + motivation).
+STEP 2: Generate 3 caption hook alternatives (bold, curiosity, pattern-interrupt).
+STEP 3: Rank and explain which works best FOR THIS content.
 
 Respond in JSON:
 {
-    "aiScore": <1-10>,
-    "aiVerdict": "<one sentence assessment>",
-    "suggestedHookLines": [
-        "<alternative hook using simple, natural language>",
-        "<second alternative>"
-    ],
-    "hashtagSuggestions": ["#relevant1", "#relevant2", "#relevant3"],
+    "audienceClassification": {
+        "energyLevel": "<HIGH or LOW/MEDIUM>",
+        "motivation": "<impress/dominate | learn/discover | laugh/relate>",
+        "reasoning": "<why>"
+    },
+    "aiScore": <1-10 overall caption quality>,
+    "hookScore": <1-10 how well current hook fits this audience>,
+    "aiVerdict": "<one sentence>",
+    "hookAlternatives": {
+        "boldStatement": "<bold/confident hook for this content>",
+        "curiosityQuestion": "<curiosity-based hook for this content>",
+        "patternInterrupt": "<pattern-interrupt hook for this content>"
+    },
+    "hookRanking": {
+        "recommended": "<boldStatement | curiosityQuestion | patternInterrupt>",
+        "reasoning": "This works for this content because..."
+    },
+    "hashtagSuggestions": ["#relevant1", "#relevant2"],
     "hashtagsToRemove": ["#overused1"],
-    "ctaSuggestions": ["<for adult audiences: 'No CTA needed - caption works as is' OR leave empty>"],
-    "optimizedCaption": "<improved caption with better hooks/structure - NO essay-style questions, use SIMPLE words>",
-    "improvements": [
-        "<specific suggestion about hook or structure>",
-        "<another specific suggestion>"
-    ]
+    "ctaSuggestions": ["<for adult: 'No CTA needed' or leave empty>"],
+    "optimizedCaption": "<improved caption - NO essay questions>",
+    "improvements": ["<specific suggestion>"]
 }`;
 
         const response = await openai.chat.completions.create({

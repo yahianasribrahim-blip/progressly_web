@@ -215,47 +215,61 @@ YOUR JOB IS TO HELP IMPROVE THE SCRIPT. Always provide feedback on:
 - Structure (does the middle section work? transitions?)
 - Specific phrases that could be reworded better
 
-RULES FOR HOOKS - ALGORITHM BASED ON AUDIENCE:
+=== NON-BINARY HOOK OPTIMIZATION SYSTEM ===
 
-STEP 1: Analyze the content tone and identify which audience group it targets:
+STEP 1: CLASSIFY THE AUDIENCE (do this first!)
 
-GROUP 1 (BOLD STATEMENTS WORK BEST):
-- Active, dominant, energetic, responds to authority/speed/intensity/confidence
-- Examples: Supercar addicts, gym ego lifters, hustle culture, alpha mindset, 
-  exotic car lovers, adrenaline seekers, MMA fans, performance car nerds,
-  diesel truck bros, extreme sports fans, luxury flex crowd
-- Content signals: aggressive cars (Aventador SVJ, flames, burnouts), 
-  intense energy, dominant tone, power/speed focus
+Analyze the script and determine:
 
-GROUP 2 (CURIOSITY QUESTIONS WORK BEST):
-- Docile, casual, relaxed, curious, responds to humor/wonder/learning
-- Examples: Fun fact lovers, science curiosity kids, vintage car fans,
-  meme enjoyers, trivia watchers, chill learners, educational content fans,
-  history nerds, satisfying video watchers, brain teaser lovers
-- Content signals: calm tone, older classy cars, informative, wondering,
-  learning style, gentle entertainment
+A) ENERGY LEVEL:
+- HIGH: dominant, hype-driven, status, flex, aggression, intensity
+- LOW/MEDIUM: curious, relaxed, entertainment, learning, chill
 
-STEP 2: Recommend hooks based on the analysis:
-- If content fits GROUP 1 → Put BOLD STATEMENT first, question second
-- If content fits GROUP 2 → Put QUESTION first, bold statement second
-- Same niche can vary: aggressive Aventador = bold, classic Ferrari = question
+B) AUDIENCE MOTIVATION:
+- Impress / dominate / feel powerful
+- Learn / discover / be entertained
+- Laugh / relate
+- Feel suspense / tension
 
-IMPORTANT:
-- Favor the winning style but STILL offer both alternatives
-- If original hook already matches the right style and works, acknowledge it
-- Both styles can work - just one tends to perform better for that audience
+STEP 2: HOOK TYPE DECISION MATRIX
+
+🔴 BOLD STATEMENT HOOKS work when:
+- HIGH energy audience
+- Content: supercars, racing, gym, physique, hustle, money, confidence, confrontational opinions
+- Emotional goal: authority, shock, aspiration, status
+- Examples: "This is the best V12 ever made." / "Most people will never understand this."
+
+🔵 CURIOSITY/QUESTION HOOKS work when:
+- LOW/MEDIUM energy audience  
+- Content: fun facts, science, experiments, history, memes, chill storytelling
+- Emotional goal: wonder, discovery, comfort curiosity
+- Examples: "Have you ever wondered why…" / "What happens if you…"
+
+🟡 PATTERN-INTERRUPT HOOKS work when:
+- Script is neutral or informational
+- Audience is mixed
+- Platform is scroll-heavy
+- Examples: "Nobody talks about this part…" / "This looks fake, but it's real."
+
+STEP 3: GENERATE ALL 3 HOOK TYPES
+- You MUST generate hooks in all 3 styles (bold, curiosity, pattern-interrupt)
+- Then RANK them based on: audience alignment, emotional immediacy, scroll-stopping power, natural fit
+- Explain WHY the top-ranked hook works best FOR THIS SPECIFIC CONTENT
+
+CRITICAL ANTI-BINARY RULE:
+- Never say "X works better than Y" without adding "for this audience/script/context"
+- Every recommendation MUST include "This works because..."
+
+STEP 4: SCORING HOOKS HONESTLY
+- Use FULL 1-10 range based on how well the hook fits THIS specific content
+- A hook that fits the audience perfectly: 8-10
+- A hook that's okay but not optimal for this audience: 5-7  
+- A hook that doesn't fit this audience at all: 1-4
 
 RULES FOR CTAs:
-- For adult audiences (16+): Don't suggest CTAs like "What's your dream car?"
-- Adult content should just END naturally without asking questions
-- Only suggest interactive CTAs for very young audiences (<12)
-
-RULES FOR SCORING - BE HONEST:
-- Use the FULL 1-10 range, don't default to safe middle scores
-- Excellent hooks that spark intrigue/curiosity: 8-10
-- Mediocre or flat hooks: 4-6
-- Poor or generic hooks: 1-3
-- Same for overall script - if it's genuinely good, give 8-10
+- CTAs only appear when: audience is very young, platform favors engagement farming, or script doesn't already prompt action
+- Otherwise: NO CTA or implicit CTA (curiosity loop)
+- Adult content should END naturally, no questions
 
 RULES FOR LANGUAGE:
 - Use the banned words list - never include those phrases
@@ -264,38 +278,44 @@ RULES FOR LANGUAGE:
 
 Return JSON only.`;
 
-        const userPrompt = `Analyze this ${platform} script (target length: ${targetSeconds} seconds${niche ? `, niche: ${niche}` : ""}):
+        const userPrompt = `Analyze this ${platform} script (target length: ${targetSeconds} seconds${niche ? `, niche: ${niche}` : ""}).
 
+SCRIPT:
 """
 ${script}
 """
 
-Provide helpful feedback on:
-1. Word choices - any words that could be more impactful or clearer?
-2. Flow - any parts that feel slow, rushed, or awkward?
-3. Clarity - any parts that might confuse viewers?
-4. Structure - does the middle work well? Good transitions?
+STEP 1: Classify the audience energy and motivation from this script.
+STEP 2: Generate 3 hook alternatives (one bold statement, one curiosity question, one pattern-interrupt).
+STEP 3: Rank them by fit for THIS specific content and explain why.
 
-Remember:
-- Do NOT use banned AI-sounding words
-- Do NOT suggest essay-style endings ("What's your dream car?")
-- For adult content, no CTA is often best - it should just END naturally
+Provide feedback on word choices, flow, clarity, and structure.
 
 Respond in JSON:
 {
-    "aiScore": <1-10>,
+    "audienceClassification": {
+        "energyLevel": "<HIGH or LOW/MEDIUM>",
+        "motivation": "<impress/dominate | learn/discover | laugh/relate | suspense/tension>",
+        "reasoning": "<why you classified it this way>"
+    },
+    "aiScore": <1-10 based on how good the script is>,
+    "hookScore": <1-10 based on how well current hook fits THIS audience>,
     "aiVerdict": "<one sentence assessment>",
     "suggestions": [
-        "<specific suggestion about word choice, flow, clarity, or structure>",
-        "<another specific suggestion>",
-        "<third suggestion if relevant>"
+        "<specific suggestion>",
+        "<another suggestion>"
     ],
-    "alternativeHooks": [
-        "<alternative hook using simple, natural language>",
-        "<second alternative - what a real creator in this niche would say>"
-    ],
-    "improvedScript": "<rewrite with your suggestions applied - improve word choices, flow, clarity BUT keep the ending natural, no questions>",
-    "ctaSuggestion": "<for adult audiences: 'The script ends naturally - no CTA needed' OR suggest how to make the ending statement stronger>"
+    "hookAlternatives": {
+        "boldStatement": "<bold/confident hook for this content>",
+        "curiosityQuestion": "<curiosity-based hook for this content>",
+        "patternInterrupt": "<pattern-interrupt hook for this content>"
+    },
+    "hookRanking": {
+        "recommended": "<boldStatement | curiosityQuestion | patternInterrupt>",
+        "reasoning": "This works for this content because..."
+    },
+    "improvedScript": "<rewrite with suggestions applied - keep ending natural>",
+    "ctaSuggestion": "<for adult: 'No CTA needed' or how to strengthen ending>"
 }`;
 
         const response = await openai.chat.completions.create({
