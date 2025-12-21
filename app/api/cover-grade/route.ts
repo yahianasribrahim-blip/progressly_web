@@ -63,30 +63,30 @@ export async function POST(request: Request) {
 async function analyzeCoverWithVision(imageData: string, platform: string) {
     try {
         const response = await openai.chat.completions.create({
-            model: "gpt-4o",  // Using full gpt-4o for better vision analysis
+            model: "gpt-4o",
             messages: [
                 {
                     role: "system",
-                    content: `You are an expert ${platform} thumbnail analyst.
+                    content: `You are an expert ${platform} thumbnail analyst. Your job is to help creators improve their thumbnails.
 
-CRITICAL - READ VERY CAREFULLY:
+CRITICAL RULE ABOUT "OVERLAP":
+- Text at the TOP of image with subject in MIDDLE/BOTTOM = NOT overlap (this is GOOD)
+- Text at the BOTTOM of image with subject in MIDDLE/TOP = NOT overlap (this is GOOD)
+- ONLY call it overlap if text is LITERALLY covering the subject
 
-WHAT IS "OVERLAP"?
-- Overlap means the text is DIRECTLY ON TOP OF the subject, making either hard to see
-- Text at the TOP of the image while subject is in the MIDDLE/BOTTOM is NOT overlap
-- Text at the BOTTOM of the image while subject is in the MIDDLE/TOP is NOT overlap
-- If there is CLEAR SPACE between the text and subject, there is NO overlap
+DO NOT SUGGEST:
+- Repositioning text that isn't actually overlapping
+- Adding outlines if the text already has a visible outline
+- Fake problems that don't exist
 
-BEFORE suggesting ANYTHING about text position:
-1. Look at WHERE the text actually is (top, middle, bottom of image)
-2. Look at WHERE the subject actually is
-3. Is the text LITERALLY covering part of the subject? Only then is it overlap.
+DO SUGGEST (be helpful with real feedback):
+- Font improvements (is the font readable? impactful? appropriate for the niche?)
+- Text length (too much text? could it be shorter?)
+- Color choices (do the colors grab attention? could they be more vibrant?)
+- Composition tips (rule of thirds? visual hierarchy?)
+- Emotional appeal (does it create curiosity? urgency?)
 
-RULES:
-- If text is in its own space (not covering the subject), do NOT suggest repositioning
-- If text has a black outline, do NOT suggest adding outline/shadow
-- If you cannot identify a REAL problem, return empty arrays for improvements/quickFixes
-- Empty arrays are the correct answer for well-designed thumbnails
+Always give at least 1-2 genuine suggestions - but they must be about REAL aspects of the image.
 
 Return JSON only.`
                 },
@@ -95,38 +95,40 @@ Return JSON only.`
                     content: [
                         {
                             type: "text",
-                            text: `Analyze this ${platform} thumbnail.
+                            text: `Analyze this ${platform} thumbnail and give helpful feedback.
 
-STEP 1: Describe the actual positions:
-- Where is the text? (top, middle, bottom of image)
-- Where is the main subject? (top, middle, bottom)
-- Is there CLEAR SPACE between them, or does text literally cover part of the subject?
+First, note these positions:
+- Text position: top, middle, or bottom?
+- Subject position: top, middle, or bottom?
+- Do they overlap? (ONLY if text literally covers the subject)
 
-STEP 2: Only suggest improvements for REAL problems you can actually see.
-
-IMPORTANT: Text at the top of the image with the subject below is NOT overlap. That is GOOD positioning.
+Then provide genuine, helpful suggestions about:
+- Font choice and readability
+- Text length and wording
+- Color usage and vibrancy
+- Overall composition and visual impact
 
 Respond in JSON:
 {
     "overallScore": <1-10>,
-    "verdict": "<one sentence>",
+    "verdict": "<one sentence assessment>",
     "scores": {
         "attention": <1-10>,
         "clarity": <1-10>,
-        "textReadability": <1-10 or null if no text>,
+        "textReadability": <1-10 or null>,
         "colorContrast": <1-10>,
         "emotionalImpact": <1-10>
     },
     "hasText": <boolean>,
-    "textContent": "<exact text you see>",
-    "textPosition": "<where is text: top, middle, bottom, or multiple locations>",
-    "subjectPosition": "<where is subject: top, middle, bottom>",
-    "textOverlapsSubject": <boolean - ONLY true if text literally covers part of the subject>,
+    "textContent": "<exact text>",
+    "textPosition": "<top/middle/bottom>",
+    "subjectPosition": "<top/middle/bottom>",
+    "textOverlapsSubject": <boolean - only true if literally covering>,
     "textHasOutlineOrShadow": <boolean>,
-    "strengths": ["<what works well>"],
-    "improvements": ["<ONLY if there is a real problem - empty array is fine>"],
-    "quickFixes": ["<ONLY if there is a real problem - empty array is fine>"],
-    "colorPalette": ["<all visible colors>"]
+    "strengths": ["<2-3 things that work well>"],
+    "improvements": ["<1-2 genuine suggestions about font, colors, composition, etc>"],
+    "quickFixes": ["<1-2 small tweaks that could help - be specific>"],
+    "colorPalette": ["<visible colors>"]
 }`
                         },
                         {
