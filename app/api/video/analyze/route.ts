@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/db";
 
 // Analyze a single video from TikTok URL
 export async function POST(request: Request) {
@@ -22,6 +23,18 @@ export async function POST(request: Request) {
 
         console.log("=== VIDEO ANALYSIS REQUEST ===");
         console.log("URL:", videoUrl);
+
+        // Fetch creator setup for personalized recommendations
+        let creatorSetup = null;
+        try {
+            const profile = await prisma.userProfile.findUnique({
+                where: { userId: session.user.id },
+                include: { creatorSetup: true },
+            });
+            creatorSetup = profile?.creatorSetup;
+        } catch (e) {
+            console.log("Could not fetch creator setup:", e);
+        }
 
         // Extract video ID from TikTok URL - multiple patterns
         let videoId: string | null = null;
@@ -207,8 +220,24 @@ export async function POST(request: Request) {
             console.log("VideoInfo object keys:", Object.keys(videoInfo));
         }
 
-        // Generate analysis with REAL data - pass in the expected format
-        const analysis = analyzeVideoContent(desc, { playCount: views, diggCount: likes, commentCount: comments, shareCount: shares }, duration);
+        // Generate ENHANCED analysis with hook breakdown and key learnings
+        const analysis = analyzeVideoContent(
+            desc,
+            { playCount: views, diggCount: likes, commentCount: comments, shareCount: shares },
+            duration
+        );
+
+        // Generate hook analysis
+        const hookAnalysis = analyzeHook(desc);
+
+        // Generate content structure
+        const contentStructure = analyzeContentStructure(desc, duration);
+
+        // Generate personalized key learnings based on creator setup
+        const keyLearnings = generateKeyLearnings(analysis, hookAnalysis, creatorSetup);
+
+        // Calculate replicability score based on creator's resources
+        const replicability = calculateReplicability(duration, creatorSetup);
 
         // Add warning if stats are all zero
         if (!hasRealStats) {
@@ -225,6 +254,10 @@ export async function POST(request: Request) {
                 stats: { views, likes, comments, shares },
             },
             analysis: analysis,
+            hookAnalysis: hookAnalysis,
+            contentStructure: contentStructure,
+            keyLearnings: keyLearnings,
+            replicability: replicability,
             debug: {
                 hasStats: hasRealStats,
                 apiResponseKeys: Object.keys(videoData),
@@ -239,6 +272,206 @@ export async function POST(request: Request) {
             { status: 500 }
         );
     }
+}
+
+// Analyze the hook/opening of the video
+function analyzeHook(description: string) {
+    const hookLine = description.split(/[.!?\n]/).shift()?.trim() || "";
+    const descLower = description.toLowerCase();
+
+    // Classify hook type
+    let hookType = "Unknown";
+    let hookScore = 5;
+    let hookFeedback = "";
+
+    if (/^pov[:\s]/i.test(hookLine)) {
+        hookType = "POV";
+        hookScore = 8;
+        hookFeedback = "POV hooks are highly effective - they instantly create curiosity and immersion.";
+    } else if (/\?/.test(hookLine)) {
+        hookType = "Question";
+        hookScore = 7;
+        hookFeedback = "Questions engage viewers by making them want to know the answer.";
+    } else if (/^(wait|watch|dont skip|stop scrolling)/i.test(hookLine)) {
+        hookType = "Pattern Interrupt";
+        hookScore = 8;
+        hookFeedback = "Pattern interrupts are effective at stopping the scroll.";
+    } else if (/^(this|here's|the secret|you need|nobody|everyone)/i.test(hookLine)) {
+        hookType = "Bold Statement";
+        hookScore = 7;
+        hookFeedback = "Bold statements create intrigue and promise value.";
+    } else if (/^(how to|how i|learn|tutorial|step)/i.test(hookLine)) {
+        hookType = "Tutorial/How-To";
+        hookScore = 6;
+        hookFeedback = "Tutorial hooks work well for educational content - consider adding a curiosity element.";
+    } else if (descLower.match(/(trend|viral|challenge|dance|fyp)/)) {
+        hookType = "Trend/Challenge";
+        hookScore = 6;
+        hookFeedback = "Trending content hooks - the visual hook matters more than the caption here.";
+    } else if (hookLine.length > 10) {
+        hookType = "Statement";
+        hookScore = 5;
+        hookFeedback = "Consider starting with a question, 'POV:', or a bolder statement.";
+    } else {
+        hookType = "Minimal";
+        hookScore = 4;
+        hookFeedback = "The caption doesn't have a strong hook - the video itself likely carries the hook.";
+    }
+
+    return {
+        hookLine: hookLine.substring(0, 100),
+        hookType,
+        hookScore,
+        hookFeedback,
+        suggestions: generateHookSuggestions(hookType, hookScore),
+    };
+}
+
+function generateHookSuggestions(hookType: string, hookScore: number): string[] {
+    const suggestions: string[] = [];
+
+    if (hookScore < 7) {
+        suggestions.push("Try starting with 'POV:' followed by a relatable scenario");
+        suggestions.push("Ask a question that your target audience is already thinking");
+        suggestions.push("Use 'Wait for it...' or 'You need to see this' for curiosity");
+    }
+
+    if (hookType === "Minimal" || hookType === "Unknown") {
+        suggestions.push("Add a text hook in the first frame of your video");
+        suggestions.push("The first 1-2 seconds should tell viewers why they should keep watching");
+    }
+
+    return suggestions.slice(0, 3);
+}
+
+// Analyze content structure
+function analyzeContentStructure(description: string, duration: number) {
+    // Estimate phases based on duration
+    const phases: { name: string; duration: number; description: string }[] = [];
+
+    if (duration > 0) {
+        phases.push({
+            name: "Hook",
+            duration: Math.min(3, Math.floor(duration * 0.1)),
+            description: "First 1-3 seconds to capture attention",
+        });
+
+        if (duration > 10) {
+            phases.push({
+                name: "Build-up",
+                duration: Math.floor(duration * 0.4),
+                description: "Develop the content, build tension or value",
+            });
+
+            phases.push({
+                name: "Peak/Payoff",
+                duration: Math.floor(duration * 0.3),
+                description: "The main moment - punchline, reveal, or key insight",
+            });
+        }
+
+        phases.push({
+            name: "CTA/End",
+            duration: Math.floor(duration * 0.2),
+            description: "Call-to-action or memorable ending",
+        });
+    }
+
+    // Check if description has a CTA
+    const hasCTA = /follow|like|comment|share|save|link in bio|dm me/i.test(description);
+
+    return {
+        phases,
+        estimatedPacing: duration <= 15 ? "Fast" : duration <= 45 ? "Medium" : "Slow",
+        hasCTA,
+        ctaFeedback: hasCTA
+            ? "Good - this video includes a call-to-action"
+            : "Consider adding a CTA to boost engagement",
+    };
+}
+
+// Generate personalized key learnings based on creator setup
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function generateKeyLearnings(analysis: any, hookAnalysis: any, creatorSetup: any) {
+    const learnings: string[] = [];
+
+    // Hook-related learnings
+    if (hookAnalysis.hookScore >= 7) {
+        learnings.push(`🎣 Study this hook style: "${hookAnalysis.hookType}" - it's effective and you can adapt it for your content.`);
+    }
+
+    // Based on engagement
+    if (analysis.engagementRate && parseFloat(analysis.engagementRate) > 5) {
+        learnings.push("📈 This video has above-average engagement - pay attention to what made viewers interact.");
+    }
+
+    // Personalized based on creator setup
+    if (creatorSetup) {
+        // Solo creator advice
+        if (creatorSetup.teamSize === 1) {
+            learnings.push("👤 As a solo creator, focus on the hook and caption - you can replicate these without a team.");
+        }
+
+        // Time-based advice
+        if (creatorSetup.hoursPerVideo && creatorSetup.hoursPerVideo <= 2) {
+            learnings.push("⏱️ With your time budget, prioritize the hook and structure over production polish.");
+        }
+
+        // Muslim creator advice
+        if (creatorSetup.isMuslimCreator && creatorSetup.prefersNoMusic) {
+            learnings.push("🔇 Note: If this video uses music, consider how you'd achieve similar energy with voice, sound effects, or nasheeds.");
+        }
+    } else {
+        // Generic advice if no creator setup
+        learnings.push("💡 Complete your Creator Profile in Settings to get personalized recommendations.");
+    }
+
+    // Add strength-based learnings
+    if (analysis.strengths && analysis.strengths.length > 0) {
+        learnings.push(`✅ Key strength to learn from: ${analysis.strengths[0]}`);
+    }
+
+    return learnings.slice(0, 5);
+}
+
+// Calculate how easy this video is to replicate based on creator's resources
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function calculateReplicability(duration: number, creatorSetup: any) {
+    let score = 7; // Default to medium replicability
+    const factors: string[] = [];
+
+    // Duration factor
+    if (duration <= 30) {
+        score += 1;
+        factors.push("Short videos are easier to produce");
+    } else if (duration >= 60) {
+        score -= 1;
+        factors.push("Longer videos require more planning");
+    }
+
+    if (creatorSetup) {
+        // Time factor
+        if (creatorSetup.hoursPerVideo >= 3) {
+            score += 1;
+            factors.push("You have enough time budget for quality production");
+        } else if (creatorSetup.hoursPerVideo <= 1) {
+            score -= 1;
+            factors.push("Your time budget is tight - focus on simple formats");
+        }
+
+        // Equipment factor
+        if (creatorSetup.hasLighting) {
+            factors.push("Your lighting setup helps with quality");
+        }
+    }
+
+    score = Math.min(10, Math.max(1, score));
+
+    return {
+        score,
+        label: score >= 8 ? "Easy to replicate" : score >= 5 ? "Moderate effort" : "Challenging",
+        factors: factors.slice(0, 3),
+    };
 }
 
 // Analyze video content and provide feedback
