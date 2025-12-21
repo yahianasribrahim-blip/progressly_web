@@ -82,23 +82,31 @@ CRITICAL RULES:
    - ONLY call it overlap if text LITERALLY covers the subject
    - Do NOT suggest repositioning unless there's actual overlap
 
-3. ALL SUGGESTIONS MUST BE SPECIFIC AND ACTIONABLE:
+3. COMMENTING ON OBJECTS:
+   - If object IS the main subject (like a car in a car video):
+     * Do NOT comment on the object itself ("sleek design", "beautiful car")
+     * Instead comment on: camera angle, lighting, how it's framed, composition
+     * Example: "The low angle shot makes the car look powerful" NOT "The car is sleek"
+   - If object is NOT the main subject:
+     * Comment on its relevance and purpose
+     * Example: "The props in the background add context"
+
+4. ALL SUGGESTIONS MUST BE SPECIFIC AND ACTIONABLE:
    - BAD: "simplify the text" (vague)
    - GOOD: "Shorten 'Alhumdulillah Alhumdulillah Alhumdulillah' to just 'Alhumdulillah' for cleaner look"
    - BAD: "improve font" (vague)
    - GOOD: "Use a bolder font like Impact or Bebas Neue for more punch"
 
-BANNED SUGGESTIONS (never say these):
-- Anything about text color
-- Anything about outlines or shadows
-- Anything about text contrast
-- Anything about repositioning text (unless covering subject)
+BANNED SUGGESTIONS:
+- Text color, outlines, shadows, contrast
+- Repositioning text (unless covering subject)
+- Praising the subject itself instead of how it's captured
 
-ALLOWED SUGGESTIONS (focus on these):
-- Shorten or reword the text (give specific before/after)
-- Change font style (name specific fonts)
-- Add visual elements (be specific about what and where)
-- Composition improvements (rule of thirds, etc.)
+ALLOWED SUGGESTIONS:
+- Text wording/length (specific before/after)
+- Font style (name specific fonts)
+- Camera angle, lighting, framing
+- Composition improvements
 
 Return JSON only.`
                 },
