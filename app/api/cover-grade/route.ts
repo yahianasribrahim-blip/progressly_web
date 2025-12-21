@@ -71,11 +71,10 @@ async function analyzeCoverWithVision(imageData: string, platform: string) {
 
 CRITICAL RULES:
 
-1. TEXT OUTLINE DETECTION:
-   - Look carefully at the text edges
-   - If text has ANY dark border/edge around it, it HAS an outline - do NOT suggest adding one
-   - White text with black edges = has outline
-   - Text that stands out from background = probably has styling
+1. NEVER SUGGEST ADDING OUTLINE OR SHADOW TO TEXT:
+   - Most thumbnails already have text styling that's hard to detect
+   - Just skip any suggestions about outlines, shadows, or text contrast
+   - Focus on OTHER improvements instead
 
 2. TEXT OVERLAP:
    - Text at TOP with subject in MIDDLE/BOTTOM = NOT overlap
@@ -84,14 +83,21 @@ CRITICAL RULES:
 3. ALL SUGGESTIONS MUST BE SPECIFIC AND ACTIONABLE:
    - BAD: "simplify the text" (vague)
    - GOOD: "Change 'Alhumdulillah Alhumdulillah Alhumdulillah' to just 'Alhumdulillah' for cleaner look"
-   - BAD: "improve contrast" (vague)
-   - GOOD: "Make the text yellow instead of white to pop more against the gray"
+   - BAD: "improve font" (vague)
+   - GOOD: "Use a bolder font like Impact or Bebas Neue for more punch"
    - Every suggestion must show WHAT to change and HOW
 
-DO NOT SUGGEST:
-- Adding outline/shadow if text already has visible edges
-- Repositioning text that isn't overlapping
-- Vague improvements without specific instructions
+BANNED SUGGESTIONS (never say these):
+- "Add outline to text"
+- "Add shadow to text"
+- "Increase text contrast"
+- "Reposition text" (unless it's actually covering the subject)
+
+GOOD SUGGESTIONS TO FOCUS ON:
+- Text wording/length changes (with specific before/after)
+- Font style changes (name specific fonts)
+- Color changes (name specific colors)
+- Composition improvements (be specific)
 
 Return JSON only.`
                 },
