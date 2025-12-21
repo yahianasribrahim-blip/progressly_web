@@ -545,13 +545,40 @@ Return a JSON object with this EXACT structure:
 }`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        // Try multiple model names - different accounts may have different models available
+        const modelsToTry = [
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+        ];
 
-        const result = await model.generateContent([prompt, videoPart]);
+        let result;
+        let successfulModel = "";
+
+        for (const modelName of modelsToTry) {
+            try {
+                console.log(`Trying Gemini model: ${modelName}...`);
+                const model = genAI.getGenerativeModel({ model: modelName });
+                result = await model.generateContent([prompt, videoPart]);
+                successfulModel = modelName;
+                console.log(`Success with model: ${modelName}`);
+                break;
+            } catch (modelError: unknown) {
+                const error = modelError as Error;
+                console.log(`Model ${modelName} failed:`, error.message?.substring(0, 100));
+                // Continue to next model
+            }
+        }
+
+        if (!result) {
+            throw new Error("All Gemini models failed");
+        }
+
         const response = await result.response;
         const text = response.text();
 
-        console.log("Gemini response received, parsing...");
+        console.log(`Gemini response received from ${successfulModel}, parsing...`);
 
         // Extract JSON from response
         const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -637,8 +664,31 @@ Return JSON with this structure (acknowledge limitations - you only see the thum
     "replicabilityRequirements": ["<visible requirements>"]
 }`;
 
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-        const result = await model.generateContent([prompt, imagePart]);
+        // Try multiple model names
+        const modelsToTry = [
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+        ];
+
+        let result;
+        for (const modelName of modelsToTry) {
+            try {
+                console.log(`Cover analysis: trying ${modelName}...`);
+                const model = genAI.getGenerativeModel({ model: modelName });
+                result = await model.generateContent([prompt, imagePart]);
+                console.log(`Cover analysis: success with ${modelName}`);
+                break;
+            } catch {
+                console.log(`Cover analysis: ${modelName} failed`);
+            }
+        }
+
+        if (!result) {
+            throw new Error("All models failed for cover analysis");
+        }
+
         const response = await result.response;
         const text = response.text();
 
