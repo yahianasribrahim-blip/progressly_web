@@ -94,9 +94,31 @@ interface AnalyzeMyVideoProps {
     className?: string;
 }
 
+interface GeneratedShotPlan {
+    shotNumber: number;
+    timestamp: string;
+    action: string;
+    cameraAngle: string;
+    lighting: string;
+    notes: string;
+}
+
+interface GeneratedVideoIdea {
+    title: string;
+    concept: string;
+    estimatedDuration: string;
+    shotByShot: GeneratedShotPlan[];
+    equipmentNeeded: string[];
+    locationSuggestions: string[];
+    tipsForSuccess: string[];
+}
+
 export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
     const [videoUrl, setVideoUrl] = useState("");
+    const [videoIntention, setVideoIntention] = useState("");
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isGeneratingIdea, setIsGeneratingIdea] = useState(false);
+    const [generatedIdea, setGeneratedIdea] = useState<GeneratedVideoIdea | null>(null);
     const [video, setVideo] = useState<AnalyzedVideo | null>(null);
     const [stats, setStats] = useState<VideoStats | null>(null);
     const [engagement, setEngagement] = useState<EngagementMetrics | null>(null);
@@ -133,7 +155,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
             const response = await fetch("/api/video/analyze", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ videoUrl }),
+                body: JSON.stringify({ videoUrl, videoIntention }),
             });
 
             const data = await response.json();
@@ -154,6 +176,49 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
             toast.error("Failed to analyze video");
         } finally {
             setIsAnalyzing(false);
+        }
+    };
+
+    const handleGenerateIdea = async () => {
+        if (!videoAnalysis || !video) {
+            toast.error("Please analyze a video first");
+            return;
+        }
+
+        setIsGeneratingIdea(true);
+        setGeneratedIdea(null);
+
+        try {
+            const response = await fetch("/api/video/generate-idea", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    inspirationVideo: {
+                        description: video.description,
+                        duration: video.duration,
+                        contentType: videoAnalysis.contentType,
+                        sceneBreakdown: videoAnalysis.sceneBySceneBreakdown,
+                        whatWorked: videoAnalysis.whatWorked,
+                        settingType: videoAnalysis.settingType,
+                        productionQuality: videoAnalysis.productionQuality,
+                    },
+                    videoIntention: videoIntention || videoAnalysis.contentType,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to generate idea");
+            }
+
+            setGeneratedIdea(data.idea);
+            toast.success("Video plan generated!");
+        } catch (err) {
+            console.error("Generate idea error:", err);
+            toast.error("Failed to generate video plan");
+        } finally {
+            setIsGeneratingIdea(false);
         }
     };
 
@@ -225,7 +290,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                         Paste any TikTok video URL. Our AI analyzes the content and gives you specific, actionable feedback.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                     <div className="flex gap-2">
                         <div className="relative flex-1">
                             <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -254,6 +319,24 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                 </>
                             )}
                         </Button>
+                    </div>
+
+                    {/* Video Intention Field */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                            <Target className="h-4 w-4" />
+                            Video Intention (Optional)
+                        </label>
+                        <Input
+                            placeholder="e.g., ASMR/Satisfying, Educational, Comedy, Storytelling, Product Review, Day in the Life..."
+                            value={videoIntention}
+                            onChange={(e) => setVideoIntention(e.target.value)}
+                            disabled={isAnalyzing}
+                            className="text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Helps the AI understand the video&apos;s purpose and give more relevant feedback
+                        </p>
                     </div>
                 </CardContent>
             </Card>
@@ -561,6 +644,133 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                         </li>
                                     ))}
                                 </ul>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Generate My Idea Section */}
+                    <Card className="border-violet-200 dark:border-violet-800 bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <Lightbulb className="h-5 w-5 text-violet-500" />
+                                Create Your Version
+                            </CardTitle>
+                            <CardDescription>
+                                Generate a personalized video plan based on this inspiration and your available resources
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Button
+                                onClick={handleGenerateIdea}
+                                disabled={isGeneratingIdea}
+                                className="w-full gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+                            >
+                                {isGeneratingIdea ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Generating Your Video Plan...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Lightbulb className="h-4 w-4" />
+                                        Generate My Idea
+                                    </>
+                                )}
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    {/* Generated Idea Display */}
+                    {generatedIdea && (
+                        <Card className="border-emerald-200 dark:border-emerald-800">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-lg flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                                    <CheckCircle className="h-5 w-5" />
+                                    Your Personalized Video Plan
+                                </CardTitle>
+                                <CardDescription className="text-base font-medium">
+                                    {generatedIdea.title}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Concept */}
+                                <div>
+                                    <h4 className="text-sm font-semibold mb-2">Concept</h4>
+                                    <p className="text-sm text-muted-foreground">{generatedIdea.concept}</p>
+                                </div>
+
+                                {/* Duration */}
+                                <div className="flex items-center gap-2 text-sm">
+                                    <Clock className="h-4 w-4 text-muted-foreground" />
+                                    <span>Estimated Duration: {generatedIdea.estimatedDuration}</span>
+                                </div>
+
+                                {/* Shot-by-Shot Breakdown */}
+                                <div>
+                                    <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                        <Film className="h-4 w-4" />
+                                        Shot-by-Shot Plan
+                                    </h4>
+                                    <div className="space-y-3">
+                                        {generatedIdea.shotByShot.map((shot, i) => (
+                                            <div key={i} className="bg-muted/50 rounded-lg p-3 space-y-1">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="font-medium text-sm">Shot {shot.shotNumber}</span>
+                                                    <Badge variant="outline" className="text-xs">{shot.timestamp}</Badge>
+                                                </div>
+                                                <p className="text-sm">{shot.action}</p>
+                                                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                                    <span>📷 {shot.cameraAngle}</span>
+                                                    <span>💡 {shot.lighting}</span>
+                                                </div>
+                                                {shot.notes && (
+                                                    <p className="text-xs text-muted-foreground italic">{shot.notes}</p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Equipment & Location */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h4 className="text-sm font-semibold mb-2">Equipment Needed</h4>
+                                        <ul className="space-y-1">
+                                            {generatedIdea.equipmentNeeded.map((item, i) => (
+                                                <li key={i} className="text-sm flex items-start gap-2">
+                                                    <span className="text-muted-foreground">•</span>
+                                                    {item}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-semibold mb-2">Location Suggestions</h4>
+                                        <ul className="space-y-1">
+                                            {generatedIdea.locationSuggestions.map((loc, i) => (
+                                                <li key={i} className="text-sm flex items-start gap-2">
+                                                    <MapPin className="h-3 w-3 text-muted-foreground shrink-0 mt-1" />
+                                                    {loc}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                {/* Tips */}
+                                {generatedIdea.tipsForSuccess.length > 0 && (
+                                    <div>
+                                        <h4 className="text-sm font-semibold mb-2">Tips for Success</h4>
+                                        <ul className="space-y-1">
+                                            {generatedIdea.tipsForSuccess.map((tip, i) => (
+                                                <li key={i} className="text-sm flex items-start gap-2">
+                                                    <Lightbulb className="h-3 w-3 text-amber-500 shrink-0 mt-1" />
+                                                    {tip}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     )}

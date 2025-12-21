@@ -16,7 +16,7 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { videoUrl } = body;
+        const { videoUrl, videoIntention } = body;
 
         if (!videoUrl) {
             return NextResponse.json(
@@ -27,6 +27,7 @@ export async function POST(request: Request) {
 
         console.log("=== VIDEO ANALYSIS REQUEST ===");
         console.log("URL:", videoUrl);
+        console.log("Intention:", videoIntention || "not specified");
 
         // Fetch creator setup for personalized recommendations
         let creatorSetup: CreatorSetup | null = null;
@@ -240,7 +241,8 @@ export async function POST(request: Request) {
                     desc,
                     duration,
                     creatorSetup,
-                    views
+                    views,
+                    videoIntention
                 );
             } else {
                 console.log("No video URL, falling back to cover analysis");
@@ -459,7 +461,8 @@ async function analyzeVideoWithGemini(
     caption: string,
     duration: number,
     creatorSetup: CreatorSetup | null,
-    viewCount: number
+    viewCount: number,
+    videoIntention?: string
 ): Promise<VideoAnalysis> {
     console.log("Downloading video for Gemini analysis...");
 
@@ -494,12 +497,16 @@ async function analyzeVideoWithGemini(
         },
     };
 
+    const intentionContext = videoIntention
+        ? `\n- Creator's Intended Purpose: "${videoIntention}" (IMPORTANT: Suggestions should align with this intent. Do NOT suggest things that contradict the video's purpose. For example, if it's ASMR/Satisfying content, don't suggest adding educational explanations.)`
+        : "";
+
     const prompt = `You are a TikTok video analyst. Watch this entire video carefully and provide a detailed analysis.
 
 VIDEO INFO:
 - Caption: "${caption}"
 - Duration: ${duration} seconds
-- Views: ${viewCount.toLocaleString()}
+- Views: ${viewCount.toLocaleString()}${intentionContext}
 
 RULES:
 1. Describe EXACTLY what happens in the video - you are WATCHING the actual video
@@ -508,6 +515,10 @@ RULES:
 4. NEVER use uncertainty words like "possibly", "likely", "appears to" - you are watching the video
 5. NEVER suggest adding background music as an improvement
 6. For improvements, only suggest things the video is NOT already doing
+7. If a video intention is specified, RESPECT IT when giving suggestions. For example:
+   - ASMR/Satisfying content: Focus on visual and audio quality, pacing, not educational value
+   - Educational: Focus on clarity, information delivery, structure
+   - Comedy: Focus on timing, punchlines, relatability
 
 Return a JSON object with this EXACT structure:
 {
