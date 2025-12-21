@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
-import OpenAI from "openai";
+import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
 
 // Analyze a single video from TikTok URL
 export async function POST(request: Request) {
@@ -67,27 +66,25 @@ export async function POST(request: Request) {
         const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
         const RAPIDAPI_HOST = "tiktok-scraper2.p.rapidapi.com";
 
-        // Try multiple methods to get a working video download URL
+        // Get video download URL from tikwm.com
         let videoDownloadUrl = "";
+        let coverUrl = "";
 
-        // Method 1: Try tikwm.com API (popular, often works)
         try {
-            console.log("Method 1: Trying tikwm.com API...");
+            console.log("Getting video download URL from tikwm.com...");
             const tikwmResponse = await fetch(
                 `https://www.tikwm.com/api/?url=${encodeURIComponent(videoUrl)}`,
                 {
                     method: "GET",
-                    headers: {
-                        'Accept': 'application/json',
-                    },
+                    headers: { 'Accept': 'application/json' },
                 }
             );
 
             if (tikwmResponse.ok) {
                 const tikwmData = await tikwmResponse.json();
-                console.log("tikwm response code:", tikwmData.code);
                 if (tikwmData.code === 0 && tikwmData.data) {
-                    videoDownloadUrl = tikwmData.data.play || tikwmData.data.hdplay || tikwmData.data.wmplay || "";
+                    videoDownloadUrl = tikwmData.data.play || tikwmData.data.hdplay || "";
+                    coverUrl = tikwmData.data.cover || tikwmData.data.origin_cover || "";
                     console.log("tikwm video URL found:", !!videoDownloadUrl);
                 }
             }
@@ -95,65 +92,7 @@ export async function POST(request: Request) {
             console.log("tikwm API failed:", e);
         }
 
-        // Method 2: Try our RapidAPI no_watermark endpoint
-        if (!videoDownloadUrl) {
-            try {
-                console.log("Method 2: Trying RapidAPI no_watermark...");
-                const downloadResponse = await fetch(
-                    `https://${RAPIDAPI_HOST}/video/no_watermark?video_url=${encodeURIComponent(videoUrl)}`,
-                    {
-                        method: "GET",
-                        headers: {
-                            "x-rapidapi-key": RAPIDAPI_KEY,
-                            "x-rapidapi-host": RAPIDAPI_HOST,
-                        },
-                    }
-                );
-
-                if (downloadResponse.ok) {
-                    const downloadData = await downloadResponse.json();
-                    console.log("RapidAPI response keys:", Object.keys(downloadData));
-                    videoDownloadUrl = downloadData.video_url ||
-                        downloadData.nwm_video_url ||
-                        downloadData.video?.playAddr ||
-                        downloadData.data?.play ||
-                        downloadData.data?.hdplay ||
-                        "";
-                    console.log("RapidAPI video URL found:", !!videoDownloadUrl);
-                }
-            } catch (e) {
-                console.log("RapidAPI download failed:", e);
-            }
-        }
-
-        // Method 3: Try another popular TikTok download API
-        if (!videoDownloadUrl) {
-            try {
-                console.log("Method 3: Trying ssstik-style API...");
-                const response = await fetch(
-                    `https://tiktok-download-without-watermark.p.rapidapi.com/analysis?url=${encodeURIComponent(videoUrl)}`,
-                    {
-                        method: "GET",
-                        headers: {
-                            "x-rapidapi-key": RAPIDAPI_KEY,
-                            "x-rapidapi-host": "tiktok-download-without-watermark.p.rapidapi.com",
-                        },
-                    }
-                );
-
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log("ssstik response keys:", Object.keys(data));
-                    videoDownloadUrl = data.data?.play || data.data?.wmplay || data.data?.hdplay || "";
-                    console.log("ssstik video URL found:", !!videoDownloadUrl);
-                }
-            } catch (e) {
-                console.log("ssstik API failed:", e);
-            }
-        }
-
-        console.log("Final video download URL:", videoDownloadUrl ? "Found" : "Not found");
-
+        // Get video info from RapidAPI
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let videoData: any = null;
 
@@ -230,20 +169,10 @@ export async function POST(request: Request) {
         const desc = videoInfo.desc || videoInfo.description || "";
         const duration = videoInfo.video?.duration || videoInfo.duration || 0;
 
-        // Get video download URL - try multiple paths
-        const videoPlayUrl =
-            videoInfo.video?.playAddr ||
-            videoInfo.video?.play_addr?.url_list?.[0] ||
-            videoInfo.video?.downloadAddr ||
-            videoInfo.video?.download_addr?.url_list?.[0] ||
-            "";
-
-        // Get cover/thumbnail
-        const coverUrl = videoInfo.video?.cover ||
-            videoInfo.video?.originCover ||
-            "";
-
-        const dynamicCover = videoInfo.video?.dynamicCover || "";
+        // Use cover from API if we don't have one
+        if (!coverUrl) {
+            coverUrl = videoInfo.video?.cover || videoInfo.video?.originCover || "";
+        }
 
         // Map stats
         const views = stats.playCount || stats.play_count || 0;
@@ -254,49 +183,34 @@ export async function POST(request: Request) {
 
         console.log("Creator:", creatorName);
         console.log("Views:", views, "Duration:", duration);
-        console.log("Video Play URL from API:", !!videoPlayUrl);
-        console.log("Video Download URL from download endpoint:", !!videoDownloadUrl);
+        console.log("Video download URL:", videoDownloadUrl ? "Found" : "Not found");
 
-        // Use the download endpoint URL if available, otherwise fall back to API URL
-        const actualVideoUrl = videoDownloadUrl || videoPlayUrl;
-        console.log("Using video URL:", actualVideoUrl ? actualVideoUrl.substring(0, 80) + "..." : "none");
-
-        // Calculate engagement WITH view count factor
+        // Calculate engagement
         const engagementMetrics = calculateEngagementWithViews(views, likes, comments, shares);
 
-        // Extract frames from video and analyze them
+        // ANALYZE VIDEO WITH GEMINI
         let videoAnalysis: VideoAnalysis | null = null;
         try {
-            console.log("Starting video frame analysis...");
+            console.log("Starting Gemini video analysis...");
 
-            if (actualVideoUrl) {
-                // Download video and extract frames
-                const frames = await extractVideoFrames(actualVideoUrl, duration);
-
-                if (frames.length > 0) {
-                    console.log(`Extracted ${frames.length} frames, analyzing...`);
-                    videoAnalysis = await analyzeVideoFrames(
-                        frames,
-                        desc,
-                        duration,
-                        creatorSetup,
-                        views
-                    );
-                } else {
-                    // Fallback to cover image analysis
-                    console.log("Frame extraction failed, using cover image");
-                    videoAnalysis = await analyzeCoverImage(coverUrl, dynamicCover, desc, duration, views);
-                }
+            if (videoDownloadUrl) {
+                videoAnalysis = await analyzeVideoWithGemini(
+                    videoDownloadUrl,
+                    desc,
+                    duration,
+                    creatorSetup,
+                    views
+                );
             } else {
-                // No video URL, use cover image
-                videoAnalysis = await analyzeCoverImage(coverUrl, dynamicCover, desc, duration, views);
+                console.log("No video URL, falling back to cover analysis");
+                videoAnalysis = await analyzeCoverWithGemini(coverUrl, desc, duration, views);
             }
 
             console.log("Video analysis complete");
         } catch (e) {
             console.error("Video analysis failed:", e);
-            // Fallback to cover
-            videoAnalysis = await analyzeCoverImage(coverUrl, dynamicCover, desc, duration, views);
+            // Fallback
+            videoAnalysis = await analyzeCoverWithGemini(coverUrl, desc, duration, views);
         }
 
         // Generate final analysis
@@ -367,11 +281,6 @@ interface EngagementMetrics {
     overallVerdict: string;
 }
 
-interface VideoFrame {
-    timestamp: number;
-    base64: string;
-}
-
 interface SceneBreakdown {
     timestamp: string;
     description: string;
@@ -395,11 +304,10 @@ interface VideoAnalysis {
     };
     replicabilityRequirements: string[];
     analysisMethod: "full_video" | "cover_only";
-    framesAnalyzed: number;
 }
 
 // =================
-// ENGAGEMENT WITH VIEW COUNT
+// ENGAGEMENT CALCULATION
 // =================
 
 function calculateEngagementWithViews(
@@ -464,10 +372,10 @@ function calculateEngagementWithViews(
         viewsFeedback = "Moderate reach - 10K+ views";
     } else if (views >= 1000) {
         viewsRating = "low";
-        viewsFeedback = "Limited reach - algorithm didn't push";
+        viewsFeedback = "Limited reach";
     } else {
         viewsRating = "very_low";
-        viewsFeedback = "Very low reach - flopped";
+        viewsFeedback = "Very low reach";
     }
 
     let overallVerdict: string;
@@ -484,7 +392,7 @@ function calculateEngagementWithViews(
             : "📊 Average Performance";
     } else {
         overallVerdict = engagementRating === "viral" || engagementRating === "strong"
-            ? "⚠️ Great Content, Algorithm Didn't Push"
+            ? "⚠️ Great Content, Low Reach"
             : "📉 Underperformed";
     }
 
@@ -502,156 +410,122 @@ function calculateEngagementWithViews(
 }
 
 // =================
-// VIDEO FRAME EXTRACTION
+// GEMINI VIDEO ANALYSIS
 // =================
 
-async function extractVideoFrames(videoUrl: string, duration: number): Promise<VideoFrame[]> {
-    const frames: VideoFrame[] = [];
-
-    try {
-        console.log("Attempting to download video from:", videoUrl.substring(0, 100) + "...");
-
-        // TikTok CDN requires specific headers to allow downloads
-        const videoResponse = await fetch(videoUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,audio/*;q=0.6,*/*;q=0.5',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Referer': 'https://www.tiktok.com/',
-                'Sec-Fetch-Dest': 'video',
-                'Sec-Fetch-Mode': 'no-cors',
-                'Sec-Fetch-Site': 'cross-site',
-            }
-        });
-
-        console.log("Video download response status:", videoResponse.status);
-        console.log("Content-Type:", videoResponse.headers.get('content-type'));
-        console.log("Content-Length:", videoResponse.headers.get('content-length'));
-
-        if (!videoResponse.ok) {
-            console.log("Video download failed with status:", videoResponse.status);
-            return frames;
-        }
-
-        const contentType = videoResponse.headers.get('content-type') || '';
-        if (!contentType.includes('video')) {
-            console.log("Response is not a video, got:", contentType);
-            // TikTok may return HTML instead of video
-            return frames;
-        }
-
-        const videoBuffer = await videoResponse.arrayBuffer();
-        const fileSizeKB = Math.round(videoBuffer.byteLength / 1024);
-        console.log(`Video downloaded successfully: ${fileSizeKB}KB`);
-
-        // Check if we got a real video (should be at least a few KB)
-        if (videoBuffer.byteLength < 10000) {
-            console.log("Downloaded file too small, likely not a video");
-            return frames;
-        }
-
-        const videoBase64 = Buffer.from(videoBuffer).toString('base64');
-
-        // Return video as base64 - GPT-4o's vision can analyze images from videos
-        // We're sending the whole video and letting GPT-4o extract key frames
-        frames.push({
-            timestamp: 0,
-            base64: `data:video/mp4;base64,${videoBase64}`
-        });
-
-        console.log("Video converted to base64 successfully");
-
-    } catch (error) {
-        console.error("Frame extraction error:", error);
-    }
-
-    return frames;
-}
-
-// =================
-// VIDEO FRAME ANALYSIS WITH GPT-4O
-// =================
-
-async function analyzeVideoFrames(
-    frames: VideoFrame[],
+async function analyzeVideoWithGemini(
+    videoUrl: string,
     caption: string,
     duration: number,
     creatorSetup: CreatorSetup | null,
     viewCount: number
 ): Promise<VideoAnalysis> {
-    const systemPrompt = `You are analyzing a TikTok video. You will see frames from the video and must describe EXACTLY what happens in the video, scene by scene.
+    console.log("Downloading video for Gemini analysis...");
 
-CRITICAL RULES:
-1. ONLY describe what you can actually SEE in the frames
-2. Be SPECIFIC - mention exact items, car models, products, actions
-3. NEVER use uncertainty words like "possibly", "likely", "appears", "seems"
-4. NEVER suggest adding background music
-5. If you can't see something clearly, say "Not visible" - don't guess
+    // Download the video
+    const videoResponse = await fetch(videoUrl, {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://www.tiktok.com/',
+        }
+    });
 
-Video info:
+    if (!videoResponse.ok) {
+        console.log("Video download failed:", videoResponse.status);
+        throw new Error("Failed to download video");
+    }
+
+    const videoBuffer = await videoResponse.arrayBuffer();
+    const videoBase64 = Buffer.from(videoBuffer).toString('base64');
+    const fileSizeKB = Math.round(videoBuffer.byteLength / 1024);
+
+    console.log(`Video downloaded: ${fileSizeKB}KB`);
+
+    if (videoBuffer.byteLength < 10000) {
+        throw new Error("Downloaded file too small");
+    }
+
+    // Prepare video for Gemini
+    const videoPart: Part = {
+        inlineData: {
+            mimeType: "video/mp4",
+            data: videoBase64,
+        },
+    };
+
+    const prompt = `You are a TikTok video analyst. Watch this entire video carefully and provide a detailed analysis.
+
+VIDEO INFO:
 - Caption: "${caption}"
 - Duration: ${duration} seconds
 - Views: ${viewCount.toLocaleString()}
 
-${viewCount < 10000 ? "This video has low views - analyze why it may have underperformed." : ""}`;
+RULES:
+1. Describe EXACTLY what happens in the video - you are WATCHING the actual video
+2. Provide accurate timestamps for each scene
+3. Be SPECIFIC about what you see and hear
+4. NEVER use uncertainty words like "possibly", "likely", "appears to" - you are watching the video
+5. NEVER suggest adding background music as an improvement
+6. For improvements, only suggest things the video is NOT already doing
 
-    const userPrompt = `Analyze this TikTok video. Look at all the frames and describe the ENTIRE video content.
-
-Provide a detailed scene-by-scene breakdown with accurate timestamps.
-
-Return JSON:
+Return a JSON object with this EXACT structure:
 {
-    "contentType": "<specific type: 'car modification tips', 'cooking tutorial', etc.>",
-    "contentDescription": "<4-5 sentences describing the FULL video - what happens from start to finish>",
+    "contentType": "<specific type like 'car modification tips', 'comedy skit', 'cooking tutorial'>",
+    "contentDescription": "<4-5 sentences describing the FULL video from start to finish - what the creator shows, says, and does>",
     "sceneBySceneBreakdown": [
-        {"timestamp": "0:00-0:03", "description": "Opening/Hook", "whatsHappening": "<exact description of what happens>"},
-        {"timestamp": "0:03-0:15", "description": "First Topic", "whatsHappening": "<what creator says/shows>"},
+        {"timestamp": "0:00-0:03", "description": "Opening/Hook", "whatsHappening": "<exact description of opening>"},
+        {"timestamp": "0:03-0:15", "description": "First Topic", "whatsHappening": "<what happens in this section>"},
         {"timestamp": "0:15-0:30", "description": "Second Topic", "whatsHappening": "<what happens>"},
-        {"timestamp": "0:30-end", "description": "Conclusion", "whatsHappening": "<how it ends>"}
+        {"timestamp": "0:30-end", "description": "Conclusion", "whatsHappening": "<how video ends>"}
     ],
-    "peopleCount": "<exact count: 'solo creator', '2 people', etc.>",
-    "settingType": "<specific setting you can see>",
-    "audioType": "<'talking/voiceover', 'original audio', 'background music'>",
-    "productionQuality": "<'phone filmed', 'good production', 'professional'>",
-    "whatWorked": ["<specific strength based on what you SEE>", "<strength 2>", "<strength 3>"],
-    "whatToImprove": ["<specific improvement NOT already in video>", "<improvement 2>"],
-    "hookAnalysis": {"hookType": "<type>", "effectiveness": "<why it works/doesn't>", "score": <1-10>},
-    "replicabilityRequirements": ["<specific item needed>", "<requirement 2>"]
+    "peopleCount": "<exact: 'solo creator', '2 people', 'group of 5'>",
+    "settingType": "<specific: 'parking lot with Infiniti G37', 'home kitchen', 'bedroom with ring light'>",
+    "audioType": "<'talking/voiceover', 'original audio with talking', 'background music only', 'mixed'>",
+    "productionQuality": "<'basic phone filming', 'good lighting and angles', 'professional production'>",
+    "whatWorked": [
+        "<specific strength based on what you SEE in the video>",
+        "<another specific strength>",
+        "<strength 3>"
+    ],
+    "whatToImprove": [
+        "<specific improvement that the video is NOT already doing>",
+        "<improvement 2>"
+    ],
+    "hookAnalysis": {
+        "hookType": "<type: 'text overlay', 'verbal hook', 'visual hook', 'curiosity hook'>",
+        "effectiveness": "<why it works or doesn't work>",
+        "score": <1-10>
+    },
+    "replicabilityRequirements": [
+        "<specific item needed to replicate - e.g., 'a modified car'>",
+        "<requirement 2>",
+        "<requirement 3>"
+    ]
 }`;
 
     try {
-        // Build content with frames
-        const content: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
-            { type: "text", text: userPrompt }
-        ];
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        // Add frames as images
-        for (const frame of frames.slice(0, 5)) {
-            // If it's a data URL (base64), use it directly
-            if (frame.base64.startsWith('data:')) {
-                content.push({
-                    type: "image_url",
-                    image_url: { url: frame.base64, detail: "high" }
-                });
-            }
+        const result = await model.generateContent([prompt, videoPart]);
+        const response = await result.response;
+        const text = response.text();
+
+        console.log("Gemini response received, parsing...");
+
+        // Extract JSON from response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            throw new Error("No JSON found in Gemini response");
         }
 
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content }
-            ],
-            max_tokens: 2500,
-            response_format: { type: "json_object" },
-        });
+        const parsed = JSON.parse(jsonMatch[0]);
 
-        const responseContent = response.choices[0]?.message?.content;
-        if (!responseContent) {
-            throw new Error("No response from AI");
-        }
-
-        const parsed = JSON.parse(responseContent);
+        // Filter out music suggestions
+        const filterMusic = (arr: string[]) => arr.filter((s: string) =>
+            !s.toLowerCase().includes("music") &&
+            !s.toLowerCase().includes("audio track") &&
+            !s.toLowerCase().includes("sound effect")
+        );
 
         return {
             contentType: parsed.contentType || "Video content",
@@ -661,90 +535,78 @@ Return JSON:
             settingType: parsed.settingType || "Unknown",
             audioType: parsed.audioType || "Unknown",
             productionQuality: parsed.productionQuality || "Unknown",
-            whatWorked: (parsed.whatWorked || []).filter((s: string) => !s.toLowerCase().includes("music")),
-            whatToImprove: (parsed.whatToImprove || []).filter((s: string) => !s.toLowerCase().includes("music")),
+            whatWorked: filterMusic(parsed.whatWorked || []),
+            whatToImprove: filterMusic(parsed.whatToImprove || []),
             hookAnalysis: parsed.hookAnalysis || { hookType: "Unknown", effectiveness: "Unknown", score: 5 },
             replicabilityRequirements: parsed.replicabilityRequirements || [],
             analysisMethod: "full_video",
-            framesAnalyzed: frames.length,
         };
     } catch (error) {
-        console.error("Frame analysis error:", error);
+        console.error("Gemini video analysis error:", error);
         throw error;
     }
 }
 
-// =================
-// COVER IMAGE ANALYSIS (FALLBACK)
-// =================
-
-async function analyzeCoverImage(
+// Fallback: analyze cover image with Gemini
+async function analyzeCoverWithGemini(
     coverUrl: string,
-    dynamicCoverUrl: string,
     caption: string,
     duration: number,
     viewCount: number
 ): Promise<VideoAnalysis> {
-    if (!coverUrl && !dynamicCoverUrl) {
+    if (!coverUrl) {
         return getDefaultAnalysis();
     }
 
-    const systemPrompt = `You are analyzing a TikTok video thumbnail. Be HONEST that you can only see the cover image, not the full video.
+    try {
+        // Download cover image
+        const imageResponse = await fetch(coverUrl);
+        if (!imageResponse.ok) {
+            throw new Error("Failed to download cover");
+        }
 
-RULES:
-1. Only describe what you can SEE in the thumbnail
-2. Acknowledge limitations - you cannot see the full video
-3. Never use "possibly", "likely", "appears", "seems"
-4. Never suggest adding music
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const imageBase64 = Buffer.from(imageBuffer).toString('base64');
+
+        const imagePart: Part = {
+            inlineData: {
+                mimeType: "image/jpeg",
+                data: imageBase64,
+            },
+        };
+
+        const prompt = `You are analyzing a TikTok video thumbnail. Be HONEST that you can only see the cover image.
 
 Caption: "${caption}"
 Duration: ${duration}s  
-Views: ${viewCount.toLocaleString()}`;
+Views: ${viewCount.toLocaleString()}
 
-    const userPrompt = `Based on this thumbnail and caption, provide your analysis. Be clear about what you CAN and CANNOT determine from just the cover.
-
-Return JSON:
+Return JSON with this structure (acknowledge limitations - you only see the thumbnail):
 {
-    "contentType": "<type based on what you can see>",
+    "contentType": "<type based on thumbnail>",
     "contentDescription": "<describe what you can determine from thumbnail + caption>",
-    "sceneBySceneBreakdown": [{"timestamp": "cover", "description": "Thumbnail", "whatsHappening": "<what's shown in cover>"}],
+    "sceneBySceneBreakdown": [{"timestamp": "thumbnail", "description": "Cover Frame", "whatsHappening": "<what's visible>"}],
     "peopleCount": "<what you can see>",
     "settingType": "<visible setting>",
     "audioType": "Cannot determine from thumbnail",
     "productionQuality": "<visible quality>",
     "whatWorked": ["<visible strength>"],
-    "whatToImprove": ["<suggestion>"],
+    "whatToImprove": ["<suggestion based on what you see>"],
     "hookAnalysis": {"hookType": "<type>", "effectiveness": "<analysis>", "score": <1-10>},
     "replicabilityRequirements": ["<visible requirements>"]
 }`;
 
-    try {
-        const content: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
-            { type: "text", text: userPrompt }
-        ];
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent([prompt, imagePart]);
+        const response = await result.response;
+        const text = response.text();
 
-        // Add cover images
-        if (dynamicCoverUrl) {
-            content.push({ type: "image_url", image_url: { url: dynamicCoverUrl, detail: "high" } });
-        }
-        if (coverUrl && coverUrl !== dynamicCoverUrl) {
-            content.push({ type: "image_url", image_url: { url: coverUrl, detail: "high" } });
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            throw new Error("No JSON in response");
         }
 
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content }
-            ],
-            max_tokens: 2000,
-            response_format: { type: "json_object" },
-        });
-
-        const responseContent = response.choices[0]?.message?.content;
-        if (!responseContent) throw new Error("No response");
-
-        const parsed = JSON.parse(responseContent);
+        const parsed = JSON.parse(jsonMatch[0]);
 
         return {
             contentType: parsed.contentType || "Video",
@@ -759,7 +621,6 @@ Return JSON:
             hookAnalysis: parsed.hookAnalysis || { hookType: "Unknown", effectiveness: "Unknown", score: 5 },
             replicabilityRequirements: parsed.replicabilityRequirements || [],
             analysisMethod: "cover_only",
-            framesAnalyzed: 0,
         };
     } catch (error) {
         console.error("Cover analysis error:", error);
@@ -781,7 +642,6 @@ function getDefaultAnalysis(): VideoAnalysis {
         hookAnalysis: { hookType: "Unknown", effectiveness: "Unknown", score: 5 },
         replicabilityRequirements: [],
         analysisMethod: "cover_only",
-        framesAnalyzed: 0,
     };
 }
 
@@ -816,7 +676,8 @@ function generateFinalAnalysis(
     const keyLearnings: string[] = [];
 
     if (creatorSetup && videoAnalysis) {
-        if (creatorSetup.teamSize === 1 && !videoAnalysis.peopleCount.toLowerCase().includes("solo")) {
+        const peopleCount = videoAnalysis.peopleCount.toLowerCase();
+        if (creatorSetup.teamSize === 1 && !peopleCount.includes("solo") && !peopleCount.includes("1")) {
             keyLearnings.push(`⚠️ This video has ${videoAnalysis.peopleCount}. As a solo creator, you'd need to adapt.`);
         }
         if (videoAnalysis.replicabilityRequirements.length > 0) {
@@ -829,10 +690,10 @@ function generateFinalAnalysis(
         keyLearnings.push(`💡 Good engagement but low views - algorithm didn't push it.`);
     }
 
-    if (videoAnalysis?.analysisMethod === "cover_only") {
-        keyLearnings.push(`ℹ️ Analysis based on thumbnail only. Video download was not possible.`);
-    } else if (videoAnalysis?.analysisMethod === "full_video") {
-        keyLearnings.push(`✅ Full video analyzed (${videoAnalysis.framesAnalyzed} frames)`);
+    if (videoAnalysis?.analysisMethod === "full_video") {
+        keyLearnings.push(`✅ Full video analyzed with Gemini AI`);
+    } else if (videoAnalysis?.analysisMethod === "cover_only") {
+        keyLearnings.push(`ℹ️ Analysis based on thumbnail only (video download failed)`);
     }
 
     return {
