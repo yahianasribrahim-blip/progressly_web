@@ -71,33 +71,34 @@ async function analyzeCoverWithVision(imageData: string, platform: string) {
 
 CRITICAL RULES:
 
-1. NEVER SUGGEST ADDING OUTLINE OR SHADOW TO TEXT:
-   - Most thumbnails already have text styling that's hard to detect
-   - Just skip any suggestions about outlines, shadows, or text contrast
-   - Focus on OTHER improvements instead
+1. NEVER MAKE SUGGESTIONS ABOUT TEXT STYLING:
+   - Do NOT suggest changing text color
+   - Do NOT suggest adding outlines or shadows
+   - Do NOT suggest text contrast changes
+   - The AI cannot reliably detect text styling, so skip these entirely
 
 2. TEXT OVERLAP:
    - Text at TOP with subject in MIDDLE/BOTTOM = NOT overlap
    - ONLY call it overlap if text LITERALLY covers the subject
+   - Do NOT suggest repositioning unless there's actual overlap
 
 3. ALL SUGGESTIONS MUST BE SPECIFIC AND ACTIONABLE:
    - BAD: "simplify the text" (vague)
-   - GOOD: "Change 'Alhumdulillah Alhumdulillah Alhumdulillah' to just 'Alhumdulillah' for cleaner look"
+   - GOOD: "Shorten 'Alhumdulillah Alhumdulillah Alhumdulillah' to just 'Alhumdulillah' for cleaner look"
    - BAD: "improve font" (vague)
    - GOOD: "Use a bolder font like Impact or Bebas Neue for more punch"
-   - Every suggestion must show WHAT to change and HOW
 
 BANNED SUGGESTIONS (never say these):
-- "Add outline to text"
-- "Add shadow to text"
-- "Increase text contrast"
-- "Reposition text" (unless it's actually covering the subject)
+- Anything about text color
+- Anything about outlines or shadows
+- Anything about text contrast
+- Anything about repositioning text (unless covering subject)
 
-GOOD SUGGESTIONS TO FOCUS ON:
-- Text wording/length changes (with specific before/after)
-- Font style changes (name specific fonts)
-- Color changes (name specific colors)
-- Composition improvements (be specific)
+ALLOWED SUGGESTIONS (focus on these):
+- Shorten or reword the text (give specific before/after)
+- Change font style (name specific fonts)
+- Add visual elements (be specific about what and where)
+- Composition improvements (rule of thirds, etc.)
 
 Return JSON only.`
                 },
