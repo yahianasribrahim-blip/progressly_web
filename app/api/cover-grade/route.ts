@@ -67,26 +67,31 @@ async function analyzeCoverWithVision(imageData: string, platform: string) {
             messages: [
                 {
                     role: "system",
-                    content: `You are an expert ${platform} thumbnail analyst. Your job is to help creators improve their thumbnails.
+                    content: `You are an expert ${platform} thumbnail analyst.
 
-CRITICAL RULE ABOUT "OVERLAP":
-- Text at the TOP of image with subject in MIDDLE/BOTTOM = NOT overlap (this is GOOD)
-- Text at the BOTTOM of image with subject in MIDDLE/TOP = NOT overlap (this is GOOD)
-- ONLY call it overlap if text is LITERALLY covering the subject
+CRITICAL RULES:
+
+1. TEXT OUTLINE DETECTION:
+   - Look carefully at the text edges
+   - If text has ANY dark border/edge around it, it HAS an outline - do NOT suggest adding one
+   - White text with black edges = has outline
+   - Text that stands out from background = probably has styling
+
+2. TEXT OVERLAP:
+   - Text at TOP with subject in MIDDLE/BOTTOM = NOT overlap
+   - ONLY call it overlap if text LITERALLY covers the subject
+
+3. ALL SUGGESTIONS MUST BE SPECIFIC AND ACTIONABLE:
+   - BAD: "simplify the text" (vague)
+   - GOOD: "Change 'Alhumdulillah Alhumdulillah Alhumdulillah' to just 'Alhumdulillah' for cleaner look"
+   - BAD: "improve contrast" (vague)
+   - GOOD: "Make the text yellow instead of white to pop more against the gray"
+   - Every suggestion must show WHAT to change and HOW
 
 DO NOT SUGGEST:
-- Repositioning text that isn't actually overlapping
-- Adding outlines if the text already has a visible outline
-- Fake problems that don't exist
-
-DO SUGGEST (be helpful with real feedback):
-- Font improvements (is the font readable? impactful? appropriate for the niche?)
-- Text length (too much text? could it be shorter?)
-- Color choices (do the colors grab attention? could they be more vibrant?)
-- Composition tips (rule of thirds? visual hierarchy?)
-- Emotional appeal (does it create curiosity? urgency?)
-
-Always give at least 1-2 genuine suggestions - but they must be about REAL aspects of the image.
+- Adding outline/shadow if text already has visible edges
+- Repositioning text that isn't overlapping
+- Vague improvements without specific instructions
 
 Return JSON only.`
                 },
@@ -95,23 +100,26 @@ Return JSON only.`
                     content: [
                         {
                             type: "text",
-                            text: `Analyze this ${platform} thumbnail and give helpful feedback.
+                            text: `Analyze this ${platform} thumbnail.
 
-First, note these positions:
-- Text position: top, middle, or bottom?
-- Subject position: top, middle, or bottom?
-- Do they overlap? (ONLY if text literally covers the subject)
+FIRST, check these carefully:
+1. Does the text have a dark outline or edge around it? Look closely at the text borders.
+2. Where is text vs subject positioned?
 
-Then provide genuine, helpful suggestions about:
-- Font choice and readability
-- Text length and wording
-- Color usage and vibrancy
-- Overall composition and visual impact
+THEN provide SPECIFIC, ACTIONABLE suggestions. Every suggestion must say:
+- WHAT to change
+- HOW to change it
+- Example of the result
+
+Example good suggestions:
+- "Change the repeated 'Alhumdulillah Alhumdulillah Alhumdulillah' to just 'Alhumdulillah' for a cleaner look"
+- "Use a bolder font like Impact or Bebas Neue for more punch"
+- "Add a subtle gradient overlay to the bottom for depth"
 
 Respond in JSON:
 {
     "overallScore": <1-10>,
-    "verdict": "<one sentence assessment>",
+    "verdict": "<one sentence>",
     "scores": {
         "attention": <1-10>,
         "clarity": <1-10>,
@@ -123,12 +131,12 @@ Respond in JSON:
     "textContent": "<exact text>",
     "textPosition": "<top/middle/bottom>",
     "subjectPosition": "<top/middle/bottom>",
-    "textOverlapsSubject": <boolean - only true if literally covering>,
-    "textHasOutlineOrShadow": <boolean>,
-    "strengths": ["<2-3 things that work well>"],
-    "improvements": ["<1-2 genuine suggestions about font, colors, composition, etc>"],
-    "quickFixes": ["<1-2 small tweaks that could help - be specific>"],
-    "colorPalette": ["<visible colors>"]
+    "textOverlapsSubject": <boolean>,
+    "textHasOutlineOrShadow": <boolean - true if ANY dark edge visible around text>,
+    "strengths": ["<what works well>"],
+    "improvements": ["<SPECIFIC suggestion with what/how/result>"],
+    "quickFixes": ["<SPECIFIC small tweak with clear instruction>"],
+    "colorPalette": ["<colors>"]
 }`
                         },
                         {
