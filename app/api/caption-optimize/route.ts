@@ -166,14 +166,15 @@ YOUR JOB IS TO HELP IMPROVE THE CAPTION. Always provide feedback on:
 
 RULES FOR HOOKS:
 - Good hooks spark either INTRIGUE or CURIOSITY:
-  * INTRIGUE: Bold claims like "I genuinely think this is the best V12 ever made"
-  * CURIOSITY: Questions like "Have you ever wondered what the sun really is?"
-- Hooks that usually don't work (unless context makes them fit):
-  * "Let's talk about X" - often flat, but can work for casual content
-  * "Today I'm showing you..." - generic
-- If the original hook ALREADY sparks curiosity or intrigue, keep it
-- Only suggest alternatives that are genuinely BETTER for the content
-- Match the hook style to the audience and content type
+  * INTRIGUE (bold claim): "The Ferrari 812 is the best V12 out there"
+  * CURIOSITY (question): "Have you ever wondered what the sun really is?"
+- BOTH styles work - neither is better than the other
+- If the original hook is already a bold claim OR good question, acknowledge it's working
+- For alternatives, ALWAYS suggest:
+  * One BOLD CLAIM style alternative
+  * One QUESTION style alternative
+- Don't suggest only questions or only statements
+- Match to the specific content
 
 RULES FOR CTAs:
 - For adult audiences (16+): Don't suggest "save this for later" or "comment below"
