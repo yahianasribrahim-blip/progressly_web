@@ -71,19 +71,25 @@ export async function POST(request: Request) {
         let coverUrl = "";
 
         try {
-            console.log("Getting video download URL from tikwm.com...");
+            console.log("Method 1: Trying tikwm.com...");
             const tikwmResponse = await fetch(
                 `https://www.tikwm.com/api/?url=${encodeURIComponent(videoUrl)}`,
                 {
                     method: "GET",
-                    headers: { 'Accept': 'application/json' },
+                    headers: {
+                        'Accept': 'application/json',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    },
                 }
             );
 
+            console.log("tikwm status:", tikwmResponse.status);
+
             if (tikwmResponse.ok) {
                 const tikwmData = await tikwmResponse.json();
+                console.log("tikwm code:", tikwmData.code, "msg:", tikwmData.msg);
                 if (tikwmData.code === 0 && tikwmData.data) {
-                    videoDownloadUrl = tikwmData.data.play || tikwmData.data.hdplay || "";
+                    videoDownloadUrl = tikwmData.data.play || tikwmData.data.hdplay || tikwmData.data.wmplay || "";
                     coverUrl = tikwmData.data.cover || tikwmData.data.origin_cover || "";
                     console.log("tikwm video URL found:", !!videoDownloadUrl);
                 }
@@ -91,6 +97,41 @@ export async function POST(request: Request) {
         } catch (e) {
             console.log("tikwm API failed:", e);
         }
+
+        // Fallback: Try RapidAPI download endpoint
+        if (!videoDownloadUrl) {
+            try {
+                console.log("Method 2: Trying RapidAPI download...");
+                const rapidResponse = await fetch(
+                    `https://${RAPIDAPI_HOST}/video/no_watermark?video_url=${encodeURIComponent(videoUrl)}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "x-rapidapi-key": RAPIDAPI_KEY,
+                            "x-rapidapi-host": RAPIDAPI_HOST,
+                        },
+                    }
+                );
+
+                console.log("RapidAPI download status:", rapidResponse.status);
+
+                if (rapidResponse.ok) {
+                    const rapidData = await rapidResponse.json();
+                    console.log("RapidAPI keys:", Object.keys(rapidData));
+                    videoDownloadUrl = rapidData.video_url || rapidData.nwm_video_url ||
+                        rapidData.data?.play || rapidData.data?.hdplay || "";
+                    if (!coverUrl) {
+                        coverUrl = rapidData.cover || rapidData.data?.cover || "";
+                    }
+                    console.log("RapidAPI video URL found:", !!videoDownloadUrl);
+                }
+            } catch (e) {
+                console.log("RapidAPI download failed:", e);
+            }
+        }
+
+        console.log("Final: videoDownloadUrl available:", !!videoDownloadUrl);
+        console.log("Final: coverUrl available:", !!coverUrl);
 
         // Get video info from RapidAPI
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
