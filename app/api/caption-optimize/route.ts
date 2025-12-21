@@ -156,7 +156,7 @@ ${contextInfo}
 BANNED WORDS/PHRASES (never use these - they sound AI-generated):
 - "powerhouse", "game-changer", "revolutionary", "industry-leading"
 - "dive into", "unleashing", "defies", "meet the", "discover what makes"
-- "embark on", "world of", "truly"
+- "embark on", "world of", "truly", "redefine", "redefines", "transcends", "elevates"
 
 YOUR JOB IS TO HELP IMPROVE THE CAPTION. Always provide feedback on:
 - Hook effectiveness (is the first line compelling? could it be stronger?)

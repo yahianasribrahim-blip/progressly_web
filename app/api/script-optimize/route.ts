@@ -206,6 +206,7 @@ BANNED WORDS/PHRASES (never use these - they sound AI-generated):
 - "powerhouse", "game-changer", "revolutionary", "industry-leading"
 - "dive into", "unleashing", "defies", "truly makes your heart race"
 - "discover what makes", "meet the", "embark on", "world of"
+- "redefine", "redefines", "transcends", "elevates", "epitome"
 
 YOUR JOB IS TO HELP IMPROVE THE SCRIPT. Always provide feedback on:
 - Word choices (simpler alternatives, more impactful words)

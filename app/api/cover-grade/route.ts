@@ -78,35 +78,35 @@ CRITICAL RULES:
    - The AI cannot reliably detect text styling, so skip these entirely
 
 2. TEXT OVERLAP:
-   - Text at TOP with subject in MIDDLE/BOTTOM = NOT overlap
-   - ONLY call it overlap if text LITERALLY covers the subject
+   - Text at TOP with main object in MIDDLE/BOTTOM = NOT overlap
+   - ONLY call it overlap if text LITERALLY covers the main object
    - Do NOT suggest repositioning unless there's actual overlap
 
-3. COMMENTING ON OBJECTS:
-   - If object IS the main subject (like a car in a car video):
-     * Do NOT comment on the object itself ("sleek design", "beautiful car")
-     * Instead comment on: camera angle, lighting, how it's framed, composition
-     * Example: "The low angle shot makes the car look powerful" NOT "The car is sleek"
-   - If object is NOT the main subject:
-     * Comment on its relevance and purpose
-     * Example: "The props in the background add context"
+3. NAMING OBJECTS:
+   - Never call things "the subject" - use the actual name of what you see
+   - If you see a car, say "the car" or "the Ferrari"
+   - If you see a person, say "the person" or describe what they're doing
+   - If you see a product, name the product
 
-4. ALL SUGGESTIONS MUST BE SPECIFIC AND ACTIONABLE:
+4. COMMENTING ON THE MAIN OBJECT:
+   - Do NOT comment on the object itself ("sleek design", "beautiful car")
+   - Instead comment on: camera angle, lighting, how it's framed, composition
+   - Example: "The low angle shot makes the car look powerful" NOT "The car is sleek"
+
+5. ALL SUGGESTIONS MUST BE SPECIFIC AND ACTIONABLE:
    - BAD: "simplify the text" (vague)
-   - GOOD: "Shorten 'Alhumdulillah Alhumdulillah Alhumdulillah' to just 'Alhumdulillah' for cleaner look"
-   - BAD: "improve font" (vague)
-   - GOOD: "Use a bolder font like Impact or Bebas Neue for more punch"
+   - GOOD: "Shorten 'Alhumdulillah Alhumdulillah Alhumdulillah' to just 'Alhumdulillah'"
+
+6. QUICK FIXES VARIETY:
+   - Don't always suggest "Use Impact font" - provide varied suggestions
+   - Good quickFixes: composition tweaks, cropping, text placement, visual elements
+   - If no quick fixes are genuinely needed, return an empty array
 
 BANNED SUGGESTIONS:
 - Text color, outlines, shadows, contrast
-- Repositioning text (unless covering subject)
-- Praising the subject itself instead of how it's captured
-
-ALLOWED SUGGESTIONS:
-- Text wording/length (specific before/after)
-- Font style (name specific fonts)
-- Camera angle, lighting, framing
-- Composition improvements
+- Repositioning text (unless covering main object)
+- Always suggesting Impact font
+- Using the word "subject" instead of what the object actually is
 
 Return JSON only.`
                 },

@@ -120,32 +120,42 @@ export function DashboardHome({
             <div className="grid gap-4 md:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Analyses Used</CardTitle>
+                        <CardTitle className="text-sm font-medium">Analyses Left This Week</CardTitle>
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{remaining}</div>
-                        <p className="text-xs text-muted-foreground">remaining this period</p>
+                        <div className="text-2xl font-bold">
+                            {plan === "pro" ? "∞" : remaining}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            {plan === "pro" ? "unlimited on Pro plan" : `resets every week`}
+                        </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Content Score</CardTitle>
+                        <CardTitle className="text-sm font-medium">Your Plan</CardTitle>
                         <Sparkles className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">--</div>
-                        <p className="text-xs text-muted-foreground">analyze a video to see score</p>
+                        <div className="text-2xl font-bold capitalize">{plan}</div>
+                        <p className="text-xs text-muted-foreground">
+                            {plan === "pro" ? "all features unlocked" : (
+                                <Link href="/dashboard/billing" className="text-violet-600 hover:underline">
+                                    upgrade for more
+                                </Link>
+                            )}
+                        </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Optimization Tips</CardTitle>
+                        <CardTitle className="text-sm font-medium">Tools Available</CardTitle>
                         <Zap className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">5</div>
-                        <p className="text-xs text-muted-foreground">tools available</p>
+                        <p className="text-xs text-muted-foreground">ready to optimize your content</p>
                     </CardContent>
                 </Card>
             </div>
