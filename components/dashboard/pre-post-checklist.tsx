@@ -230,7 +230,7 @@ export function PrePostChecklist({ isMuslimCreator = false }: PrePostChecklistPr
         toast.success("Checklist reset!");
     };
 
-    const categories = [...new Set(filteredItems.map(item => item.category))];
+    const categories = Array.from(new Set(filteredItems.map(item => item.category)));
 
     return (
         <div className="space-y-6">
