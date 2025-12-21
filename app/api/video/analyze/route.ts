@@ -417,37 +417,57 @@ async function extractVideoFrames(videoUrl: string, duration: number): Promise<V
     const frames: VideoFrame[] = [];
 
     try {
-        // Download video
-        console.log("Downloading video...");
+        console.log("Attempting to download video from:", videoUrl.substring(0, 100) + "...");
+
+        // TikTok CDN requires specific headers to allow downloads
         const videoResponse = await fetch(videoUrl, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,audio/*;q=0.6,*/*;q=0.5',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://www.tiktok.com/',
+                'Sec-Fetch-Dest': 'video',
+                'Sec-Fetch-Mode': 'no-cors',
+                'Sec-Fetch-Site': 'cross-site',
             }
         });
 
+        console.log("Video download response status:", videoResponse.status);
+        console.log("Content-Type:", videoResponse.headers.get('content-type'));
+        console.log("Content-Length:", videoResponse.headers.get('content-length'));
+
         if (!videoResponse.ok) {
-            console.log("Video download failed:", videoResponse.status);
+            console.log("Video download failed with status:", videoResponse.status);
+            return frames;
+        }
+
+        const contentType = videoResponse.headers.get('content-type') || '';
+        if (!contentType.includes('video')) {
+            console.log("Response is not a video, got:", contentType);
+            // TikTok may return HTML instead of video
             return frames;
         }
 
         const videoBuffer = await videoResponse.arrayBuffer();
+        const fileSizeKB = Math.round(videoBuffer.byteLength / 1024);
+        console.log(`Video downloaded successfully: ${fileSizeKB}KB`);
+
+        // Check if we got a real video (should be at least a few KB)
+        if (videoBuffer.byteLength < 10000) {
+            console.log("Downloaded file too small, likely not a video");
+            return frames;
+        }
+
         const videoBase64 = Buffer.from(videoBuffer).toString('base64');
 
-        // For now, we'll send the video to a frame extraction service
-        // or use the video directly if the API supports it
-
-        // Since we can't easily extract frames server-side without ffmpeg binary,
-        // we'll use a workaround: analyze the video cover + dynamic cover (GIF)
-        // which contains multiple frames
-
-        console.log(`Video downloaded: ${Math.round(videoBuffer.byteLength / 1024)}KB`);
-
-        // Return the video as a single "frame" with timestamp 0
-        // GPT-4o might be able to handle video data directly in some cases
+        // Return video as base64 - GPT-4o's vision can analyze images from videos
+        // We're sending the whole video and letting GPT-4o extract key frames
         frames.push({
             timestamp: 0,
             base64: `data:video/mp4;base64,${videoBase64}`
         });
+
+        console.log("Video converted to base64 successfully");
 
     } catch (error) {
         console.error("Frame extraction error:", error);
