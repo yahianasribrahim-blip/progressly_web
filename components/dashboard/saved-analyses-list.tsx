@@ -121,10 +121,10 @@ export function SavedAnalysesList({ userId, plan }: SavedAnalysesListProps) {
                         <Bookmark className="h-8 w-8 text-muted-foreground" />
                     </div>
                     <h3 className="text-xl font-semibold mb-2">
-                        No Saved Analyses Yet
+                        No Saved Breakdowns Yet
                     </h3>
                     <p className="text-muted-foreground mb-6 max-w-md">
-                        Run an analysis from the dashboard and click &quot;Save Analysis&quot; to access it here later.
+                        Run an analysis from the dashboard and click &quot;Save Breakdown&quot; to access it here later.
                     </p>
                     <Button variant="outline" asChild>
                         <a href="/dashboard">Go to Dashboard</a>

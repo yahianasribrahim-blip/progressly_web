@@ -48,6 +48,7 @@ interface FormData {
     experienceLevel: string;
     isMuslimCreator: boolean;
     prefersNoMusic: boolean;
+    targetAudience: string;
 }
 
 const STEPS = [
@@ -100,6 +101,7 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
         experienceLevel: "beginner",
         isMuslimCreator: false,
         prefersNoMusic: false,
+        targetAudience: "young_adults",
     });
 
     const handleNext = () => {
@@ -435,11 +437,49 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                         <div>
                             <Label className="text-base font-semibold">Content Preferences</Label>
                             <p className="text-sm text-muted-foreground mt-1">
-                                Optional settings to personalize your experience.
+                                Help us personalize your experience.
                             </p>
                         </div>
 
-                        <div className="space-y-4">
+                        {/* Target Audience */}
+                        <div className="space-y-3">
+                            <Label className="text-sm font-medium">Who is your target audience?</Label>
+                            <p className="text-xs text-muted-foreground">
+                                This helps us give appropriate suggestions (e.g., CTAs work for kids but not adults).
+                            </p>
+                            <RadioGroup
+                                value={formData.targetAudience}
+                                onValueChange={(value) => setFormData(prev => ({ ...prev, targetAudience: value }))}
+                                className="grid gap-2"
+                            >
+                                {[
+                                    { value: "kids", label: "Kids (under 12)", description: "Children's content" },
+                                    { value: "teens", label: "Teens (12-17)", description: "Teenage audience" },
+                                    { value: "young_adults", label: "Young Adults (18-30)", description: "Most common audience" },
+                                    { value: "adults", label: "Adults (30+)", description: "Mature audience" },
+                                    { value: "professionals", label: "Professionals", description: "Business/career focused" },
+                                ].map((option) => (
+                                    <Label
+                                        key={option.value}
+                                        className={cn(
+                                            "flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-all",
+                                            formData.targetAudience === option.value
+                                                ? "border-violet-500 bg-violet-50 dark:bg-violet-950/30"
+                                                : "hover:border-muted-foreground/50"
+                                        )}
+                                    >
+                                        <RadioGroupItem value={option.value} />
+                                        <div>
+                                            <p className="font-medium text-sm">{option.label}</p>
+                                            <p className="text-xs text-muted-foreground">{option.description}</p>
+                                        </div>
+                                    </Label>
+                                ))}
+                            </RadioGroup>
+                        </div>
+
+                        {/* Muslim Creator Option */}
+                        <div className="space-y-4 pt-4 border-t">
                             <Label
                                 className={cn(
                                     "flex items-start gap-4 rounded-lg border p-4 cursor-pointer transition-all",
@@ -489,7 +529,7 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                                     <div>
                                         <p className="font-medium">No music in my videos</p>
                                         <p className="text-sm text-muted-foreground mt-1">
-                                            I prefer nasheeds or no audio as alternatives. The pre-post checklist will include a halal audio reminder.
+                                            I prefer nasheeds or no audio as alternatives.
                                         </p>
                                     </div>
                                 </Label>

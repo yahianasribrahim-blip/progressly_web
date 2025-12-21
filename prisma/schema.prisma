@@ -181,6 +181,9 @@ model CreatorSetup {
   isMuslimCreator   Boolean      @default(false)  // Halal-friendly recommendations
   prefersNoMusic    Boolean      @default(false)  // No music, nasheeds as alternative
   
+  // Target audience (for CTA recommendations)
+  targetAudience    String       @default("young_adults")  // kids, teens, young_adults, adults, professionals
+  
   // Experience level
   experienceLevel   String       @default("beginner")  // beginner, intermediate, advanced
   

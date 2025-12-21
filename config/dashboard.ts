@@ -20,7 +20,7 @@ export const sidebarLinks: SidebarNavItem[] = [
   {
     title: "LIBRARY",
     items: [
-      { href: "/dashboard/saved", icon: "bookmark", title: "Saved Analyses" },
+      { href: "/dashboard/saved", icon: "bookmark", title: "Saved Breakdowns" },
     ],
   },
   {

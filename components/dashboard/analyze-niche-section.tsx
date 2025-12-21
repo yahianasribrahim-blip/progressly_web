@@ -75,7 +75,7 @@ export function AnalyzeNicheSection({
             }
 
             setIsSaved(true);
-            toast.success("Analysis saved! View it in 'Saved Analyses'");
+            toast.success("Breakdown saved! View it in 'Saved Breakdowns'");
         } catch (error) {
             console.error("Error saving analysis:", error);
             toast.error("Failed to save analysis");
@@ -324,7 +324,7 @@ export function AnalyzeNicheSection({
                             ) : (
                                 <>
                                     <Bookmark className="h-4 w-4" />
-                                    Save Analysis
+                                    Save Breakdown
                                 </>
                             )}
                         </Button>

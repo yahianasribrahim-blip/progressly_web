@@ -62,6 +62,7 @@ export async function POST(request: Request) {
             isMuslimCreator,
             prefersNoMusic,
             experienceLevel,
+            targetAudience,
         } = body;
 
         // First, ensure user has a profile
@@ -95,6 +96,7 @@ export async function POST(request: Request) {
                 isMuslimCreator: isMuslimCreator || false,
                 prefersNoMusic: prefersNoMusic || false,
                 experienceLevel: experienceLevel || "beginner",
+                targetAudience: targetAudience || "young_adults",
             },
             create: {
                 profileId: profile.id,
@@ -110,6 +112,7 @@ export async function POST(request: Request) {
                 isMuslimCreator: isMuslimCreator || false,
                 prefersNoMusic: prefersNoMusic || false,
                 experienceLevel: experienceLevel || "beginner",
+                targetAudience: targetAudience || "young_adults",
             },
         });
 

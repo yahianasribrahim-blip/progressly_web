@@ -7,7 +7,7 @@ import { DashboardHeader } from "@/components/dashboard/header";
 import { SavedAnalysesList } from "@/components/dashboard/saved-analyses-list";
 
 export const metadata = constructMetadata({
-    title: "Saved Analyses – Progressly",
+    title: "Saved Breakdowns – Progressly",
     description: "View your saved niche analyses.",
 });
 
@@ -24,7 +24,7 @@ export default async function SavedAnalysesPage() {
     return (
         <div className="space-y-6">
             <DashboardHeader
-                heading="Saved Analyses"
+                heading="Saved Breakdowns"
                 text="Access your previously saved niche analyses."
             />
             <SavedAnalysesList
