@@ -233,6 +233,13 @@ RULES FOR CTAs:
 - Adult content should just END naturally without asking questions
 - Only suggest interactive CTAs for very young audiences (<12)
 
+RULES FOR SCORING - BE HONEST:
+- Use the FULL 1-10 range, don't default to safe middle scores
+- Excellent hooks that spark intrigue/curiosity: 8-10
+- Mediocre or flat hooks: 4-6
+- Poor or generic hooks: 1-3
+- Same for overall script - if it's genuinely good, give 8-10
+
 RULES FOR LANGUAGE:
 - Use the banned words list - never include those phrases
 - Keep language simple and natural
