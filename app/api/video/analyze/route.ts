@@ -545,7 +545,7 @@ Return a JSON object with this EXACT structure:
 }`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const result = await model.generateContent([prompt, videoPart]);
         const response = await result.response;
@@ -637,7 +637,7 @@ Return JSON with this structure (acknowledge limitations - you only see the thum
     "replicabilityRequirements": ["<visible requirements>"]
 }`;
 
-        const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
         const result = await model.generateContent([prompt, imagePart]);
         const response = await result.response;
         const text = response.text();
