@@ -63,25 +63,30 @@ export async function POST(request: Request) {
 async function analyzeCoverWithVision(imageData: string, platform: string) {
     try {
         const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
+            model: "gpt-4o",  // Using full gpt-4o for better vision analysis
             messages: [
                 {
                     role: "system",
                     content: `You are an expert ${platform} thumbnail analyst.
 
-CRITICAL: You MUST actually analyze the image. Do NOT suggest fixes for problems that don't exist.
+CRITICAL - READ VERY CAREFULLY:
 
-BEFORE suggesting anything, you must verify:
-1. TEXT POSITION: Does the text actually overlap with the main subject, or is it positioned separately?
-2. TEXT STYLING: Does the text already have an outline, shadow, or contrasting background?
-3. COMPOSITION: Is the image already well-composed?
+WHAT IS "OVERLAP"?
+- Overlap means the text is DIRECTLY ON TOP OF the subject, making either hard to see
+- Text at the TOP of the image while subject is in the MIDDLE/BOTTOM is NOT overlap
+- Text at the BOTTOM of the image while subject is in the MIDDLE/TOP is NOT overlap
+- If there is CLEAR SPACE between the text and subject, there is NO overlap
+
+BEFORE suggesting ANYTHING about text position:
+1. Look at WHERE the text actually is (top, middle, bottom of image)
+2. Look at WHERE the subject actually is
+3. Is the text LITERALLY covering part of the subject? Only then is it overlap.
 
 RULES:
-- If text does NOT overlap the subject, don't suggest repositioning
-- If text already HAS an outline/shadow, don't suggest adding one
-- If you suggest "reduce text", specify WHICH words to remove
-- Empty arrays are fine if no changes needed
-- Be SPECIFIC: "Move the top text 20px left" not "adjust positioning"
+- If text is in its own space (not covering the subject), do NOT suggest repositioning
+- If text has a black outline, do NOT suggest adding outline/shadow
+- If you cannot identify a REAL problem, return empty arrays for improvements/quickFixes
+- Empty arrays are the correct answer for well-designed thumbnails
 
 Return JSON only.`
                 },
@@ -92,12 +97,14 @@ Return JSON only.`
                             type: "text",
                             text: `Analyze this ${platform} thumbnail.
 
-FIRST, describe what you actually see:
-- Where is the text positioned relative to the main subject?
-- Does the text have any outline, shadow, or background?
-- What is the overall composition?
+STEP 1: Describe the actual positions:
+- Where is the text? (top, middle, bottom of image)
+- Where is the main subject? (top, middle, bottom)
+- Is there CLEAR SPACE between them, or does text literally cover part of the subject?
 
-THEN, only suggest improvements for REAL problems. If something is already done well, don't suggest it.
+STEP 2: Only suggest improvements for REAL problems you can actually see.
+
+IMPORTANT: Text at the top of the image with the subject below is NOT overlap. That is GOOD positioning.
 
 Respond in JSON:
 {
@@ -112,11 +119,13 @@ Respond in JSON:
     },
     "hasText": <boolean>,
     "textContent": "<exact text you see>",
-    "textHasOutlineOrShadow": <boolean - does the text already have styling?>,
-    "textOverlapsSubject": <boolean - does text actually overlap the main subject?>,
+    "textPosition": "<where is text: top, middle, bottom, or multiple locations>",
+    "subjectPosition": "<where is subject: top, middle, bottom>",
+    "textOverlapsSubject": <boolean - ONLY true if text literally covers part of the subject>,
+    "textHasOutlineOrShadow": <boolean>,
     "strengths": ["<what works well>"],
-    "improvements": ["<ONLY suggest if truly needed - empty array if image is good>"],
-    "quickFixes": ["<minor tweaks ONLY if needed - be SPECIFIC about what exactly to change>"],
+    "improvements": ["<ONLY if there is a real problem - empty array is fine>"],
+    "quickFixes": ["<ONLY if there is a real problem - empty array is fine>"],
     "colorPalette": ["<all visible colors>"]
 }`
                         },
