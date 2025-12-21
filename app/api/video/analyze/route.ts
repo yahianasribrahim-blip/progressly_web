@@ -67,39 +67,92 @@ export async function POST(request: Request) {
         const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
         const RAPIDAPI_HOST = "tiktok-scraper2.p.rapidapi.com";
 
-        // First, try to get a working video download URL using the user's URL directly
+        // Try multiple methods to get a working video download URL
         let videoDownloadUrl = "";
+
+        // Method 1: Try tikwm.com API (popular, often works)
         try {
-            console.log("Attempting to get video download URL...");
-            const downloadResponse = await fetch(
-                `https://${RAPIDAPI_HOST}/video/no_watermark?video_url=${encodeURIComponent(videoUrl)}`,
+            console.log("Method 1: Trying tikwm.com API...");
+            const tikwmResponse = await fetch(
+                `https://www.tikwm.com/api/?url=${encodeURIComponent(videoUrl)}`,
                 {
                     method: "GET",
                     headers: {
-                        "x-rapidapi-key": RAPIDAPI_KEY,
-                        "x-rapidapi-host": RAPIDAPI_HOST,
+                        'Accept': 'application/json',
                     },
                 }
             );
 
-            if (downloadResponse.ok) {
-                const downloadData = await downloadResponse.json();
-                console.log("Download response keys:", Object.keys(downloadData));
-
-                // Try different paths where video URL might be
-                videoDownloadUrl = downloadData.video_url ||
-                    downloadData.nwm_video_url ||
-                    downloadData.video?.playAddr ||
-                    downloadData.data?.play ||
-                    downloadData.data?.wmplay ||
-                    downloadData.data?.hdplay ||
-                    "";
-
-                console.log("Video download URL found:", !!videoDownloadUrl);
+            if (tikwmResponse.ok) {
+                const tikwmData = await tikwmResponse.json();
+                console.log("tikwm response code:", tikwmData.code);
+                if (tikwmData.code === 0 && tikwmData.data) {
+                    videoDownloadUrl = tikwmData.data.play || tikwmData.data.hdplay || tikwmData.data.wmplay || "";
+                    console.log("tikwm video URL found:", !!videoDownloadUrl);
+                }
             }
         } catch (e) {
-            console.log("Download endpoint failed:", e);
+            console.log("tikwm API failed:", e);
         }
+
+        // Method 2: Try our RapidAPI no_watermark endpoint
+        if (!videoDownloadUrl) {
+            try {
+                console.log("Method 2: Trying RapidAPI no_watermark...");
+                const downloadResponse = await fetch(
+                    `https://${RAPIDAPI_HOST}/video/no_watermark?video_url=${encodeURIComponent(videoUrl)}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "x-rapidapi-key": RAPIDAPI_KEY,
+                            "x-rapidapi-host": RAPIDAPI_HOST,
+                        },
+                    }
+                );
+
+                if (downloadResponse.ok) {
+                    const downloadData = await downloadResponse.json();
+                    console.log("RapidAPI response keys:", Object.keys(downloadData));
+                    videoDownloadUrl = downloadData.video_url ||
+                        downloadData.nwm_video_url ||
+                        downloadData.video?.playAddr ||
+                        downloadData.data?.play ||
+                        downloadData.data?.hdplay ||
+                        "";
+                    console.log("RapidAPI video URL found:", !!videoDownloadUrl);
+                }
+            } catch (e) {
+                console.log("RapidAPI download failed:", e);
+            }
+        }
+
+        // Method 3: Try another popular TikTok download API
+        if (!videoDownloadUrl) {
+            try {
+                console.log("Method 3: Trying ssstik-style API...");
+                const response = await fetch(
+                    `https://tiktok-download-without-watermark.p.rapidapi.com/analysis?url=${encodeURIComponent(videoUrl)}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "x-rapidapi-key": RAPIDAPI_KEY,
+                            "x-rapidapi-host": "tiktok-download-without-watermark.p.rapidapi.com",
+                        },
+                    }
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log("ssstik response keys:", Object.keys(data));
+                    videoDownloadUrl = data.data?.play || data.data?.wmplay || data.data?.hdplay || "";
+                    console.log("ssstik video URL found:", !!videoDownloadUrl);
+                }
+            } catch (e) {
+                console.log("ssstik API failed:", e);
+            }
+        }
+
+        console.log("Final video download URL:", videoDownloadUrl ? "Found" : "Not found");
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let videoData: any = null;
