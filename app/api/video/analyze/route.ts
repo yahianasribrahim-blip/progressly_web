@@ -595,6 +595,8 @@ SEXUAL SPEECH/DIALOGUE (flag if mentioned verbally or in text):
 - Sexual jokes, innuendo, or double meanings
 - Arguing about showing body parts or "being allowed to show" body parts
 - Talking about making clothes see-through or wet
+- Captions like "would I survive", "can you handle it", "too big/deep" with sexual meaning
+- Any reference to penis size, depth, or sexual capability
 
 CLOTHING/UNDRESSING:
 - Intentionally making clothing wet/see-through to reveal body
@@ -609,6 +611,14 @@ THIRST TRAP CONTENT:
 - Content designed to sexually attract viewers (lip biting, body focus)
 - Camera focus on bouncing/jiggling body parts
 - Suggestive poses with revealing outfits
+
+SEXUAL INNUENDO WITH PROPS/GESTURES:
+- Measuring tape, ruler, or objects used near groin/private areas to suggest size
+- Objects placed near genitals to imply sexual comparison
+- Food items (bananas, cucumbers, etc.) used suggestively near mouth or body
+- Gestures simulating sexual acts (even if clothed)
+- "How deep" or "how far" demonstrations with hands or objects
+- Any prop used to suggest penis size, vaginal depth, or sexual acts
 
 Do NOT flag:
 - Normal fitness content (running, exercising) without sexual focus
