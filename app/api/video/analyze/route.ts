@@ -533,6 +533,7 @@ RULES:
    - Educational: Focus on clarity, information delivery, structure
    - Comedy: Focus on timing, punchlines, relatability
 8. Focus on MEANINGFUL details that affect the video's effectiveness. Skip trivial observations (e.g., minor clothing adjustments, tiny movements). Only describe what matters to the content.
+9. USE SIMPLE LANGUAGE - write like you're explaining to a 10 year old. No fancy words. Short sentences. Always give specific examples from the video.
 
 CONTENT MODERATION:
 - Flag content as inappropriate if it contains:
@@ -572,13 +573,13 @@ Return a JSON object with this EXACT structure:
     "audioType": "<'talking/voiceover', 'original audio with talking', 'background music only', 'mixed'>",
     "productionQuality": "<'basic phone filming', 'good lighting and angles', 'professional production'>",
     "lessonsToApply": [
-        "<what can viewers LEARN from this video for their OWN content? Focus on transferable techniques>",
-        "<lesson 2 - specific technique or approach they can copy>",
-        "<lesson 3>"
+        "<SPECIFIC tip with example from the video - e.g., 'The fast color switch at 0:03 grabs attention - try this for your edits'>",
+        "<second SPECIFIC tip with example - always mention WHAT and WHERE in the video>",
+        "<third tip - keep it simple and useful>"
     ],
     "mistakesToAvoid": [
-        "<even great videos have room to improve - what's ONE thing they could do better or that viewers should avoid in their own attempts?>",
-        "<second tip viewers should keep in mind - always provide at least 2 items>"
+        "<what could be better? Give a SPECIFIC tip - e.g., 'The text was hard to read - use bigger fonts next time'>",
+        "<second tip - be helpful, not mean>"
     ],
     "hookAnalysis": {
         "hookType": "<type: 'text overlay', 'verbal hook', 'visual hook', 'curiosity hook'>",
