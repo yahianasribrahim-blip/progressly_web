@@ -577,78 +577,29 @@ RULES:
 
 CRITICAL: You MUST watch and analyze the ENTIRE video from start to finish. Do not just analyze the thumbnail or first frame.
 
-STRICT CONTENT MODERATION (scan EVERY scene in the video):
-Flag as INAPPROPRIATE if ANY of the following appear ANYWHERE in the video:
+CONTENT MODERATION - ONLY block truly explicit content:
+Flag as INAPPROPRIATE ONLY if ANY of these appear:
+- Actual nudity (exposed breasts, buttocks, genitals)
+- Intentional body jiggling/bouncing for sexual attention (not normal movement)
+- Explicit sexual acts or simulations
+- Same-sex romantic content (two men or two women kissing, romantic embrace)
+- Sexual props near private areas (measuring tape near groin, etc.)
+- OnlyFans or adult content promotion
 
-IMPORTANT: Even if a video STARTS as innocent content and then becomes sexual, it should be flagged!
-
-EXPLICIT CONTENT:
-- Nudity or partial nudity (exposed breasts, buttocks, genitals)
-- OnlyFans promotion or sexual content promotion
-- Explicit or simulated sexual acts
-- Inappropriate touching of private areas (groin, buttocks, chest) by another person
-- Hands sliding over, grabbing, or groping someone's body inappropriately
-- Sexual caressing or fondling even if clothed
-
-SEXUALLY SUGGESTIVE DANCING (flag even if brief or at the end):
-- Twerking (shaking/bouncing buttocks)
-- Grinding movements
-- Dancing that emphasizes buttocks, chest, or groin area
-- "Bending over" or "bent over" poses while shaking body
-- Dance moves that simulate sexual movements
-- Any dancing where camera/attention focuses on butt, chest, or private areas
-
-SAME-SEX ROMANTIC CONTENT:
-- Two men kissing or in romantic embrace
-- Two women kissing or in romantic embrace
-- Same-sex couples displaying affection beyond friendship (cuddling romantically, holding hands in romantic context)
-
-SEXUAL SPEECH/DIALOGUE (flag if mentioned verbally or in text):
-- Talk about breasts, nipples, boobs, butt, or private parts in sexual context
-- "Free the nipple" or similar provocative slogans on clothing or spoken
-- Sexual jokes, innuendo, or double meanings
-- Arguing about showing body parts or "being allowed to show" body parts
-- Talking about making clothes see-through or wet
-- Captions like "would I survive", "can you handle it", "too big/deep" ONLY when combined with sexual props/gestures (not in normal challenge/fitness context)
-- Direct references to penis size, depth, or sexual capability
-
-CLOTHING/UNDRESSING:
-- Intentionally making clothing wet/see-through to reveal body
-- Undressing, stripping, or removing clothing in suggestive manner
-- One person removing or pulling off another person's clothing (ANY type)
-- Removing or pulling off hijab, niqab, or face covering from a woman (even partially)
-- "Wardrobe malfunction" content or revealing clothing "accidents"
-- Dragging someone into frame to show their body
-- Grabbing, tugging, or pulling at someone's clothing
-
-THIRST TRAP CONTENT:
-- Content designed to sexually attract viewers (lip biting, body focus)
-- Camera focus on bouncing/jiggling body parts
-- Suggestive poses with revealing outfits
-
-SEXUAL INNUENDO WITH PROPS/GESTURES:
-- Measuring tape, ruler, or objects used near groin/private areas to suggest size
-- Objects placed near genitals to imply sexual comparison
-- Food items (bananas, cucumbers, etc.) used suggestively near mouth or body
-- Gestures simulating sexual acts (even if clothed)
-- "How deep" or "how far" demonstrations with hands or objects near private areas
-- Any prop used to suggest penis size, vaginal depth, or sexual acts
-
-Do NOT flag (these are SAFE content):
-- IMPORTANT: Any video where a child/kid is the main subject or one of the main subjects - these are family content and should ALWAYS be marked safe (unless there is actual abuse or exploitation)
-- Parent-child interactions, family moments, kids being funny, cute kid videos
-- Normal fitness content (running, exercising) without sexual focus
-- Swimwear in appropriate beach/pool context WITHOUT sexual behavior
-- Educational content about bodies (health, anatomy) in clinical context
-- Pregnancy content, baby bumps, pregnancy transformations, maternity content
-- Breastfeeding in non-sexual educational context
-- Medical or health-related body content
+Do NOT flag - these are ALLOWED:
+- Dancing (even if someone finds it suggestive, as long as no explicit nudity/jiggling)
+- Outfits, costumes, fashion content
+- Beauty content, makeup
+- Fitness content showing body
+- Family/kid content
+- Pregnancy content
+- Most normal social media content
 
 Return a JSON object with this EXACT structure:
 {
     "contentModeration": {
         "isSafe": <true or false>,
-        "reason": "<if not safe, explain why - e.g., 'sexually suggestive dancing', 'partial nudity'. If safe, leave empty string>"
+        "reason": "<if not safe, explain why. If safe, leave empty string>"
     },
     "contentType": "<specific type like 'car modification tips', 'comedy skit', 'cooking tutorial'>",
     "contentFormat": "<IMPORTANT: 'original_content' if creator filmed themselves/their own content. 'edit_compilation' if video uses footage of CELEBRITIES, ATHLETES, MOVIES, TV SHOWS, or other people's content (like soccer player edits, boxing highlights, movie clips). 'repost' if it's just reposted content with no editing>",
@@ -671,13 +622,13 @@ Return a JSON object with this EXACT structure:
     "cameraStyle": "<Analyze camera movement/stability: 'handheld' (shaky, natural hand movement), 'chest_mounted' (POV from chest height, stable but moves with body), 'tripod_static' (completely still, fixed position), 'gimbal_stabilized' (smooth movement, no shake), 'selfie_handheld' (facing creator, arm's length), 'screen_recording' (screen capture, no real camera)>",
     "productionQuality": "<'basic phone filming', 'good lighting and angles', 'professional production'>",
     "lessonsToApply": [
-        "<When you say something is 'good' or 'effective', you MUST explain HOW to do it. Example: Instead of 'use dramatic effects', say 'Switch from color to black-and-white right when the beat drops'>",
-        "<Second tip - tell them exactly WHAT to do, not just that something is good. Example: Instead of 'use quick cuts', say 'Cut to a new clip every 2-3 seconds to keep it fast'>",
-        "<Third tip - be specific and actionable>"
+        "<HALAL SUGGESTIONS ONLY - NEVER suggest: showing more body, showing outfit from different angles, filming from behind, wearing tighter clothes, showing more skin, emphasizing body parts, more dancing/movement. Instead focus on: hooks, captions, lighting, audio quality, editing, storytelling, posting timing, hashtags>",
+        "<Second tip - must be about CONTENT QUALITY not physical appearance>",
+        "<Third tip - be specific and actionable, focused on production not body>"
     ],
     "mistakesToAvoid": [
-        "<What could be done better? Tell them exactly HOW to fix it. Example: 'The text stayed too long - keep text on screen for only 1-2 seconds'>",
-        "<Second tip - keep it helpful and specific>"
+        "<What could be done better? Focus on editing, pacing, audio, hooks, captions - NOT on showing more body or outfit>",
+        "<Second tip - keep it helpful and specific, about content not appearance>"
     ],
     "hookAnalysis": {
         "hookType": "<type: 'text overlay', 'verbal hook', 'visual hook', 'curiosity hook'>",
