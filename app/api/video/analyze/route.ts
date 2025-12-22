@@ -365,6 +365,7 @@ interface VideoAnalysis {
     peopleCount: string;
     settingType: string;
     audioType: string;
+    cameraStyle: string;
     productionQuality: string;
     lessonsToApply: string[];
     mistakesToAvoid: string[];
@@ -617,6 +618,7 @@ Return a JSON object with this EXACT structure:
     },
     "settingType": "<specific: 'parking lot with Infiniti G37', 'home kitchen', 'bedroom with ring light'>",
     "audioType": "<'talking/voiceover', 'original audio with talking', 'background music only', 'mixed'>",
+    "cameraStyle": "<Analyze camera movement/stability: 'handheld' (shaky, natural hand movement), 'chest_mounted' (POV from chest height, stable but moves with body), 'tripod_static' (completely still, fixed position), 'gimbal_stabilized' (smooth movement, no shake), 'selfie_handheld' (facing creator, arm's length), 'screen_recording' (screen capture, no real camera)>",
     "productionQuality": "<'basic phone filming', 'good lighting and angles', 'professional production'>",
     "lessonsToApply": [
         "<When you say something is 'good' or 'effective', you MUST explain HOW to do it. Example: Instead of 'use dramatic effects', say 'Switch from color to black-and-white right when the beat drops'>",
@@ -705,6 +707,7 @@ Return a JSON object with this EXACT structure:
             peopleCount: parsed.peopleCount || "Unknown",
             settingType: parsed.settingType || "Unknown",
             audioType: parsed.audioType || "Unknown",
+            cameraStyle: parsed.cameraStyle || "Unknown",
             productionQuality: parsed.productionQuality || "Unknown",
             lessonsToApply: filterMusic(parsed.lessonsToApply || []),
             mistakesToAvoid: filterMusic(parsed.mistakesToAvoid || []),
@@ -812,6 +815,7 @@ Return JSON with this structure (acknowledge limitations - you only see the thum
             peopleCount: parsed.peopleCount || "Unknown",
             settingType: parsed.settingType || "Unknown",
             audioType: "Cannot determine from thumbnail",
+            cameraStyle: "Cannot determine from thumbnail",
             productionQuality: parsed.productionQuality || "Unknown",
             lessonsToApply: (parsed.lessonsToApply || []).filter((s: string) => !s.toLowerCase().includes("music")),
             mistakesToAvoid: (parsed.mistakesToAvoid || []).filter((s: string) => !s.toLowerCase().includes("music")),
@@ -836,6 +840,7 @@ function getDefaultAnalysis(): VideoAnalysis {
         peopleCount: "Unknown",
         settingType: "Unknown",
         audioType: "Unknown",
+        cameraStyle: "Unknown",
         productionQuality: "Unknown",
         lessonsToApply: [],
         mistakesToAvoid: [],

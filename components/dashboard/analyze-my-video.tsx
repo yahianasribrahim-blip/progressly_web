@@ -66,6 +66,7 @@ interface VideoAnalysis {
     peopleCount: string;
     settingType: string;
     audioType: string;
+    cameraStyle: string;
     productionQuality: string;
     lessonsToApply: string[];
     mistakesToAvoid: string[];
@@ -796,7 +797,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                     </div>
 
                                     {/* Video Details Grid */}
-                                    <div className="grid gap-2 md:grid-cols-4">
+                                    <div className="grid gap-2 md:grid-cols-5">
                                         <div className="flex items-center gap-2 p-2 bg-background rounded-lg border">
                                             <Users className="h-4 w-4 text-blue-500 shrink-0" />
                                             <span className="text-sm truncate">{videoAnalysis.peopleCount}</span>
@@ -811,6 +812,10 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                         </div>
                                         <div className="flex items-center gap-2 p-2 bg-background rounded-lg border">
                                             <span className="text-sm truncate">{videoAnalysis.audioType}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 p-2 bg-background rounded-lg border">
+                                            <Video className="h-4 w-4 text-purple-500 shrink-0" />
+                                            <span className="text-sm truncate">{videoAnalysis.cameraStyle}</span>
                                         </div>
                                     </div>
                                 </CardContent>
