@@ -588,8 +588,8 @@ Return a JSON object with this EXACT structure:
         "score": <1-10>
     },
     "replicabilityRequirements": [
-        "<specific item needed to replicate - e.g., 'a modified car'>",
-        "<requirement 2>",
+        "<FOR EDITS: focus on editing skills needed (e.g., 'Speed ramping skills', 'Color grading', 'Finding HD footage of the athletes'). FOR ORIGINAL CONTENT: focus on props/equipment needed (e.g., 'a modified car', 'ring light')>",
+        "<requirement 2 - make sure this matches the video type: editing skills for edits, physical items for original content>",
         "<requirement 3>"
     ],
     "whyItFlopped": "<ONLY fill this if the video has low views/engagement. Explain honestly: What went wrong? Algorithm issues? Hook failure? Wrong timing? Content problems? If video performed well, set to null>"
