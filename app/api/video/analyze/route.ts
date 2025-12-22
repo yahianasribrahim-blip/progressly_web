@@ -6,23 +6,24 @@ import { GoogleGenerativeAI, Part, HarmCategory, HarmBlockThreshold } from "@goo
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
 
-// Safety settings - allow most content except sexually explicit, let our custom moderation handle filtering
+// Safety settings - set to BLOCK_NONE for most categories since we use our own custom moderation in the prompt
+// Only sexually explicit content keeps some blocking as an extra layer
 const safetySettings = [
     {
         category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        threshold: HarmBlockThreshold.BLOCK_NONE, // We handle this in our prompt
     },
     {
         category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        threshold: HarmBlockThreshold.BLOCK_NONE, // We handle this in our prompt
     },
     {
         category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE, // Keep this stricter
+        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH, // Keep some blocking for explicit content
     },
     {
         category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH, // Allow danger/crime content since we analyze all types of videos
+        threshold: HarmBlockThreshold.BLOCK_NONE, // Crime/danger videos are legitimate content to analyze
     },
 ];
 
