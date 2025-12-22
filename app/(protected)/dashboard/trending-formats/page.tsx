@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ interface TrendingFormat {
 export default function TrendingFormatsPage() {
     const [formats, setFormats] = useState<TrendingFormat[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadingNiche, setLoadingNiche] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [hasFetched, setHasFetched] = useState(false);
     const [requestCount, setRequestCount] = useState(0);
@@ -33,6 +34,24 @@ export default function TrendingFormatsPage() {
     // Map format.id -> database savedTrend.id for unsaving
     const [savedFormats, setSavedFormats] = useState<Map<string, string>>(new Map());
     const [savingId, setSavingId] = useState<string | null>(null);
+
+    // Fetch saved niche from creator settings on mount
+    useEffect(() => {
+        async function fetchSavedNiche() {
+            try {
+                const response = await fetch("/api/creator-setup");
+                const data = await response.json();
+                if (data.creatorSetup?.contentNiche) {
+                    setNiche(data.creatorSetup.contentNiche);
+                }
+            } catch (error) {
+                console.error("Error fetching saved niche:", error);
+            } finally {
+                setLoadingNiche(false);
+            }
+        }
+        fetchSavedNiche();
+    }, []);
 
     const fetchFormats = async () => {
         if (!niche.trim()) {
@@ -150,23 +169,35 @@ export default function TrendingFormatsPage() {
                                 <label className="text-sm text-muted-foreground mb-2 block">
                                     What&apos;s your content niche?
                                 </label>
-                                <Input
-                                    type="text"
-                                    placeholder="e.g., hijab styling, halal cooking, modest fitness..."
-                                    value={niche}
-                                    onChange={(e) => setNiche(e.target.value)}
-                                    onKeyDown={handleKeyPress}
-                                    className="text-center"
-                                />
+                                {loadingNiche ? (
+                                    <div className="flex items-center justify-center py-2">
+                                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                        <span className="ml-2 text-sm text-muted-foreground">Loading saved niche...</span>
+                                    </div>
+                                ) : (
+                                    <Input
+                                        type="text"
+                                        placeholder="e.g., hijab styling, halal cooking, modest fitness..."
+                                        value={niche}
+                                        onChange={(e) => setNiche(e.target.value)}
+                                        onKeyDown={handleKeyPress}
+                                        className="text-center"
+                                    />
+                                )}
                                 <p className="text-xs text-muted-foreground mt-2">
                                     Be specific! &quot;Halal Korean food recipes&quot; works better than just &quot;food&quot;
                                 </p>
+                                {niche && (
+                                    <p className="text-xs text-purple-600 mt-1">
+                                        ✓ Using your saved niche from settings
+                                    </p>
+                                )}
                             </div>
 
                             <Button
                                 onClick={fetchFormats}
                                 size="lg"
-                                disabled={!niche.trim()}
+                                disabled={!niche.trim() || loadingNiche}
                                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                             >
                                 <Zap className="h-5 w-5 mr-2" />

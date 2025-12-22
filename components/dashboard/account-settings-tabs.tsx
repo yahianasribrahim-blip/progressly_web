@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { User, Shield, AlertTriangle, Users, Target, Loader2, Check } from "lucide-react";
+import { User, Shield, AlertTriangle, Users, Target, Loader2, Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +37,7 @@ interface CreatorSetup {
     targetAudience: string;
     isMuslimCreator: boolean;
     prefersNoMusic: boolean;
+    contentNiche: string | null;
 }
 
 const TARGET_AUDIENCES = [
@@ -155,8 +156,28 @@ export function AccountSettingsTabs({ user }: AccountSettingsTabsProps) {
                             </div>
                         ) : creatorSetup ? (
                             <>
-                                {/* Target Audience */}
+                                {/* Content Niche - Most Important */}
                                 <div className="space-y-2">
+                                    <Label className="flex items-center gap-2">
+                                        <Sparkles className="h-4 w-4 text-purple-500" />
+                                        Content Niche
+                                    </Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Your content focus area. This is used to customize trending format suggestions.
+                                    </p>
+                                    <Input
+                                        value={creatorSetup.contentNiche || ""}
+                                        onChange={(e) => updateSetup("contentNiche", e.target.value)}
+                                        placeholder="e.g., hijab styling, halal cooking, modest fitness..."
+                                        className="max-w-md"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Be specific! "Halal Korean food recipes" works better than just "food"
+                                    </p>
+                                </div>
+
+                                {/* Target Audience */}
+                                <div className="space-y-2 pt-4 border-t">
                                     <Label className="flex items-center gap-2">
                                         <Target className="h-4 w-4 text-violet-500" />
                                         Target Audience

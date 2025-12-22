@@ -190,6 +190,9 @@ model CreatorSetup {
   // Experience level
   experienceLevel   String       @default("beginner")  // beginner, intermediate, advanced
   
+  // Content niche for trending formats
+  contentNiche      String?      // Free text, e.g. "hijab styling", "halal cooking"
+  
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
