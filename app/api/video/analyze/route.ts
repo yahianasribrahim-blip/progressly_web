@@ -558,6 +558,11 @@ Return a JSON object with this EXACT structure:
         {"timestamp": "0:30-end", "description": "Conclusion", "whatsHappening": "<how video ends>"}
     ],
     "peopleCount": "<BE ACCURATE: 'no people visible' if ZERO humans appear, 'solo creator' if 1, '2 people' if 2, etc. COUNT CAREFULLY - do not guess>",
+    "subjectInfo": {
+        "mainSubject": "<who is the MAIN focus? e.g., 'the creator', 'man in blue shirt', 'no main subject - product focused'>",
+        "backgroundPeople": "<describe any people NOT the main subject, or 'none' if solo or no people>",
+        "relationship": "<if 2+ people: 'working together' / 'against each other (prank/competition)' / 'acting individually' / 'crowd/audience'. If solo or no people: 'n/a'>"
+    },
     "settingType": "<specific: 'parking lot with Infiniti G37', 'home kitchen', 'bedroom with ring light'>",
     "audioType": "<'talking/voiceover', 'original audio with talking', 'background music only', 'mixed'>",
     "productionQuality": "<'basic phone filming', 'good lighting and angles', 'professional production'>",
@@ -811,7 +816,13 @@ function generateFinalAnalysis(
 
     if (creatorSetup && videoAnalysis) {
         const peopleCount = videoAnalysis.peopleCount.toLowerCase();
-        if (creatorSetup.teamSize === 1 && !peopleCount.includes("solo") && !peopleCount.includes("1")) {
+        // Only warn if video has 2+ people (solo creator would need help)
+        // Don't warn for "no people" or "solo" - those are easy for solo creators
+        const hasMultiplePeople = !peopleCount.includes("solo") &&
+            !peopleCount.includes("1") &&
+            !peopleCount.includes("no people") &&
+            !peopleCount.includes("0");
+        if (creatorSetup.teamSize === 1 && hasMultiplePeople) {
             keyLearnings.push(`⚠️ This video has ${videoAnalysis.peopleCount}. As a solo creator, you'd need to adapt.`);
         }
         if (videoAnalysis.replicabilityRequirements.length > 0) {
