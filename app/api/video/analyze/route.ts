@@ -621,6 +621,8 @@ SEXUAL INNUENDO WITH PROPS/GESTURES:
 - Any prop used to suggest penis size, vaginal depth, or sexual acts
 
 Do NOT flag (these are SAFE content):
+- IMPORTANT: Any video where a child/kid is the main subject or one of the main subjects - these are family content and should ALWAYS be marked safe (unless there is actual abuse or exploitation)
+- Parent-child interactions, family moments, kids being funny, cute kid videos
 - Normal fitness content (running, exercising) without sexual focus
 - Swimwear in appropriate beach/pool context WITHOUT sexual behavior
 - Educational content about bodies (health, anatomy) in clinical context
