@@ -289,6 +289,16 @@ export async function POST(request: Request) {
         });
     } catch (error) {
         console.error("Error analyzing video:", error);
+
+        // Check if it's an inappropriate content error
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes("INAPPROPRIATE_CONTENT")) {
+            return NextResponse.json(
+                { error: "This video contains inappropriate content and cannot be analyzed." },
+                { status: 400 }
+            );
+        }
+
         return NextResponse.json(
             { error: "Failed to analyze video. Please try again." },
             { status: 500 }
@@ -520,8 +530,24 @@ RULES:
    - Educational: Focus on clarity, information delivery, structure
    - Comedy: Focus on timing, punchlines, relatability
 
+CONTENT MODERATION:
+- Flag content as inappropriate if it contains:
+  - Nudity or partial nudity (exposed breasts, buttocks, genitals)
+  - Sexually suggestive dancing focused on body parts (jiggling, twerking with focus on body)
+  - OnlyFans promotion or sexual content promotion
+  - Explicit sexual acts or simulated sexual acts
+- Do NOT flag:
+  - Normal fitness content (running, exercising)
+  - Swimwear in appropriate beach/pool context
+  - Artistic expression or dance that's not sexually focused
+  - Revealing clothing alone (only flag if combined with sexually suggestive movements)
+
 Return a JSON object with this EXACT structure:
 {
+    "contentModeration": {
+        "isSafe": <true or false>,
+        "reason": "<if not safe, explain why - e.g., 'sexually suggestive dancing', 'partial nudity'. If safe, leave empty string>"
+    },
     "contentType": "<specific type like 'car modification tips', 'comedy skit', 'cooking tutorial'>",
     "contentDescription": "<4-5 sentences describing the FULL video from start to finish - what the creator shows, says, and does>",
     "sceneBySceneBreakdown": [
@@ -598,6 +624,11 @@ Return a JSON object with this EXACT structure:
         }
 
         const parsed = JSON.parse(jsonMatch[0]);
+
+        // Check content moderation - reject inappropriate videos
+        if (parsed.contentModeration && parsed.contentModeration.isSafe === false) {
+            throw new Error(`INAPPROPRIATE_CONTENT: ${parsed.contentModeration.reason || "This video contains inappropriate content"}`);
+        }
 
         // Filter out music suggestions
         const filterMusic = (arr: string[]) => arr.filter((s: string) =>
@@ -792,9 +823,8 @@ function generateFinalAnalysis(
         keyLearnings.push(`💡 Good engagement but low views - algorithm didn't push it.`);
     }
 
-    if (videoAnalysis?.analysisMethod === "full_video") {
-        keyLearnings.push(`✅ Full video analyzed with Gemini AI`);
-    } else if (videoAnalysis?.analysisMethod === "cover_only") {
+    // Only show a note if analysis was limited to thumbnail
+    if (videoAnalysis?.analysisMethod === "cover_only") {
         keyLearnings.push(`ℹ️ Analysis based on thumbnail only (video download failed)`);
     }
 

@@ -77,13 +77,15 @@ VIDEO INTENTION: ${videoIntention}
 ${creatorContext}
 
 RULES:
-1. Generate an idea that ADAPTS the inspiration to what the creator can ACTUALLY make with their resources
-2. If the inspiration requires a K9 police car and creator is solo at home - suggest an equivalent like "cleaning your car" or "organizing a space"
-3. Provide SPECIFIC shot-by-shot instructions with timestamps
-4. Include camera angles and lighting for each shot
-5. Make it achievable in their time budget
-6. Keep the same energy/vibe as the inspiration but make it DOABLE
-7. NEVER suggest things they don't have access to
+1. STAY FOCUSED ON THE SAME TOPIC/PRODUCT - If the inspiration is about a dropshipping product, your idea must be for THAT SAME PRODUCT
+2. Do NOT generate ideas for a completely different product or topic - adapt the FORMAT/STYLE, not the subject
+3. Generate an idea that ADAPTS the filming style/format to what the creator can make with their resources
+4. If the inspiration requires equipment the creator doesn't have - suggest alternative ways to film THE SAME product/topic
+5. Provide SPECIFIC shot-by-shot instructions with timestamps
+6. Include camera angles and lighting for each shot
+7. Make it achievable in their time budget
+8. Keep the same energy/vibe as the inspiration but make it DOABLE
+9. NEVER suggest things they don't have access to
 
 Return a JSON object with this EXACT structure:
 {
