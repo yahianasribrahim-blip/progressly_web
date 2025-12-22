@@ -305,12 +305,53 @@ function getDefaultFormats(): TrendingFormat[] {
 export async function GET() {
     console.log("API /api/formats/trending called");
 
+    const errors: string[] = [];
+    let trendingVideos: any[] = [];
+
     try {
         // Step 1: Fetch trending videos from generic hashtags
-        const trendingVideos = await fetchGlobalTrendingVideos(20);
+        console.log("Step 1: Fetching trending videos...");
+        trendingVideos = await fetchGlobalTrendingVideos(20);
+
+        if (trendingVideos.length === 0) {
+            errors.push("TikTok API returned 0 videos. Check RAPIDAPI_KEY and API subscription.");
+        } else {
+            console.log(`Step 1 success: Got ${trendingVideos.length} videos`);
+        }
 
         // Step 2: Extract formats using Gemini
+        console.log("Step 2: Extracting formats with Gemini...");
+
+        if (trendingVideos.length === 0) {
+            // Can't extract formats without videos
+            return NextResponse.json({
+                success: false,
+                error: "Failed to fetch trending videos from TikTok API",
+                debug: {
+                    errors,
+                    rapidApiKeyExists: !!process.env.RAPIDAPI_KEY,
+                    rapidApiKeyLength: process.env.RAPIDAPI_KEY?.length || 0,
+                    geminiKeyExists: !!process.env.GOOGLE_GEMINI_API_KEY,
+                }
+            }, { status: 500 });
+        }
+
         const formats = await extractFormatsWithGemini(trendingVideos);
+
+        if (formats.length === 0) {
+            errors.push("Gemini failed to extract formats from videos");
+            return NextResponse.json({
+                success: false,
+                error: "Gemini failed to extract formats",
+                debug: {
+                    errors,
+                    videosAnalyzed: trendingVideos.length,
+                    geminiKeyExists: !!process.env.GOOGLE_GEMINI_API_KEY,
+                }
+            }, { status: 500 });
+        }
+
+        console.log(`Step 2 success: Extracted ${formats.length} formats`);
 
         return NextResponse.json({
             success: true,
@@ -318,21 +359,22 @@ export async function GET() {
                 formats,
                 videosAnalyzed: trendingVideos.length,
                 generatedAt: new Date().toISOString(),
-                source: trendingVideos.length > 0 ? "live" : "default"
+                source: "live"
             }
         });
     } catch (error) {
         console.error("API Error:", error);
 
-        // Return default formats on error
         return NextResponse.json({
-            success: true,
-            data: {
-                formats: getDefaultFormats(),
-                videosAnalyzed: 0,
-                generatedAt: new Date().toISOString(),
-                source: "default"
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error occurred",
+            debug: {
+                errors,
+                videosAnalyzed: trendingVideos.length,
+                rapidApiKeyExists: !!process.env.RAPIDAPI_KEY,
+                geminiKeyExists: !!process.env.GOOGLE_GEMINI_API_KEY,
             }
-        });
+        }, { status: 500 });
     }
 }
+

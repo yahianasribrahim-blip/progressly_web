@@ -42,11 +42,17 @@ export default function TrendingFormatsPage() {
                 setSource(data.data.source);
                 setHasFetched(true);
             } else {
-                setError("Failed to fetch trending formats");
+                // Show detailed error from API
+                const debugInfo = data.debug
+                    ? `\n\nDebug: ${JSON.stringify(data.debug, null, 2)}`
+                    : "";
+                setError(`${data.error || "Failed to fetch trending formats"}${debugInfo}`);
+                setHasFetched(true);
             }
         } catch (err) {
-            setError("Error loading formats. Please try again.");
+            setError(`Network error: ${err instanceof Error ? err.message : "Unknown error"}`);
             console.error("Error fetching formats:", err);
+            setHasFetched(true);
         } finally {
             setLoading(false);
         }
@@ -121,8 +127,11 @@ export default function TrendingFormatsPage() {
             {/* Error State */}
             {error && !loading && (
                 <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
-                    <CardContent className="p-6 text-center">
-                        <p className="text-red-600">{error}</p>
+                    <CardContent className="p-6">
+                        <p className="text-red-600 font-medium mb-2">Error fetching formats</p>
+                        <pre className="text-xs bg-red-100 dark:bg-red-900/30 p-3 rounded overflow-auto whitespace-pre-wrap text-red-800 dark:text-red-200">
+                            {error}
+                        </pre>
                         <Button variant="outline" className="mt-4" onClick={fetchFormats}>
                             Try Again
                         </Button>
