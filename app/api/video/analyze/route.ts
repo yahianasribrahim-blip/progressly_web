@@ -598,6 +598,11 @@ SEXUALLY SUGGESTIVE DANCING (flag even if brief or at the end):
 - Dance moves that simulate sexual movements
 - Any dancing where camera/attention focuses on butt, chest, or private areas
 
+SAME-SEX ROMANTIC CONTENT:
+- Two men kissing or in romantic embrace
+- Two women kissing or in romantic embrace
+- Same-sex couples displaying affection beyond friendship (cuddling romantically, holding hands in romantic context)
+
 SEXUAL SPEECH/DIALOGUE (flag if mentioned verbally or in text):
 - Talk about breasts, nipples, boobs, butt, or private parts in sexual context
 - "Free the nipple" or similar provocative slogans on clothing or spoken
