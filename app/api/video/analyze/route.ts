@@ -255,8 +255,15 @@ export async function POST(request: Request) {
         } catch (e) {
             const errorMsg = e instanceof Error ? e.message : String(e);
             console.error("Video analysis failed:", errorMsg);
+
+            // If Gemini blocked for prohibited content, reject the video entirely
+            // DO NOT fall back to thumbnail - this would bypass content detection
+            if (errorMsg.includes("PROHIBITED_CONTENT") || errorMsg.includes("INAPPROPRIATE_CONTENT")) {
+                throw new Error("INAPPROPRIATE_CONTENT: This video was blocked by AI content moderation for containing prohibited content.");
+            }
+
             fallbackReason = `Video analysis error: ${errorMsg.substring(0, 100)}`;
-            // Fallback
+            // Only fallback for non-content-related errors (network issues, etc.)
             videoAnalysis = await analyzeCoverWithGemini(coverUrl, desc, duration, views);
         }
 
