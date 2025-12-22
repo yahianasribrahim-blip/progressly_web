@@ -24,6 +24,11 @@ interface TrendingFormat {
     halalAudioSuggestions: string[];
     exampleNiches: string[];
     engagementPotential: "High" | "Medium" | "Low";
+    avgStats: {
+        views: string;
+        likes: string;
+        shares: string;
+    };
 }
 
 // Fetch trending videos from generic hashtags
@@ -208,11 +213,12 @@ function getDefaultFormats(): TrendingFormat[] {
             ],
             halalAudioSuggestions: [
                 "Voiceover explaining your journey",
-                "Gentle nasheed in background",
-                "Natural ambient sounds"
+                "Gentle nasheed",
+                "Natural sounds"
             ],
             exampleNiches: ["hijab", "food", "fitness", "lifestyle"],
-            engagementPotential: "High"
+            engagementPotential: "High",
+            avgStats: { views: "500K-2M", likes: "50K-200K", shares: "5K-20K" }
         },
         {
             id: "default-2",
@@ -231,7 +237,8 @@ function getDefaultFormats(): TrendingFormat[] {
                 "Natural sounds (cooking, nature, etc.)"
             ],
             exampleNiches: ["lifestyle", "food", "productivity", "faith"],
-            engagementPotential: "High"
+            engagementPotential: "High",
+            avgStats: { views: "300K-1M", likes: "30K-100K", shares: "3K-15K" }
         },
         {
             id: "default-3",
@@ -249,7 +256,8 @@ function getDefaultFormats(): TrendingFormat[] {
                 "Share thoughts, stories, or advice while getting ready"
             ],
             exampleNiches: ["hijab", "beauty", "lifestyle", "faith"],
-            engagementPotential: "High"
+            engagementPotential: "High",
+            avgStats: { views: "400K-1.5M", likes: "40K-150K", shares: "4K-18K" }
         },
         {
             id: "default-4",
@@ -268,7 +276,8 @@ function getDefaultFormats(): TrendingFormat[] {
                 "Your own voice acting"
             ],
             exampleNiches: ["storytelling", "comedy", "faith", "culture"],
-            engagementPotential: "High"
+            engagementPotential: "High",
+            avgStats: { views: "600K-3M", likes: "60K-300K", shares: "8K-40K" }
         },
         {
             id: "default-5",
@@ -287,7 +296,8 @@ function getDefaultFormats(): TrendingFormat[] {
                 "Natural sound of the activity"
             ],
             exampleNiches: ["hijab", "food", "faith", "lifestyle"],
-            engagementPotential: "High"
+            engagementPotential: "High",
+            avgStats: { views: "200K-800K", likes: "20K-80K", shares: "10K-50K" }
         }
     ];
 }
