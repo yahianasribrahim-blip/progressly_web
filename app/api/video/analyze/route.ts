@@ -6,8 +6,8 @@ import { GoogleGenerativeAI, Part, HarmCategory, HarmBlockThreshold } from "@goo
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
 
-// Safety settings - set to BLOCK_NONE for ALL categories since we use our own custom moderation in the prompt
-// This gives us full control over what gets flagged vs Gemini's default filters
+// Safety settings - BLOCK_NONE for ALL to avoid false positives on family/kid content
+// We rely on our detailed custom prompt moderation which has nuanced exceptions
 const safetySettings = [
     {
         category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -19,7 +19,7 @@ const safetySettings = [
     },
     {
         category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-        threshold: HarmBlockThreshold.BLOCK_NONE, // Our prompt handles this with nuanced rules
+        threshold: HarmBlockThreshold.BLOCK_NONE, // Custom prompt handles with nuanced rules + child exception
     },
     {
         category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
@@ -580,14 +580,23 @@ CRITICAL: You MUST watch and analyze the ENTIRE video from start to finish. Do n
 STRICT CONTENT MODERATION (scan EVERY scene in the video):
 Flag as INAPPROPRIATE if ANY of the following appear ANYWHERE in the video:
 
+IMPORTANT: Even if a video STARTS as innocent content and then becomes sexual, it should be flagged!
+
 EXPLICIT CONTENT:
 - Nudity or partial nudity (exposed breasts, buttocks, genitals)
-- Sexually suggestive dancing focused on body parts (jiggling, twerking, bouncing)
 - OnlyFans promotion or sexual content promotion
 - Explicit or simulated sexual acts
 - Inappropriate touching of private areas (groin, buttocks, chest) by another person
 - Hands sliding over, grabbing, or groping someone's body inappropriately
 - Sexual caressing or fondling even if clothed
+
+SEXUALLY SUGGESTIVE DANCING (flag even if brief or at the end):
+- Twerking (shaking/bouncing buttocks)
+- Grinding movements
+- Dancing that emphasizes buttocks, chest, or groin area
+- "Bending over" or "bent over" poses while shaking body
+- Dance moves that simulate sexual movements
+- Any dancing where camera/attention focuses on butt, chest, or private areas
 
 SEXUAL SPEECH/DIALOGUE (flag if mentioned verbally or in text):
 - Talk about breasts, nipples, boobs, butt, or private parts in sexual context
