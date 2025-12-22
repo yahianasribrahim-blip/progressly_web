@@ -557,7 +557,7 @@ Return a JSON object with this EXACT structure:
     "contentType": "<specific type like 'car modification tips', 'comedy skit', 'cooking tutorial'>",
     "contentFormat": "<IMPORTANT: 'original_content' if creator filmed themselves/their own content. 'edit_compilation' if video uses footage of CELEBRITIES, ATHLETES, MOVIES, TV SHOWS, or other people's content (like soccer player edits, boxing highlights, movie clips). 'repost' if it's just reposted content with no editing>",
     "celebritiesDetected": "<if contentFormat is 'edit_compilation', list who: e.g., 'Mbappe, Ronaldo'. If original content, say 'none'>",
-    "contentDescription": "<2-3 SHORT sentences using SIMPLE, casual words. Describe what happens in the video like you're texting a friend. Avoid fancy vocabulary.>",
+    "contentDescription": "<4-6 sentences describing what happens in the video. Use SIMPLE, casual words like you're texting a friend. Cover the beginning, middle, and end of the video.>",
     "sceneBySceneBreakdown": [
         {"timestamp": "0:00-0:03", "description": "Opening/Hook", "whatsHappening": "<exact description of opening>"},
         {"timestamp": "0:03-0:15", "description": "First Topic", "whatsHappening": "<what happens in this section>"},
