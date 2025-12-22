@@ -201,22 +201,32 @@ async function extractFormatsWithGemini(videos: any[], niche: string): Promise<T
         .map((v, i) => `Video ${i + 1}: "${v.description}" (${v.views} views, ${v.duration}s)`)
         .join("\n");
 
-    const prompt = `You are a content strategist helping a Muslim creator in the "${nicheName}" niche.
+    // The niche now includes their content creation style (e.g., "I film myself doing street racing" vs "I talk about racing history")
+    const prompt = `You are a content strategist helping a Muslim content creator.
+
+THEIR CONTENT STYLE: "${nicheName}"
+
+This describes HOW they create content - whether they film themselves doing activities, create tutorials, do reviews, talk to camera, etc. Your suggestions MUST match their filming style.
 
 Analyze these ${videos.length} trending TikTok videos:
 ${videoDescriptions}
 
-Extract 3-5 distinct FORMATS from these videos that this creator can apply to their ${nicheName} content.
+Extract EXACTLY 3 distinct FORMATS from these videos that match their content creation style.
 
-A format is the STRUCTURE and APPROACH, not the specific content.
+A format is the STRUCTURE and APPROACH (not specific content). Focus on formats that match HOW they film:
+- If they film themselves DOING something, suggest action-based formats
+- If they create tutorials, suggest teaching formats
+- If they do reviews/commentary, suggest talking formats
+- If they vlog, suggest day-in-life formats
 
 CRITICAL RULES:
 1. NEVER mention music or songs - suggest halal audio only (voiceover, nasheed, ambient sounds)
-2. All examples must be SPECIFICALLY for ${nicheName} content
+2. All suggestions must match their specific content creation STYLE
 3. Focus on formats that work WITHOUT showing haram content
-4. Be SPECIFIC and ACTIONABLE - don't give vague advice
+4. Be EXTREMELY specific and actionable - give exact video concepts they can film TODAY
+5. YOU MUST RETURN EXACTLY 3 FORMATS - no more, no less
 
-Return ONLY a JSON array (no other text):
+Return ONLY a valid JSON array with EXACTLY 3 objects (no markdown, no extra text):
 [
     {
         "id": "f1",
@@ -224,9 +234,9 @@ Return ONLY a JSON array (no other text):
         "formatDescription": "<2-3 sentences explaining the format structure>",
         "whyItWorks": "<Psychology behind why this format drives engagement>",
         "howToApply": [
-            "<SPECIFIC example of how a ${nicheName} creator would use this - be detailed>",
-            "<Another SPECIFIC ${nicheName} example with exact content idea>",
-            "<Third SPECIFIC way to apply this to ${nicheName}>"
+            "<EXACT video concept matching their style - what to film, what to say, how to edit>",
+            "<Another specific concept with hook and content structure>",
+            "<Third specific idea they can film immediately>"
         ],
         "halalAudioSuggestions": [
             "<Specific halal audio idea - voiceover topic, nasheed style, or sound type>",
@@ -238,10 +248,12 @@ Return ONLY a JSON array (no other text):
             "likes": "<estimated like range>",
             "shares": "<estimated share range>"
         }
-    }
+    },
+    { "id": "f2", ... },
+    { "id": "f3", ... }
 ]
 
-Make the "howToApply" suggestions VERY specific to ${nicheName}. Include exact video concepts, hooks, and content ideas.`;
+The "howToApply" suggestions must be FILM-READY concepts that match exactly how they create content.`;
 
     try {
         const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash"];

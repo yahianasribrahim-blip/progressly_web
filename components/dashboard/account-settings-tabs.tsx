@@ -156,23 +156,23 @@ export function AccountSettingsTabs({ user }: AccountSettingsTabsProps) {
                             </div>
                         ) : creatorSetup ? (
                             <>
-                                {/* Content Niche - Most Important */}
+                                {/* Content Creation Style - Most Important */}
                                 <div className="space-y-2">
                                     <Label className="flex items-center gap-2">
                                         <Sparkles className="h-4 w-4 text-purple-500" />
-                                        Content Niche
+                                        Content Creation Style
                                     </Label>
                                     <p className="text-sm text-muted-foreground">
-                                        Your content focus area. This is used to customize trending format suggestions.
+                                        Describe HOW you create content. This helps us suggest formats that match your filming style.
                                     </p>
                                     <Input
                                         value={creatorSetup.contentNiche || ""}
                                         onChange={(e) => updateSetup("contentNiche", e.target.value)}
-                                        placeholder="e.g., hijab styling, halal cooking, modest fitness..."
+                                        placeholder="e.g., I film myself doing street racing, I cook halal recipes at home..."
                                         className="max-w-md"
                                     />
                                     <p className="text-xs text-muted-foreground">
-                                        Be specific! "Halal Korean food recipes" works better than just "food"
+                                        Include both WHAT you do and HOW you film it (tutorials, vlogs, action footage, etc.)
                                     </p>
                                 </div>
 

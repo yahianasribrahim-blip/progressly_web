@@ -161,23 +161,26 @@ export default function TrendingFormatsPage() {
                         <div className="p-4 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20">
                             <Sparkles className="h-12 w-12 text-purple-600" />
                         </div>
-                        <div className="text-center max-w-md w-full">
-                            <h2 className="text-xl font-semibold mb-4">Get Trending Formats For Your Niche</h2>
+                        <div className="text-center max-w-lg w-full">
+                            <h2 className="text-xl font-semibold mb-2">Get Trending Formats</h2>
+                            <p className="text-sm text-muted-foreground mb-6">
+                                Describe how you create content so we can match formats to your style
+                            </p>
 
-                            {/* Niche Input */}
+                            {/* Content Style Input */}
                             <div className="mb-6 px-4">
-                                <label className="text-sm text-muted-foreground mb-2 block">
-                                    What&apos;s your content niche?
+                                <label className="text-sm font-medium mb-2 block">
+                                    How do you create your content?
                                 </label>
                                 {loadingNiche ? (
                                     <div className="flex items-center justify-center py-2">
                                         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                                        <span className="ml-2 text-sm text-muted-foreground">Loading saved niche...</span>
+                                        <span className="ml-2 text-sm text-muted-foreground">Loading...</span>
                                     </div>
                                 ) : (
                                     <Input
                                         type="text"
-                                        placeholder="e.g., hijab styling, halal cooking, modest fitness..."
+                                        placeholder="e.g., I film myself doing street racing, I cook halal recipes at home..."
                                         value={niche}
                                         onChange={(e) => setNiche(e.target.value)}
                                         onKeyDown={handleKeyPress}
@@ -185,11 +188,11 @@ export default function TrendingFormatsPage() {
                                     />
                                 )}
                                 <p className="text-xs text-muted-foreground mt-2">
-                                    Be specific! &quot;Halal Korean food recipes&quot; works better than just &quot;food&quot;
+                                    Include WHAT you do and HOW you film it
                                 </p>
-                                {niche && (
+                                {niche && !loadingNiche && (
                                     <p className="text-xs text-purple-600 mt-1">
-                                        ✓ Using your saved niche from settings
+                                        ✓ Using your saved style from settings
                                     </p>
                                 )}
                             </div>
