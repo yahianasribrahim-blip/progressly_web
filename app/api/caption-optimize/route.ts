@@ -31,6 +31,19 @@ export async function POST(request: Request) {
             );
         }
 
+        // Content moderation - block inappropriate captions
+        const inappropriatePatterns = [
+            /\b(boobs?|tits?|ass|pussy|dick|cock|nude|naked|onlyfans|sexy|sex)\b/i,
+            /\b(porn|xxx|nsfw|18\+)\b/i,
+        ];
+        const isInappropriate = inappropriatePatterns.some(pattern => pattern.test(caption));
+        if (isInappropriate) {
+            return NextResponse.json(
+                { error: "This caption contains inappropriate content that cannot be analyzed." },
+                { status: 400 }
+            );
+        }
+
         // Fetch creator setup for personalized recommendations
         let creatorContext: CreatorContext | null = null;
         try {
@@ -204,9 +217,16 @@ SCORING:
 - Perfect fit: 8-10 | Okay fit: 5-7 | Wrong fit: 1-4
 
 RULES FOR CTAs:
-- CTAs only when: audience is very young, or script doesn't already prompt action
-- Otherwise: NO CTA or implicit CTA
+- ONLY suggest a CTA if genuinely helpful for engagement
+- If no CTA is needed, return an EMPTY array for ctaSuggestions
+- Never return "No CTA needed" as a suggestion - just leave array empty
 - Never force CTAs on adult content
+
+RULES FOR HASHTAGS:
+- ALL hashtags must be lowercase - NEVER use capital letters
+- BAD: #FoodCreator, #TravelTips
+- GOOD: #foodcreator, #traveltips
+- Suggest only relevant hashtags for the niche
 
 RULES FOR LANGUAGE:
 - Never use words from the banned list
@@ -245,9 +265,9 @@ Respond in JSON:
         "recommended": "<boldStatement | curiosityQuestion | patternInterrupt>",
         "reasoning": "This works for this content because..."
     },
-    "hashtagSuggestions": ["#relevant1", "#relevant2"],
+    "hashtagSuggestions": ["#lowercase1", "#neverusecapitals"],
     "hashtagsToRemove": ["#overused1"],
-    "ctaSuggestions": ["<for adult: 'No CTA needed' or leave empty>"],
+    "ctaSuggestions": [],
     "optimizedCaption": "<improved caption - NO essay questions>",
     "improvements": ["<specific suggestion>"]
 }`;

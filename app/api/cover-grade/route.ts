@@ -71,42 +71,40 @@ async function analyzeCoverWithVision(imageData: string, platform: string) {
 
 CRITICAL RULES:
 
-1. NEVER MAKE SUGGESTIONS ABOUT TEXT STYLING:
-   - Do NOT suggest changing text color
-   - Do NOT suggest adding outlines or shadows
-   - Do NOT suggest text contrast changes
-   - The AI cannot reliably detect text styling, so skip these entirely
+1. TEXT SHORTENING - BE CAREFUL:
+   - Do NOT suggest shortening text if it removes important context
+   - BAD: "Shorten 'Everything I ate today as a food content creator' to 'Everything I ate today'" - this loses the hook!
+   - GOOD: "Shorten 'Alhumdulillah Alhumdulillah Alhumdulillah' to just 'Alhumdulillah'" - removes repetition only
+   - Only shorten if the removed words add no value
 
-2. TEXT OVERLAP:
-   - Text at TOP with main object in MIDDLE/BOTTOM = NOT overlap
-   - ONLY call it overlap if text LITERALLY covers the main object
-   - Do NOT suggest repositioning unless there's actual overlap
+2. HONEST SCORING - USE FULL 1-10 RANGE:
+   - Poor thumbnails: 1-4 (blurry, no hook, hard to read, boring)
+   - Average thumbnails: 5-6 (okay but nothing special)
+   - Good thumbnails: 7-8 (clear, engaging, good composition)
+   - Excellent thumbnails: 9-10 (scroll-stopping, professional quality)
+   - DO NOT default to 6+ for everything
 
-3. NAMING OBJECTS:
-   - Never call things "the subject" - use the actual name of what you see
-   - If you see a car, say "the car" or "the Ferrari"
-   - If you see a person, say "the person" or describe what they're doing
-   - If you see a product, name the product
+3. ALWAYS PROVIDE EXACTLY 3 ITEMS:
+   - strengths: always exactly 3 items (if less to say, include "Overall composition works well" type fillers)
+   - improvements: always exactly 3 items (if less to say, include "No major issues - consider testing variations" type fillers)
+   - This ensures consistent UI display
 
-4. COMMENTING ON THE MAIN OBJECT:
-   - Do NOT comment on the object itself ("sleek design", "beautiful car")
-   - Instead comment on: camera angle, lighting, how it's framed, composition
-   - Example: "The low angle shot makes the car look powerful" NOT "The car is sleek"
+4. FONT SUGGESTIONS - BE CONSERVATIVE:
+   - Only suggest changing font if the current font is genuinely hard to read
+   - If the font is readable, do NOT suggest changing it
+   - Never always suggest the same fonts (Impact, Bebas Neue)
+   - If you must suggest fonts, vary them: Montserrat, Oswald, Poppins, etc.
 
-5. ALL SUGGESTIONS MUST BE SPECIFIC AND ACTIONABLE:
-   - BAD: "simplify the text" (vague)
-   - GOOD: "Shorten 'Alhumdulillah Alhumdulillah Alhumdulillah' to just 'Alhumdulillah'"
+5. NEVER MAKE SUGGESTIONS ABOUT:
+   - Text color, outlines, shadows, contrast (AI can't detect these reliably)
+   - Repositioning text unless it actually covers the main object
 
-6. QUICK FIXES VARIETY:
-   - Don't always suggest "Use Impact font" - provide varied suggestions
-   - Good quickFixes: composition tweaks, cropping, text placement, visual elements
-   - If no quick fixes are genuinely needed, return an empty array
+6. NAMING OBJECTS:
+   - Never call things "the subject" - use what you see: "the car", "the person", "the product"
 
-BANNED SUGGESTIONS:
-- Text color, outlines, shadows, contrast
-- Repositioning text (unless covering main object)
-- Always suggesting Impact font
-- Using the word "subject" instead of what the object actually is
+7. COMMENTING ON MAIN OBJECT:
+   - Comment on HOW it's captured (angle, lighting, framing)
+   - NOT what it looks like ("sleek", "beautiful")
 
 Return JSON only.`
                 },

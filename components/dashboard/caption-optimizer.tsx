@@ -204,7 +204,7 @@ What's your biggest challenge with content creation? Comment below! 👇
                                 disabled={isOptimizing}
                             />
                             <p className="text-xs text-muted-foreground">
-                                Helps us suggest context-appropriate hooks and hashtags
+                                The more detailed, the better caption we can provide
                             </p>
                         </div>
 

@@ -520,7 +520,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                         <div className="flex items-center justify-between mb-2">
                                             <p className="text-sm font-medium">Scene-by-Scene Breakdown:</p>
                                             <Badge variant="outline" className="text-xs">
-                                                {videoAnalysis.analysisMethod === "video_frames" ? "Full Analysis" : "Thumbnail Only"}
+                                                {videoAnalysis.analysisMethod === "full_video" || videoAnalysis.analysisMethod === "video_frames" ? "Full Analysis" : "Thumbnail Only"}
                                             </Badge>
                                         </div>
                                         <div className="space-y-2">
