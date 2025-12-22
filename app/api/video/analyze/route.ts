@@ -595,8 +595,8 @@ SEXUAL SPEECH/DIALOGUE (flag if mentioned verbally or in text):
 - Sexual jokes, innuendo, or double meanings
 - Arguing about showing body parts or "being allowed to show" body parts
 - Talking about making clothes see-through or wet
-- Captions like "would I survive", "can you handle it", "too big/deep" with sexual meaning
-- Any reference to penis size, depth, or sexual capability
+- Captions like "would I survive", "can you handle it", "too big/deep" ONLY when combined with sexual props/gestures (not in normal challenge/fitness context)
+- Direct references to penis size, depth, or sexual capability
 
 CLOTHING/UNDRESSING:
 - Intentionally making clothing wet/see-through to reveal body
@@ -617,13 +617,16 @@ SEXUAL INNUENDO WITH PROPS/GESTURES:
 - Objects placed near genitals to imply sexual comparison
 - Food items (bananas, cucumbers, etc.) used suggestively near mouth or body
 - Gestures simulating sexual acts (even if clothed)
-- "How deep" or "how far" demonstrations with hands or objects
+- "How deep" or "how far" demonstrations with hands or objects near private areas
 - Any prop used to suggest penis size, vaginal depth, or sexual acts
 
-Do NOT flag:
+Do NOT flag (these are SAFE content):
 - Normal fitness content (running, exercising) without sexual focus
 - Swimwear in appropriate beach/pool context WITHOUT sexual behavior
 - Educational content about bodies (health, anatomy) in clinical context
+- Pregnancy content, baby bumps, pregnancy transformations, maternity content
+- Breastfeeding in non-sexual educational context
+- Medical or health-related body content
 
 Return a JSON object with this EXACT structure:
 {
