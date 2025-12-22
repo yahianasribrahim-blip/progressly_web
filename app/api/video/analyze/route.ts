@@ -577,8 +577,8 @@ Return a JSON object with this EXACT structure:
         "<lesson 3>"
     ],
     "mistakesToAvoid": [
-        "<if this video has genuine issues, what should viewers AVOID doing in their own videos? Be honest but constructive>",
-        "<mistake 2 - only include if there are real problems>"
+        "<even great videos have room to improve - what's ONE thing they could do better or that viewers should avoid in their own attempts?>",
+        "<second tip viewers should keep in mind - always provide at least 2 items>"
     ],
     "hookAnalysis": {
         "hookType": "<type: 'text overlay', 'verbal hook', 'visual hook', 'curiosity hook'>",
