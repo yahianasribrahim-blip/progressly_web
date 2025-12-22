@@ -563,6 +563,9 @@ EXPLICIT CONTENT:
 - Sexually suggestive dancing focused on body parts (jiggling, twerking, bouncing)
 - OnlyFans promotion or sexual content promotion
 - Explicit or simulated sexual acts
+- Inappropriate touching of private areas (groin, buttocks, chest) by another person
+- Hands sliding over, grabbing, or groping someone's body inappropriately
+- Sexual caressing or fondling even if clothed
 
 SEXUAL SPEECH/DIALOGUE (flag if mentioned verbally or in text):
 - Talk about breasts, nipples, boobs, butt, or private parts in sexual context

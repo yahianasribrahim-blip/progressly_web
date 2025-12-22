@@ -233,11 +233,64 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
             return;
         }
 
-        // Check for random character spam (no vowels = likely gibberish)
-        const vowelCount = (intention.match(/[aeiou]/gi) || []).length;
-        const letterCount = (intention.match(/[a-z]/gi) || []).length;
-        if (letterCount > 20 && vowelCount / letterCount < 0.15) {
-            toast.error("Please describe the video's purpose in clear English.");
+        // Check if most words are actual English words (not gibberish)
+        // List of 300+ common English words for validation
+        const commonWords = new Set([
+            // Common words
+            "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
+            "have", "has", "had", "do", "does", "did", "will", "would", "could", "should",
+            "may", "might", "must", "shall", "can", "need", "dare", "ought", "used",
+            "i", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them",
+            "my", "your", "his", "its", "our", "their", "mine", "yours", "hers", "ours", "theirs",
+            "this", "that", "these", "those", "who", "whom", "which", "what", "whose",
+            "where", "when", "why", "how", "all", "each", "every", "both", "few", "more",
+            "most", "other", "some", "any", "no", "not", "only", "own", "same", "so",
+            "than", "too", "very", "just", "also", "now", "here", "there", "then",
+            "and", "but", "or", "nor", "for", "yet", "so", "because", "although", "if",
+            "unless", "until", "while", "as", "since", "before", "after", "when", "where",
+            "in", "on", "at", "by", "for", "with", "about", "against", "between", "into",
+            "through", "during", "before", "after", "above", "below", "to", "from", "up",
+            "down", "out", "off", "over", "under", "again", "further", "once",
+            // Content creation words
+            "video", "content", "tutorial", "review", "vlog", "blog", "comedy", "funny",
+            "educational", "informative", "entertainment", "lifestyle", "fashion", "beauty",
+            "makeup", "skincare", "fitness", "workout", "health", "wellness", "food",
+            "cooking", "recipe", "travel", "adventure", "gaming", "music", "dance",
+            "art", "craft", "diy", "howto", "tips", "tricks", "hack", "hacks",
+            "story", "storytime", "day", "life", "routine", "morning", "night", "daily",
+            "weekly", "monthly", "challenge", "trend", "trending", "viral", "popular",
+            "new", "old", "first", "last", "next", "show", "showing", "share", "sharing",
+            "talk", "talking", "explain", "explaining", "teach", "teaching", "learn", "learning",
+            "make", "making", "create", "creating", "build", "building", "try", "trying",
+            "test", "testing", "unbox", "unboxing", "haul", "shopping", "buy", "buying",
+            "get", "getting", "use", "using", "work", "working", "play", "playing",
+            "watch", "watching", "listen", "listening", "read", "reading", "write", "writing",
+            "asmr", "satisfying", "relaxing", "calming", "soothing", "meditation", "yoga",
+            "motivational", "inspirational", "emotional", "personal", "private", "public",
+            "family", "friends", "couple", "relationship", "dating", "love", "life",
+            "home", "house", "room", "bedroom", "kitchen", "bathroom", "living", "office",
+            "outdoor", "indoor", "nature", "city", "urban", "rural", "country",
+            "muslim", "islamic", "hijab", "modest", "modesty", "faith", "spiritual", "religious",
+            "product", "products", "brand", "service", "company", "business", "shop", "store",
+            "good", "great", "best", "better", "bad", "worse", "worst", "top", "bottom",
+            "high", "low", "big", "small", "long", "short", "fast", "slow", "quick",
+            "easy", "hard", "simple", "complex", "basic", "advanced", "beginner", "expert",
+            "like", "love", "hate", "want", "need", "think", "know", "believe", "feel",
+            "see", "look", "find", "give", "take", "come", "go", "run", "walk", "move",
+            "put", "set", "keep", "let", "begin", "start", "end", "finish", "stop",
+            "open", "close", "turn", "change", "follow", "help", "support", "thank",
+            "please", "sorry", "hello", "hi", "hey", "bye", "goodbye", "welcome",
+            "yes", "no", "maybe", "ok", "okay", "sure", "right", "wrong", "true", "false"
+        ]);
+
+        // Check how many words are recognizable English
+        const wordsToCheck = words.filter(w => w.length > 2); // Skip very short words
+        const recognizedWords = wordsToCheck.filter(w => commonWords.has(w));
+        const recognitionRate = wordsToCheck.length > 0 ? recognizedWords.length / wordsToCheck.length : 0;
+
+        // If less than 40% of words are recognized, likely gibberish
+        if (wordsToCheck.length >= 4 && recognitionRate < 0.4) {
+            toast.error("Please describe the video's purpose using clear, understandable English words.");
             return;
         }
 
