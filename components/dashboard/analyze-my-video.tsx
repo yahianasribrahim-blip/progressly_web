@@ -77,6 +77,7 @@ interface VideoAnalysis {
     replicabilityRequirements: string[];
     analysisMethod: "video_frames" | "thumbnail_only" | "full_video" | "cover_only";
     whyItFlopped?: string | null;
+    fallbackReason?: string;
 }
 
 interface Analysis {
@@ -659,10 +660,28 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                         {videoAnalysis && (
                             <Card className="border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-950/20">
                                 <CardHeader className="pb-3">
-                                    <CardTitle className="flex items-center gap-2 text-lg">
-                                        <Brain className="h-5 w-5 text-violet-600" />
-                                        Video Content Analysis
-                                    </CardTitle>
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                            <Brain className="h-5 w-5 text-violet-600" />
+                                            Video Content Analysis
+                                        </CardTitle>
+                                        <Badge
+                                            variant={videoAnalysis.analysisMethod === "full_video" ? "default" : "destructive"}
+                                            className={videoAnalysis.analysisMethod === "full_video"
+                                                ? "bg-emerald-600"
+                                                : "bg-amber-600"
+                                            }
+                                        >
+                                            {videoAnalysis.analysisMethod === "full_video"
+                                                ? "✓ Full Video Analyzed"
+                                                : "⚠️ Thumbnail Only"}
+                                        </Badge>
+                                    </div>
+                                    {videoAnalysis.analysisMethod !== "full_video" && (
+                                        <p className="text-xs text-amber-600 mt-1">
+                                            {videoAnalysis.fallbackReason || "Video download failed."} Analysis based on thumbnail only - scene breakdown may be incomplete.
+                                        </p>
+                                    )}
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {/* Content Type & Description */}

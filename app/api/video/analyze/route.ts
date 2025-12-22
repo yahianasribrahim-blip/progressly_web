@@ -232,6 +232,7 @@ export async function POST(request: Request) {
 
         // ANALYZE VIDEO WITH GEMINI
         let videoAnalysis: VideoAnalysis | null = null;
+        let fallbackReason = "";
         try {
             console.log("Starting Gemini video analysis...");
 
@@ -245,15 +246,23 @@ export async function POST(request: Request) {
                     videoIntention
                 );
             } else {
+                fallbackReason = "No video download URL available from TikTok API";
                 console.log("No video URL, falling back to cover analysis");
                 videoAnalysis = await analyzeCoverWithGemini(coverUrl, desc, duration, views);
             }
 
             console.log("Video analysis complete");
         } catch (e) {
-            console.error("Video analysis failed:", e);
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            console.error("Video analysis failed:", errorMsg);
+            fallbackReason = `Video analysis error: ${errorMsg.substring(0, 100)}`;
             // Fallback
             videoAnalysis = await analyzeCoverWithGemini(coverUrl, desc, duration, views);
+        }
+
+        // Add fallback reason to videoAnalysis if it fell back
+        if (fallbackReason && videoAnalysis) {
+            videoAnalysis.fallbackReason = fallbackReason;
         }
 
         // Generate final analysis
@@ -360,6 +369,7 @@ interface VideoAnalysis {
     replicabilityRequirements: string[];
     analysisMethod: "full_video" | "cover_only";
     whyItFlopped?: string | null;
+    fallbackReason?: string;
 }
 
 // =================
