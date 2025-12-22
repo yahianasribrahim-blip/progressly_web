@@ -14,7 +14,7 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { inspirationVideo, videoIntention } = body;
+        const { inspirationVideo, videoIntention, userAnswers } = body;
 
         if (!inspirationVideo) {
             return NextResponse.json(
@@ -90,6 +90,13 @@ INSPIRATION VIDEO:
 VIDEO INTENTION: ${videoIntention}
 
 ${creatorContext}
+
+${userAnswers && userAnswers.length > 0 ? `
+USER'S SPECIFIC SITUATION (from pre-generation questions):
+${userAnswers.map((a: { question: string; answer: string }) => `- ${a.question}: ${a.answer}`).join("\n")}
+
+IMPORTANT: Respect these answers! If they said "no" to something, DO NOT suggest it.
+` : ""}
 
 RULES:
 1. STAY FOCUSED ON THE SAME TOPIC/PRODUCT - If the inspiration is about a dropshipping product, your idea must be for THAT SAME PRODUCT
