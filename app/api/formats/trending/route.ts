@@ -32,30 +32,37 @@ interface TrendingFormat {
 }
 
 // Fetch trending videos from generic hashtags
-async function fetchGlobalTrendingVideos(count: number = 20): Promise<any[]> {
+async function fetchGlobalTrendingVideos(count: number = 20): Promise<{ videos: any[], debugInfo: any }> {
     console.log("Fetching global trending videos...");
+
+    const debugInfo: any = {
+        apiResponses: [],
+        errors: [],
+    };
 
     if (!RAPIDAPI_KEY) {
         console.error("RAPIDAPI_KEY is not set");
-        return [];
+        debugInfo.errors.push("RAPIDAPI_KEY is not set");
+        return { videos: [], debugInfo };
     }
 
     const allVideos: any[] = [];
     const seenIds = new Set<string>();
 
     // Try multiple generic hashtags to get diverse formats
-    for (const hashtag of TRENDING_HASHTAGS.slice(0, 8)) {
+    for (const hashtag of TRENDING_HASHTAGS.slice(0, 3)) { // Try just 3 to start
         if (allVideos.length >= count) break;
 
         try {
             const params = new URLSearchParams({
                 hashtag: hashtag,
                 sorting: "rise",
-                days: "3", // Last 3 days for freshest trends
+                days: "7", // Expanded to 7 days
                 order: "desc",
             });
 
             const url = `https://${WOOP_API_HOST}/video?${params.toString()}`;
+            console.log(`Fetching: ${url}`);
 
             const response = await fetch(url, {
                 method: "GET",
@@ -67,13 +74,34 @@ async function fetchGlobalTrendingVideos(count: number = 20): Promise<any[]> {
                 },
             });
 
+            const responseStatus = response.status;
+            const responseText = await response.text();
+
+            debugInfo.apiResponses.push({
+                hashtag,
+                status: responseStatus,
+                responsePreview: responseText.substring(0, 500),
+            });
+
             if (!response.ok) {
-                console.error(`Error for #${hashtag}: ${response.status}`);
+                console.error(`Error for #${hashtag}: ${responseStatus} - ${responseText.substring(0, 200)}`);
+                debugInfo.errors.push(`#${hashtag}: ${responseStatus}`);
                 continue;
             }
 
-            const data = await response.json();
-            const rawVideos = data.data?.stats || data.stats || data.data || data.videos || [];
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                debugInfo.errors.push(`#${hashtag}: Failed to parse JSON`);
+                continue;
+            }
+
+            // Log the response structure
+            console.log(`#${hashtag} response keys:`, Object.keys(data));
+
+            const rawVideos = data.data?.stats || data.stats || data.data || data.videos || data.items || [];
+            console.log(`#${hashtag} rawVideos type:`, typeof rawVideos, Array.isArray(rawVideos) ? `length: ${rawVideos.length}` : "not array");
 
             if (Array.isArray(rawVideos)) {
                 for (const v of rawVideos.slice(0, 5)) {
@@ -95,12 +123,14 @@ async function fetchGlobalTrendingVideos(count: number = 20): Promise<any[]> {
             console.log(`#${hashtag}: added ${allVideos.length} total videos`);
         } catch (error) {
             console.error(`Error fetching #${hashtag}:`, error);
+            debugInfo.errors.push(`#${hashtag}: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 
     console.log(`Fetched ${allVideos.length} global trending videos`);
-    return allVideos;
+    return { videos: allVideos, debugInfo };
 }
+
 
 // Use Gemini to extract FORMAT from multiple videos
 async function extractFormatsWithGemini(videos: any[]): Promise<TrendingFormat[]> {
@@ -307,17 +337,32 @@ export async function GET() {
 
     const errors: string[] = [];
     let trendingVideos: any[] = [];
+    let apiDebugInfo: any = {};
 
     try {
         // Step 1: Fetch trending videos from generic hashtags
         console.log("Step 1: Fetching trending videos...");
-        trendingVideos = await fetchGlobalTrendingVideos(20);
+        const fetchResult = await fetchGlobalTrendingVideos(20);
+        trendingVideos = fetchResult.videos;
+        apiDebugInfo = fetchResult.debugInfo;
 
         if (trendingVideos.length === 0) {
             errors.push("TikTok API returned 0 videos. Check RAPIDAPI_KEY and API subscription.");
-        } else {
-            console.log(`Step 1 success: Got ${trendingVideos.length} videos`);
+            // Return with API debug info to see what happened
+            return NextResponse.json({
+                success: false,
+                error: "Failed to fetch trending videos from TikTok API",
+                debug: {
+                    errors,
+                    rapidApiKeyExists: !!process.env.RAPIDAPI_KEY,
+                    rapidApiKeyLength: process.env.RAPIDAPI_KEY?.length || 0,
+                    geminiKeyExists: !!process.env.GOOGLE_GEMINI_API_KEY,
+                    apiDebugInfo, // Include the API response details
+                }
+            }, { status: 500 });
         }
+
+        console.log(`Step 1 success: Got ${trendingVideos.length} videos`);
 
         // Step 2: Extract formats using Gemini
         console.log("Step 2: Extracting formats with Gemini...");
@@ -373,8 +418,8 @@ export async function GET() {
                 videosAnalyzed: trendingVideos.length,
                 rapidApiKeyExists: !!process.env.RAPIDAPI_KEY,
                 geminiKeyExists: !!process.env.GOOGLE_GEMINI_API_KEY,
+                apiDebugInfo,
             }
         }, { status: 500 });
     }
 }
-
