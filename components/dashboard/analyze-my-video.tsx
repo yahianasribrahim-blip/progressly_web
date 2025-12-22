@@ -688,6 +688,36 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                             </Card>
                         )}
 
+                        {/* Scene-by-Scene Breakdown */}
+                        {videoAnalysis && videoAnalysis.sceneBySceneBreakdown && videoAnalysis.sceneBySceneBreakdown.length > 0 && (
+                            <Card className="border-cyan-200 dark:border-cyan-800 bg-cyan-50/50 dark:bg-cyan-950/20">
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="flex items-center gap-2 text-lg">
+                                        <Clock className="h-5 w-5 text-cyan-600" />
+                                        Scene-by-Scene Breakdown
+                                    </CardTitle>
+                                    <CardDescription>
+                                        What happens at each point in the video
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-3">
+                                        {videoAnalysis.sceneBySceneBreakdown.map((scene, index) => (
+                                            <div key={index} className="flex gap-3 p-3 bg-background rounded-lg border">
+                                                <Badge variant="outline" className="shrink-0 h-fit">
+                                                    {scene.timestamp}
+                                                </Badge>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-medium text-sm">{scene.description}</p>
+                                                    <p className="text-sm text-muted-foreground mt-1">{scene.whatsHappening}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
                         {/* Hook Analysis */}
                         {videoAnalysis && (
                             <Card>

@@ -536,17 +536,40 @@ RULES:
 9. Focus on MEANINGFUL details that affect the video's effectiveness. Skip trivial observations (e.g., minor clothing adjustments, tiny movements). Only describe what matters to the content.
 10. USE SIMPLE LANGUAGE - write like you're explaining to a 10 year old. No fancy words. Short sentences.
 
-CONTENT MODERATION:
-- Flag content as inappropriate if it contains:
-  - Nudity or partial nudity (exposed breasts, buttocks, genitals)
-  - Sexually suggestive dancing focused on body parts (jiggling, twerking with focus on body)
-  - OnlyFans promotion or sexual content promotion
-  - Explicit sexual acts or simulated sexual acts
-- Do NOT flag:
-  - Normal fitness content (running, exercising)
-  - Swimwear in appropriate beach/pool context
-  - Artistic expression or dance that's not sexually focused
-  - Revealing clothing alone (only flag if combined with sexually suggestive movements)
+CRITICAL: You MUST watch and analyze the ENTIRE video from start to finish. Do not just analyze the thumbnail or first frame.
+
+STRICT CONTENT MODERATION (scan EVERY scene in the video):
+Flag as INAPPROPRIATE if ANY of the following appear ANYWHERE in the video:
+
+EXPLICIT CONTENT:
+- Nudity or partial nudity (exposed breasts, buttocks, genitals)
+- Sexually suggestive dancing focused on body parts (jiggling, twerking, bouncing)
+- OnlyFans promotion or sexual content promotion
+- Explicit or simulated sexual acts
+
+SEXUAL SPEECH/DIALOGUE (flag if mentioned verbally or in text):
+- Talk about breasts, nipples, boobs, butt, or private parts in sexual context
+- "Free the nipple" or similar provocative slogans on clothing or spoken
+- Sexual jokes, innuendo, or double meanings
+- Arguing about showing body parts or "being allowed to show" body parts
+- Talking about making clothes see-through or wet
+
+CLOTHING/UNDRESSING:
+- Intentionally making clothing wet/see-through to reveal body
+- Undressing, stripping, or removing clothing in suggestive manner
+- Another person undressing someone (especially removing hijab/niqab in vulgar context)
+- "Wardrobe malfunction" content or revealing clothing "accidents"
+- Dragging someone into frame to show their body
+
+THIRST TRAP CONTENT:
+- Content designed to sexually attract viewers (lip biting, body focus)
+- Camera focus on bouncing/jiggling body parts
+- Suggestive poses with revealing outfits
+
+Do NOT flag:
+- Normal fitness content (running, exercising) without sexual focus
+- Swimwear in appropriate beach/pool context WITHOUT sexual behavior
+- Educational content about bodies (health, anatomy) in clinical context
 
 Return a JSON object with this EXACT structure:
 {
@@ -557,7 +580,7 @@ Return a JSON object with this EXACT structure:
     "contentType": "<specific type like 'car modification tips', 'comedy skit', 'cooking tutorial'>",
     "contentFormat": "<IMPORTANT: 'original_content' if creator filmed themselves/their own content. 'edit_compilation' if video uses footage of CELEBRITIES, ATHLETES, MOVIES, TV SHOWS, or other people's content (like soccer player edits, boxing highlights, movie clips). 'repost' if it's just reposted content with no editing>",
     "celebritiesDetected": "<if contentFormat is 'edit_compilation', list who: e.g., 'Mbappe, Ronaldo'. If original content, say 'none'>",
-    "contentDescription": "<4-6 sentences describing what happens in the video. Use SIMPLE, casual words like you're texting a friend. Cover the beginning, middle, and end of the video.>",
+    "contentDescription": "<MINIMUM 50 CHARACTERS. Write 4-6 sentences describing what happens in the video. Use SIMPLE, casual words like you're texting a friend. Cover the beginning, middle, and end of the video. If you write less than 50 characters, you have failed.>",
     "sceneBySceneBreakdown": [
         {"timestamp": "0:00-0:03", "description": "Opening/Hook", "whatsHappening": "<exact description of opening>"},
         {"timestamp": "0:03-0:15", "description": "First Topic", "whatsHappening": "<what happens in this section>"},
