@@ -348,8 +348,8 @@ interface VideoAnalysis {
     settingType: string;
     audioType: string;
     productionQuality: string;
-    whatWorked: string[];
-    whatToImprove: string[];
+    lessonsToApply: string[];
+    mistakesToAvoid: string[];
     hookAnalysis: {
         hookType: string;
         effectiveness: string;
@@ -357,6 +357,7 @@ interface VideoAnalysis {
     };
     replicabilityRequirements: string[];
     analysisMethod: "full_video" | "cover_only";
+    whyItFlopped?: string | null;
 }
 
 // =================
@@ -566,14 +567,14 @@ Return a JSON object with this EXACT structure:
     "settingType": "<specific: 'parking lot with Infiniti G37', 'home kitchen', 'bedroom with ring light'>",
     "audioType": "<'talking/voiceover', 'original audio with talking', 'background music only', 'mixed'>",
     "productionQuality": "<'basic phone filming', 'good lighting and angles', 'professional production'>",
-    "whatWorked": [
-        "<specific strength based on what you SEE in the video>",
-        "<another specific strength>",
-        "<strength 3>"
+    "lessonsToApply": [
+        "<what can viewers LEARN from this video for their OWN content? Focus on transferable techniques>",
+        "<lesson 2 - specific technique or approach they can copy>",
+        "<lesson 3>"
     ],
-    "whatToImprove": [
-        "<specific improvement that the video is NOT already doing>",
-        "<improvement 2>"
+    "mistakesToAvoid": [
+        "<if this video has genuine issues, what should viewers AVOID doing in their own videos? Be honest but constructive>",
+        "<mistake 2 - only include if there are real problems>"
     ],
     "hookAnalysis": {
         "hookType": "<type: 'text overlay', 'verbal hook', 'visual hook', 'curiosity hook'>",
@@ -584,7 +585,8 @@ Return a JSON object with this EXACT structure:
         "<specific item needed to replicate - e.g., 'a modified car'>",
         "<requirement 2>",
         "<requirement 3>"
-    ]
+    ],
+    "whyItFlopped": "<ONLY fill this if the video has low views/engagement. Explain honestly: What went wrong? Algorithm issues? Hook failure? Wrong timing? Content problems? If video performed well, set to null>"
 }`;
 
     try {
@@ -651,11 +653,12 @@ Return a JSON object with this EXACT structure:
             settingType: parsed.settingType || "Unknown",
             audioType: parsed.audioType || "Unknown",
             productionQuality: parsed.productionQuality || "Unknown",
-            whatWorked: filterMusic(parsed.whatWorked || []),
-            whatToImprove: filterMusic(parsed.whatToImprove || []),
+            lessonsToApply: filterMusic(parsed.lessonsToApply || []),
+            mistakesToAvoid: filterMusic(parsed.mistakesToAvoid || []),
             hookAnalysis: parsed.hookAnalysis || { hookType: "Unknown", effectiveness: "Unknown", score: 5 },
             replicabilityRequirements: parsed.replicabilityRequirements || [],
             analysisMethod: "full_video",
+            whyItFlopped: parsed.whyItFlopped || null,
         };
     } catch (error) {
         console.error("Gemini video analysis error:", error);
@@ -755,11 +758,12 @@ Return JSON with this structure (acknowledge limitations - you only see the thum
             settingType: parsed.settingType || "Unknown",
             audioType: "Cannot determine from thumbnail",
             productionQuality: parsed.productionQuality || "Unknown",
-            whatWorked: (parsed.whatWorked || []).filter((s: string) => !s.toLowerCase().includes("music")),
-            whatToImprove: (parsed.whatToImprove || []).filter((s: string) => !s.toLowerCase().includes("music")),
+            lessonsToApply: (parsed.lessonsToApply || []).filter((s: string) => !s.toLowerCase().includes("music")),
+            mistakesToAvoid: (parsed.mistakesToAvoid || []).filter((s: string) => !s.toLowerCase().includes("music")),
             hookAnalysis: parsed.hookAnalysis || { hookType: "Unknown", effectiveness: "Unknown", score: 5 },
             replicabilityRequirements: parsed.replicabilityRequirements || [],
             analysisMethod: "cover_only",
+            whyItFlopped: parsed.whyItFlopped || null,
         };
     } catch (error) {
         console.error("Cover analysis error:", error);
@@ -776,11 +780,12 @@ function getDefaultAnalysis(): VideoAnalysis {
         settingType: "Unknown",
         audioType: "Unknown",
         productionQuality: "Unknown",
-        whatWorked: [],
-        whatToImprove: [],
+        lessonsToApply: [],
+        mistakesToAvoid: [],
         hookAnalysis: { hookType: "Unknown", effectiveness: "Unknown", score: 5 },
         replicabilityRequirements: [],
         analysisMethod: "cover_only",
+        whyItFlopped: null,
     };
 }
 
@@ -843,8 +848,9 @@ function generateFinalAnalysis(
     return {
         performanceScore,
         verdict: engagement.overallVerdict,
-        strengths: videoAnalysis?.whatWorked || [],
-        improvements: videoAnalysis?.whatToImprove || [],
+        strengths: videoAnalysis?.lessonsToApply || [],
+        improvements: videoAnalysis?.mistakesToAvoid || [],
         keyLearnings,
+        whyItFlopped: videoAnalysis?.whyItFlopped || null,
     };
 }

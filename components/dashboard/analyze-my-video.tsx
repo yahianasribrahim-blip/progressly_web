@@ -65,8 +65,8 @@ interface VideoAnalysis {
     settingType: string;
     audioType: string;
     productionQuality: string;
-    whatWorked: string[];
-    whatToImprove: string[];
+    lessonsToApply: string[];
+    mistakesToAvoid: string[];
     hookAnalysis: {
         hookType: string;
         effectiveness: string;
@@ -74,6 +74,7 @@ interface VideoAnalysis {
     };
     replicabilityRequirements: string[];
     analysisMethod: "video_frames" | "thumbnail_only" | "full_video" | "cover_only";
+    whyItFlopped?: string | null;
 }
 
 interface Analysis {
@@ -82,6 +83,7 @@ interface Analysis {
     strengths: string[];
     improvements: string[];
     keyLearnings: string[];
+    whyItFlopped?: string | null;
 }
 
 interface AnalyzedVideo {
@@ -292,7 +294,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                         duration: video.duration,
                         contentType: videoAnalysis.contentType,
                         sceneBreakdown: videoAnalysis.sceneBySceneBreakdown,
-                        whatWorked: videoAnalysis.whatWorked,
+                        whatWorked: videoAnalysis.lessonsToApply,
                         settingType: videoAnalysis.settingType,
                         productionQuality: videoAnalysis.productionQuality,
                     },
@@ -693,6 +695,21 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                             </Card>
                         )}
 
+                        {/* Why It Flopped - Only show for low performing videos */}
+                        {analysis.whyItFlopped && analysis.performanceScore < 50 && (
+                            <Card className="border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20">
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="flex items-center gap-2 text-lg text-red-600">
+                                        <AlertCircle className="h-5 w-5" />
+                                        Why This Flopped
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-sm">{analysis.whyItFlopped}</p>
+                                </CardContent>
+                            </Card>
+                        )}
+
                         {/* Strengths & Improvements */}
                         <div className="grid gap-4 md:grid-cols-2">
                             {analysis.strengths.length > 0 && (
@@ -700,7 +717,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                     <CardHeader className="pb-3">
                                         <CardTitle className="flex items-center gap-2 text-lg text-emerald-600">
                                             <CheckCircle className="h-5 w-5" />
-                                            What&apos;s Working
+                                            Lessons to Apply
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
@@ -721,7 +738,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                     <CardHeader className="pb-3">
                                         <CardTitle className="flex items-center gap-2 text-lg text-amber-600">
                                             <AlertCircle className="h-5 w-5" />
-                                            Areas to Improve
+                                            Mistakes to Avoid
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
