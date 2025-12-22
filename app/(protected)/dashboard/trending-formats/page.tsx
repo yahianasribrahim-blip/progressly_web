@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Loader2, TrendingUp, Lightbulb, Volume2, Sparkles, Eye, Heart, Share2, Zap, Bookmark, Check } from "lucide-react";
 
 interface TrendingFormat {
@@ -11,9 +12,8 @@ interface TrendingFormat {
     formatName: string;
     formatDescription: string;
     whyItWorks: string;
-    howMuslimCreatorsCanApply: string[];
+    howToApply: string[];
     halalAudioSuggestions: string[];
-    exampleNiches: string[];
     engagementPotential: "High" | "Medium" | "Low";
     avgStats?: {
         views: string;
@@ -28,21 +28,28 @@ export default function TrendingFormatsPage() {
     const [error, setError] = useState<string | null>(null);
     const [hasFetched, setHasFetched] = useState(false);
     const [requestCount, setRequestCount] = useState(0);
+    const [niche, setNiche] = useState<string>("");
+    const [fetchedNiche, setFetchedNiche] = useState<string>("");
     // Map format.id -> database savedTrend.id for unsaving
     const [savedFormats, setSavedFormats] = useState<Map<string, string>>(new Map());
     const [savingId, setSavingId] = useState<string | null>(null);
 
     const fetchFormats = async () => {
+        if (!niche.trim()) {
+            setError("Please enter your content niche");
+            return;
+        }
+
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch("/api/formats/trending");
+            const response = await fetch(`/api/formats/trending?niche=${encodeURIComponent(niche.trim())}`);
             const data = await response.json();
 
             if (data.success) {
-                // Show top 3 formats (already ranked by API)
                 setFormats(data.data.formats.slice(0, 3));
-                setRequestCount(data.data.requestsUsed || 6); // Approx 6 requests per run
+                setRequestCount(data.data.requestsUsed || 6);
+                setFetchedNiche(niche.trim());
                 setHasFetched(true);
             } else {
                 const debugInfo = data.debug
@@ -67,7 +74,6 @@ export default function TrendingFormatsPage() {
 
         try {
             if (existingSavedId) {
-                // Unsave - delete from database
                 const response = await fetch(`/api/trends/${existingSavedId}`, {
                     method: "DELETE",
                 });
@@ -80,7 +86,6 @@ export default function TrendingFormatsPage() {
                     });
                 }
             } else {
-                // Save - add to database
                 const response = await fetch("/api/trends", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -88,9 +93,9 @@ export default function TrendingFormatsPage() {
                         formatName: format.formatName,
                         formatDescription: format.formatDescription,
                         whyItWorks: format.whyItWorks,
-                        howToApply: format.howMuslimCreatorsCanApply,
+                        howToApply: format.howToApply,
                         halalAudio: format.halalAudioSuggestions,
-                        niches: format.exampleNiches,
+                        niches: [fetchedNiche],
                         avgStats: format.avgStats,
                     }),
                 });
@@ -107,6 +112,12 @@ export default function TrendingFormatsPage() {
         }
     };
 
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" && niche.trim() && !loading) {
+            fetchFormats();
+        }
+    };
+
     return (
         <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto">
             {/* Header */}
@@ -118,7 +129,7 @@ export default function TrendingFormatsPage() {
                     <div>
                         <h1 className="text-2xl font-bold">Trending Formats</h1>
                         <p className="text-muted-foreground text-sm">
-                            Discover what formats are working right now
+                            Discover formats tailored to your content niche
                         </p>
                     </div>
                 </div>
@@ -131,14 +142,31 @@ export default function TrendingFormatsPage() {
                         <div className="p-4 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20">
                             <Sparkles className="h-12 w-12 text-purple-600" />
                         </div>
-                        <div className="text-center max-w-md">
-                            <h2 className="text-xl font-semibold mb-2">Get Current Trending Formats</h2>
-                            <p className="text-muted-foreground text-sm mb-6">
-                                We&apos;ll analyze what&apos;s trending right now and show you the top 3 formats you can apply to your content.
-                            </p>
+                        <div className="text-center max-w-md w-full">
+                            <h2 className="text-xl font-semibold mb-4">Get Trending Formats For Your Niche</h2>
+
+                            {/* Niche Input */}
+                            <div className="mb-6 px-4">
+                                <label className="text-sm text-muted-foreground mb-2 block">
+                                    What&apos;s your content niche?
+                                </label>
+                                <Input
+                                    type="text"
+                                    placeholder="e.g., hijab styling, halal cooking, modest fitness..."
+                                    value={niche}
+                                    onChange={(e) => setNiche(e.target.value)}
+                                    onKeyDown={handleKeyPress}
+                                    className="text-center"
+                                />
+                                <p className="text-xs text-muted-foreground mt-2">
+                                    Be specific! &quot;Halal Korean food recipes&quot; works better than just &quot;food&quot;
+                                </p>
+                            </div>
+
                             <Button
                                 onClick={fetchFormats}
                                 size="lg"
+                                disabled={!niche.trim()}
                                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                             >
                                 <Zap className="h-5 w-5 mr-2" />
@@ -155,7 +183,7 @@ export default function TrendingFormatsPage() {
                     <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
                         <Loader2 className="h-10 w-10 animate-spin text-purple-600" />
                         <div className="text-center">
-                            <p className="font-medium">Analyzing trending content...</p>
+                            <p className="font-medium">Finding trending formats for &quot;{niche}&quot;...</p>
                             <p className="text-sm text-muted-foreground mt-1">This may take a moment</p>
                         </div>
                     </CardContent>
@@ -180,6 +208,35 @@ export default function TrendingFormatsPage() {
             {/* Formats Grid - Only after fetching */}
             {hasFetched && !loading && !error && formats.length > 0 && (
                 <>
+                    {/* Niche Indicator & Change */}
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-sm py-1 px-3">
+                                {fetchedNiche}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">
+                                Customized for your niche
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Input
+                                type="text"
+                                placeholder="Try a different niche..."
+                                value={niche}
+                                onChange={(e) => setNiche(e.target.value)}
+                                onKeyDown={handleKeyPress}
+                                className="w-64"
+                            />
+                            <Button
+                                variant="outline"
+                                onClick={fetchFormats}
+                                disabled={!niche.trim() || loading}
+                            >
+                                Update
+                            </Button>
+                        </div>
+                    </div>
+
                     <div className="grid gap-6">
                         {formats.map((format, index) => (
                             <Card key={format.id} className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -259,17 +316,17 @@ export default function TrendingFormatsPage() {
                                         </p>
                                     </div>
 
-                                    {/* How to Apply */}
-                                    <div>
-                                        <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-                                            <TrendingUp className="h-4 w-4 text-purple-600" />
-                                            How You Can Apply This
+                                    {/* How to Apply - NICHE SPECIFIC */}
+                                    <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/20 border border-purple-200/50">
+                                        <h4 className="font-medium text-sm mb-2 flex items-center gap-2 text-purple-700 dark:text-purple-400">
+                                            <TrendingUp className="h-4 w-4" />
+                                            How to Apply This to Your Content
                                         </h4>
                                         <ul className="space-y-2">
-                                            {format.howMuslimCreatorsCanApply.map((idea, i) => (
+                                            {format.howToApply.map((idea, i) => (
                                                 <li key={i} className="flex items-start gap-2 text-sm">
                                                     <span className="text-purple-600 mt-1">•</span>
-                                                    <span className="text-muted-foreground">{idea}</span>
+                                                    <span className="text-purple-900 dark:text-purple-200">{idea}</span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -293,18 +350,6 @@ export default function TrendingFormatsPage() {
                                             ))}
                                         </div>
                                     </div>
-
-                                    {/* Niches */}
-                                    <div className="flex items-center gap-2 pt-2">
-                                        <span className="text-xs text-muted-foreground">Works for:</span>
-                                        <div className="flex flex-wrap gap-1">
-                                            {format.exampleNiches.map((niche, i) => (
-                                                <Badge key={i} variant="outline" className="text-xs">
-                                                    {niche}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </div>
                                 </CardContent>
                             </Card>
                         ))}
@@ -315,7 +360,7 @@ export default function TrendingFormatsPage() {
                         <Button
                             variant="outline"
                             onClick={fetchFormats}
-                            disabled={loading}
+                            disabled={loading || !niche.trim()}
                         >
                             <TrendingUp className="h-4 w-4 mr-2" />
                             Get Fresh Formats
