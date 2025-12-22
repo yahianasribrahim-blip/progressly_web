@@ -215,6 +215,32 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
             return;
         }
 
+        // Detect spam/gibberish in video intention
+        const intention = videoIntention.trim().toLowerCase();
+
+        // Check for repeated single character (like "aaaaaaaaaaaaa")
+        const uniqueChars = new Set(intention.replace(/\s/g, ''));
+        if (uniqueChars.size < 5) {
+            toast.error("Please provide a genuine description of the video's purpose, not repeated characters.");
+            return;
+        }
+
+        // Check for single word repeated (like "test test test test")
+        const words = intention.split(/\s+/).filter(w => w.length > 0);
+        const uniqueWords = new Set(words);
+        if (words.length >= 5 && uniqueWords.size <= 2) {
+            toast.error("Please provide a meaningful description, not repeated words.");
+            return;
+        }
+
+        // Check for random character spam (no vowels = likely gibberish)
+        const vowelCount = (intention.match(/[aeiou]/gi) || []).length;
+        const letterCount = (intention.match(/[a-z]/gi) || []).length;
+        if (letterCount > 20 && vowelCount / letterCount < 0.15) {
+            toast.error("Please describe the video's purpose in clear English.");
+            return;
+        }
+
         setIsAnalyzing(true);
         setError(null);
         setVideo(null);

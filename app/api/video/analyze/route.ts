@@ -574,9 +574,11 @@ SEXUAL SPEECH/DIALOGUE (flag if mentioned verbally or in text):
 CLOTHING/UNDRESSING:
 - Intentionally making clothing wet/see-through to reveal body
 - Undressing, stripping, or removing clothing in suggestive manner
-- Another person undressing someone (especially removing hijab/niqab in vulgar context)
+- One person removing or pulling off another person's clothing (ANY type)
+- Removing or pulling off hijab, niqab, or face covering from a woman (even partially)
 - "Wardrobe malfunction" content or revealing clothing "accidents"
 - Dragging someone into frame to show their body
+- Grabbing, tugging, or pulling at someone's clothing
 
 THIRST TRAP CONTENT:
 - Content designed to sexually attract viewers (lip biting, body focus)
