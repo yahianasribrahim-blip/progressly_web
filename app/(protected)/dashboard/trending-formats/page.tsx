@@ -28,7 +28,8 @@ export default function TrendingFormatsPage() {
     const [error, setError] = useState<string | null>(null);
     const [hasFetched, setHasFetched] = useState(false);
     const [requestCount, setRequestCount] = useState(0);
-    const [savedFormats, setSavedFormats] = useState<Set<string>>(new Set());
+    // Map format.id -> database savedTrend.id for unsaving
+    const [savedFormats, setSavedFormats] = useState<Map<string, string>>(new Map());
     const [savingId, setSavingId] = useState<string | null>(null);
 
     const fetchFormats = async () => {
@@ -59,28 +60,48 @@ export default function TrendingFormatsPage() {
         }
     };
 
-    const saveToTrendBank = async (format: TrendingFormat) => {
+    const toggleSaveTrend = async (format: TrendingFormat) => {
         setSavingId(format.id);
-        try {
-            const response = await fetch("/api/trends", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    formatName: format.formatName,
-                    formatDescription: format.formatDescription,
-                    whyItWorks: format.whyItWorks,
-                    howToApply: format.howMuslimCreatorsCanApply,
-                    halalAudio: format.halalAudioSuggestions,
-                    niches: format.exampleNiches,
-                    avgStats: format.avgStats,
-                }),
-            });
 
-            if (response.ok) {
-                setSavedFormats(prev => new Set(prev).add(format.id));
+        const existingSavedId = savedFormats.get(format.id);
+
+        try {
+            if (existingSavedId) {
+                // Unsave - delete from database
+                const response = await fetch(`/api/trends/${existingSavedId}`, {
+                    method: "DELETE",
+                });
+
+                if (response.ok) {
+                    setSavedFormats(prev => {
+                        const newMap = new Map(prev);
+                        newMap.delete(format.id);
+                        return newMap;
+                    });
+                }
+            } else {
+                // Save - add to database
+                const response = await fetch("/api/trends", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        formatName: format.formatName,
+                        formatDescription: format.formatDescription,
+                        whyItWorks: format.whyItWorks,
+                        howToApply: format.howMuslimCreatorsCanApply,
+                        halalAudio: format.halalAudioSuggestions,
+                        niches: format.exampleNiches,
+                        avgStats: format.avgStats,
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setSavedFormats(prev => new Map(prev).set(format.id, data.data.id));
+                }
             }
         } catch (err) {
-            console.error("Error saving trend:", err);
+            console.error("Error toggling trend save:", err);
         } finally {
             setSavingId(null);
         }
@@ -175,20 +196,20 @@ export default function TrendingFormatsPage() {
                                                 </CardDescription>
                                             </div>
                                         </div>
-                                        {/* Save Button */}
+                                        {/* Save/Unsave Button */}
                                         <Button
                                             variant={savedFormats.has(format.id) ? "secondary" : "outline"}
                                             size="sm"
-                                            onClick={() => saveToTrendBank(format)}
-                                            disabled={savingId === format.id || savedFormats.has(format.id)}
+                                            onClick={() => toggleSaveTrend(format)}
+                                            disabled={savingId === format.id}
                                         >
-                                            {savedFormats.has(format.id) ? (
+                                            {savingId === format.id ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : savedFormats.has(format.id) ? (
                                                 <>
                                                     <Check className="h-4 w-4 mr-1" />
                                                     Saved
                                                 </>
-                                            ) : savingId === format.id ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
                                             ) : (
                                                 <>
                                                     <Bookmark className="h-4 w-4 mr-1" />
