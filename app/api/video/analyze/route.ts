@@ -1,10 +1,30 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
-import { GoogleGenerativeAI, Part } from "@google/generative-ai";
+import { GoogleGenerativeAI, Part, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
+
+// Safety settings - allow most content except sexually explicit, let our custom moderation handle filtering
+const safetySettings = [
+    {
+        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    },
+    {
+        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    },
+    {
+        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE, // Keep this stricter
+    },
+    {
+        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH, // Allow danger/crime content since we analyze all types of videos
+    },
+];
 
 // Analyze a single video from TikTok URL
 export async function POST(request: Request) {
@@ -657,7 +677,10 @@ Return a JSON object with this EXACT structure:
         for (const modelName of modelsToTry) {
             try {
                 console.log(`Trying Gemini model: ${modelName}...`);
-                const model = genAI.getGenerativeModel({ model: modelName });
+                const model = genAI.getGenerativeModel({
+                    model: modelName,
+                    safetySettings, // Use our custom safety settings
+                });
                 result = await model.generateContent([prompt, videoPart]);
                 successfulModel = modelName;
                 console.log(`Success with model: ${modelName}`);
@@ -783,7 +806,10 @@ Return JSON with this structure (acknowledge limitations - you only see the thum
         for (const modelName of modelsToTry) {
             try {
                 console.log(`Cover analysis: trying ${modelName}...`);
-                const model = genAI.getGenerativeModel({ model: modelName });
+                const model = genAI.getGenerativeModel({
+                    model: modelName,
+                    safetySettings,
+                });
                 result = await model.generateContent([prompt, imagePart]);
                 console.log(`Cover analysis: success with ${modelName}`);
                 break;
