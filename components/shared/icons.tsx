@@ -12,6 +12,7 @@ import {
   CreditCard,
   File,
   FileText,
+  Folder,
   HelpCircle,
   Home,
   Image,
@@ -187,4 +188,5 @@ export const Icons = {
   checkSquare: CheckSquare,
   messageSquare: MessageSquare,
   image: Image,
+  folder: Folder,
 };

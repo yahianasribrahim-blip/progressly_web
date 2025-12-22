@@ -2,25 +2,26 @@ import { SidebarNavItem } from "types";
 
 export const sidebarLinks: SidebarNavItem[] = [
   {
-    title: "ANALYZE",
+    title: "DISCOVER",
     items: [
       { href: "/dashboard", icon: "home", title: "Home" },
-      { href: "/dashboard/analyze-video", icon: "video", title: "Video Breakdown" },
+      { href: "/dashboard/trending-formats", icon: "trendingUp", title: "Trending Formats" },
     ],
   },
   {
-    title: "OPTIMIZE",
+    title: "TOOLS",
     items: [
+      { href: "/dashboard/analyze-video", icon: "video", title: "Video Breakdown" },
       { href: "/dashboard/script-optimizer", icon: "fileText", title: "Script Optimizer" },
       { href: "/dashboard/caption-optimizer", icon: "messageSquare", title: "Caption Optimizer" },
       { href: "/dashboard/cover-grader", icon: "image", title: "Cover Grader" },
-      { href: "/dashboard/pre-post-checklist", icon: "checkSquare", title: "Pre-Post Checklist" },
     ],
   },
   {
     title: "LIBRARY",
     items: [
       { href: "/dashboard/saved", icon: "bookmark", title: "Saved Breakdowns" },
+      { href: "/dashboard/content-bank", icon: "folder", title: "Content Bank" },
     ],
   },
   {
@@ -35,3 +36,4 @@ export const sidebarLinks: SidebarNavItem[] = [
     ],
   },
 ];
+

@@ -1,0 +1,328 @@
+import { NextResponse } from "next/server";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
+
+// API Configuration
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
+const WOOP_API_HOST = "tiktok-most-trending-and-viral-content.p.rapidapi.com";
+
+// Generic trending hashtags to find globally popular formats
+const TRENDING_HASHTAGS = [
+    "fyp", "foryou", "viral", "trending", "foryoupage",
+    "transformation", "beforeandafter", "storytime", "grwm",
+    "tutorial", "howto", "dayinmylife", "vlog", "routine"
+];
+
+interface TrendingFormat {
+    id: string;
+    formatName: string;
+    formatDescription: string;
+    whyItWorks: string;
+    howMuslimCreatorsCanApply: string[];
+    halalAudioSuggestions: string[];
+    exampleNiches: string[];
+    engagementPotential: "High" | "Medium" | "Low";
+}
+
+// Fetch trending videos from generic hashtags
+async function fetchGlobalTrendingVideos(count: number = 20): Promise<any[]> {
+    console.log("Fetching global trending videos...");
+
+    if (!RAPIDAPI_KEY) {
+        console.error("RAPIDAPI_KEY is not set");
+        return [];
+    }
+
+    const allVideos: any[] = [];
+    const seenIds = new Set<string>();
+
+    // Try multiple generic hashtags to get diverse formats
+    for (const hashtag of TRENDING_HASHTAGS.slice(0, 8)) {
+        if (allVideos.length >= count) break;
+
+        try {
+            const params = new URLSearchParams({
+                hashtag: hashtag,
+                sorting: "rise",
+                days: "3", // Last 3 days for freshest trends
+                order: "desc",
+            });
+
+            const url = `https://${WOOP_API_HOST}/video?${params.toString()}`;
+
+            const response = await fetch(url, {
+                method: "GET",
+                cache: "no-store",
+                headers: {
+                    "x-rapidapi-host": WOOP_API_HOST,
+                    "x-rapidapi-key": RAPIDAPI_KEY,
+                    "Accept": "application/json",
+                },
+            });
+
+            if (!response.ok) {
+                console.error(`Error for #${hashtag}: ${response.status}`);
+                continue;
+            }
+
+            const data = await response.json();
+            const rawVideos = data.data?.stats || data.stats || data.data || data.videos || [];
+
+            if (Array.isArray(rawVideos)) {
+                for (const v of rawVideos.slice(0, 5)) {
+                    const videoId = v.videoId || v.id;
+                    if (!videoId || seenIds.has(videoId)) continue;
+                    seenIds.add(videoId);
+
+                    allVideos.push({
+                        id: videoId,
+                        description: v.videoTitle || v.title || v.desc || "",
+                        views: v.playCount || v.views || 0,
+                        likes: v.likes || v.likeCount || 0,
+                        duration: v.videoDuration || v.duration || 0,
+                        coverUrl: v.coverUrl || v.cover || "",
+                    });
+                }
+            }
+
+            console.log(`#${hashtag}: added ${allVideos.length} total videos`);
+        } catch (error) {
+            console.error(`Error fetching #${hashtag}:`, error);
+        }
+    }
+
+    console.log(`Fetched ${allVideos.length} global trending videos`);
+    return allVideos;
+}
+
+// Use Gemini to extract FORMAT from multiple videos
+async function extractFormatsWithGemini(videos: any[]): Promise<TrendingFormat[]> {
+    console.log(`Extracting formats from ${videos.length} videos using Gemini...`);
+
+    if (videos.length === 0) {
+        return getDefaultFormats();
+    }
+
+    const videoDescriptions = videos
+        .map((v, i) => `Video ${i + 1}: "${v.description}" (${v.views} views, ${v.duration}s)`)
+        .join("\n");
+
+    const prompt = `You are analyzing trending TikTok videos to extract FORMATS that can be applied to ANY niche.
+
+Here are ${videos.length} trending videos:
+${videoDescriptions}
+
+Extract 5-7 distinct FORMATS from these videos. A format is the STRUCTURE and APPROACH, not the specific content.
+
+IMPORTANT RULES:
+1. Focus on the FORMAT/STRUCTURE that could work in ANY niche (hijab tutorials, cooking, fitness, storytelling, etc.)
+2. Never mention specific music or songs
+3. Always suggest halal audio alternatives (voiceover, nasheed, ambient sounds, natural sounds)
+4. Give specific examples of how a MUSLIM creator could apply each format
+
+Return a JSON array of formats:
+[
+    {
+        "id": "f1",
+        "formatName": "<Short catchy name like 'Day 1 vs Day 365 Progression'>",
+        "formatDescription": "<2-3 sentences explaining the format structure that works in any niche>",
+        "whyItWorks": "<Why this format gets engagement - psychology behind it>",
+        "howMuslimCreatorsCanApply": [
+            "<Specific example for hijab/modest fashion creators>",
+            "<Specific example for food/cooking creators>",
+            "<Specific example for fitness creators>",
+            "<Specific example for storytelling/vlog creators>"
+        ],
+        "halalAudioSuggestions": [
+            "<Audio option 1 - voiceover idea>",
+            "<Audio option 2 - nasheed or ambient sound>"
+        ],
+        "exampleNiches": ["hijab", "food", "fitness", "storytelling"],
+        "engagementPotential": "High"
+    }
+]
+
+Focus on formats that:
+- Are highly replicable without showing haram content
+- Work with voiceover or no music
+- Can be applied to modest/Islamic content niches
+- Have high engagement potential`;
+
+    try {
+        const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+        let result;
+
+        for (const modelName of modelsToTry) {
+            try {
+                console.log(`Trying Gemini model: ${modelName}...`);
+                const model = genAI.getGenerativeModel({ model: modelName });
+                result = await model.generateContent(prompt);
+                console.log(`Success with model: ${modelName}`);
+                break;
+            } catch (modelError: unknown) {
+                const error = modelError as Error;
+                console.log(`Model ${modelName} failed:`, error.message?.substring(0, 100));
+            }
+        }
+
+        if (!result) {
+            console.error("All Gemini models failed");
+            return getDefaultFormats();
+        }
+
+        const response = await result.response;
+        const text = response.text();
+
+        // Extract JSON from response
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) {
+            console.error("No JSON array found in Gemini response");
+            return getDefaultFormats();
+        }
+
+        const formats: TrendingFormat[] = JSON.parse(jsonMatch[0]);
+        console.log(`Extracted ${formats.length} formats from Gemini`);
+
+        return formats;
+    } catch (error) {
+        console.error("Error extracting formats with Gemini:", error);
+        return getDefaultFormats();
+    }
+}
+
+// Default formats if API/Gemini fails
+function getDefaultFormats(): TrendingFormat[] {
+    return [
+        {
+            id: "default-1",
+            formatName: "Before & After Transformation",
+            formatDescription: "Show a dramatic transformation from start to finish. Works for any skill, project, or journey.",
+            whyItWorks: "Creates curiosity and satisfaction. Viewers want to see the end result and the journey motivates them.",
+            howMuslimCreatorsCanApply: [
+                "Hijab styling: Show plain outfit → styled modest look",
+                "Cooking: Raw ingredients → finished halal dish",
+                "Fitness: Starting point → progress after consistent effort",
+                "Room/space: Messy → organized and clean"
+            ],
+            halalAudioSuggestions: [
+                "Voiceover explaining your journey",
+                "Gentle nasheed in background",
+                "Natural ambient sounds"
+            ],
+            exampleNiches: ["hijab", "food", "fitness", "lifestyle"],
+            engagementPotential: "High"
+        },
+        {
+            id: "default-2",
+            formatName: "Day in My Life (DITL)",
+            formatDescription: "Document your daily routine from morning to evening. Viewers love seeing authentic real-life content.",
+            whyItWorks: "Creates parasocial connection. Viewers feel like they know you personally. Highly shareable.",
+            howMuslimCreatorsCanApply: [
+                "A day as a hijabi student/professional",
+                "My morning routine as a Muslim",
+                "What I eat in a day (halal edition)",
+                "Productive day routine with prayer times"
+            ],
+            halalAudioSuggestions: [
+                "Voiceover narrating your day",
+                "Soft background nasheed",
+                "Natural sounds (cooking, nature, etc.)"
+            ],
+            exampleNiches: ["lifestyle", "food", "productivity", "faith"],
+            engagementPotential: "High"
+        },
+        {
+            id: "default-3",
+            formatName: "Get Ready With Me (GRWM)",
+            formatDescription: "Film yourself getting ready while talking to the camera. Combine preparation with conversation.",
+            whyItWorks: "Intimate format that builds connection. Viewers feel like they're hanging out with a friend.",
+            howMuslimCreatorsCanApply: [
+                "GRWM for Jummah prayer",
+                "Modest makeup and hijab styling",
+                "Getting ready for Eid",
+                "Study/work session preparation"
+            ],
+            halalAudioSuggestions: [
+                "Talk directly to camera (no music needed)",
+                "Share thoughts, stories, or advice while getting ready"
+            ],
+            exampleNiches: ["hijab", "beauty", "lifestyle", "faith"],
+            engagementPotential: "High"
+        },
+        {
+            id: "default-4",
+            formatName: "POV Storytelling",
+            formatDescription: "Tell a story from a specific point of view with acting or text overlays. Creates immersive experience.",
+            whyItWorks: "Engages viewer's imagination. Easy to relate to. High comment engagement (people share their own stories).",
+            howMuslimCreatorsCanApply: [
+                "POV: You're learning to pray for the first time",
+                "POV: First day wearing hijab",
+                "POV: Cooking for iftar during Ramadan",
+                "POV: That one aunty at family gatherings"
+            ],
+            halalAudioSuggestions: [
+                "Voiceover narration",
+                "Text overlays with subtle background sound",
+                "Your own voice acting"
+            ],
+            exampleNiches: ["storytelling", "comedy", "faith", "culture"],
+            engagementPotential: "High"
+        },
+        {
+            id: "default-5",
+            formatName: "Tutorial/How-To",
+            formatDescription: "Teach something step by step. Quick, actionable content that provides real value.",
+            whyItWorks: "Saveable content - viewers bookmark for later. Positions you as an expert. Gets shared.",
+            howMuslimCreatorsCanApply: [
+                "How to style a hijab in 60 seconds",
+                "Quick halal recipe tutorial",
+                "How to start praying (beginner guide)",
+                "Modest outfit ideas for different occasions"
+            ],
+            halalAudioSuggestions: [
+                "Clear voiceover explaining each step",
+                "Text overlays for silent viewing",
+                "Natural sound of the activity"
+            ],
+            exampleNiches: ["hijab", "food", "faith", "lifestyle"],
+            engagementPotential: "High"
+        }
+    ];
+}
+
+export async function GET() {
+    console.log("API /api/formats/trending called");
+
+    try {
+        // Step 1: Fetch trending videos from generic hashtags
+        const trendingVideos = await fetchGlobalTrendingVideos(20);
+
+        // Step 2: Extract formats using Gemini
+        const formats = await extractFormatsWithGemini(trendingVideos);
+
+        return NextResponse.json({
+            success: true,
+            data: {
+                formats,
+                videosAnalyzed: trendingVideos.length,
+                generatedAt: new Date().toISOString(),
+                source: trendingVideos.length > 0 ? "live" : "default"
+            }
+        });
+    } catch (error) {
+        console.error("API Error:", error);
+
+        // Return default formats on error
+        return NextResponse.json({
+            success: true,
+            data: {
+                formats: getDefaultFormats(),
+                videosAnalyzed: 0,
+                generatedAt: new Date().toISOString(),
+                source: "default"
+            }
+        });
+    }
+}
