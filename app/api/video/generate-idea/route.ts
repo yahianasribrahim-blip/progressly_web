@@ -108,6 +108,8 @@ RULES:
 7. Make it achievable in their time budget
 8. Keep the same energy/vibe as the inspiration but make it DOABLE
 9. NEVER suggest things they don't have access to
+10. NEVER end with explicit CTAs like "LIKE & FOLLOW" or "COMMENT BELOW" - TikTok algorithm HATES this
+11. NEVER suggest black screens or text-only outros asking questions. End on actual content, not engagement requests.
 
 Return a JSON object with this EXACT structure:
 {
