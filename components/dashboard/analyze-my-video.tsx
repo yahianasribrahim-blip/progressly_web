@@ -583,31 +583,6 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                         <span className="text-sm truncate">{videoAnalysis.audioType}</span>
                                     </div>
                                 </div>
-
-                                {/* Scene-by-Scene Breakdown */}
-                                {videoAnalysis.sceneBySceneBreakdown.length > 0 && (
-                                    <div>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <p className="text-sm font-medium">Scene-by-Scene Breakdown:</p>
-                                            <Badge variant="outline" className="text-xs">
-                                                {videoAnalysis.analysisMethod === "full_video" || videoAnalysis.analysisMethod === "video_frames" ? "Full Analysis" : "Thumbnail Only"}
-                                            </Badge>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {videoAnalysis.sceneBySceneBreakdown.map((scene, i) => (
-                                                <div key={i} className="p-3 bg-background rounded-lg border">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <Badge variant="secondary" className="text-xs font-mono">
-                                                            {scene.timestamp}
-                                                        </Badge>
-                                                        <span className="text-sm font-medium">{scene.description}</span>
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground">{scene.whatsHappening}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
                             </CardContent>
                         </Card>
                     )}
