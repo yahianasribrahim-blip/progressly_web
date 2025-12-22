@@ -209,6 +209,11 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
             return;
         }
 
+        if (videoIntention.trim().length < 50) {
+            toast.error("Video intention must be at least 50 characters. Please be more descriptive.");
+            return;
+        }
+
         setIsAnalyzing(true);
         setError(null);
         setVideo(null);
@@ -484,7 +489,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                 className="text-sm"
                             />
                             <p className="text-xs text-muted-foreground">
-                                The more specific you are, the better your analysis will be
+                                Minimum 50 characters. The more specific you are, the better your analysis will be ({videoIntention.length}/50)
                             </p>
                         </div>
                     </CardContent>
