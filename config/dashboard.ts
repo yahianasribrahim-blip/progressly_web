@@ -14,7 +14,7 @@ export const sidebarLinks: SidebarNavItem[] = [
       { href: "/dashboard/analyze-video", icon: "video", title: "Video Breakdown" },
       { href: "/dashboard/script-optimizer", icon: "fileText", title: "Script Optimizer" },
       { href: "/dashboard/caption-optimizer", icon: "messageSquare", title: "Caption Optimizer" },
-      { href: "/dashboard/cover-grader", icon: "image", title: "Cover Grader" },
+      { href: "/dashboard/cover-grader", icon: "image", title: "Cover Optimizer" },
     ],
   },
   {
@@ -22,6 +22,7 @@ export const sidebarLinks: SidebarNavItem[] = [
     items: [
       { href: "/dashboard/saved", icon: "bookmark", title: "Saved Breakdowns" },
       { href: "/dashboard/content-bank", icon: "folder", title: "Content Bank" },
+      { href: "/dashboard/trend-bank", icon: "trendingUp", title: "Trend Bank" },
     ],
   },
   {
@@ -36,4 +37,5 @@ export const sidebarLinks: SidebarNavItem[] = [
     ],
   },
 ];
+
 

@@ -70,6 +70,7 @@ model User {
   stripeCurrentPeriodEnd DateTime? @map(name: "stripe_current_period_end")
 
   savedIdeas SavedIdea[]
+  savedTrends SavedTrend[]
 
   @@map(name: "users")
 }
@@ -326,3 +327,26 @@ model SavedIdea {
   @@index([userId])
   @@map(name: "saved_ideas")
 }
+
+// Trend Bank - Saved Trending Formats
+model SavedTrend {
+  id               String   @id @default(cuid())
+  userId           String
+  formatName       String
+  formatDescription String  @db.Text
+  whyItWorks       String   @db.Text
+  howToApply       String[] // Array of application ideas
+  halalAudio       String[] // Array of halal audio suggestions
+  niches           String[] // Array of applicable niches
+  avgStats         Json?    // { views, likes, shares }
+  notes            String?  @db.Text
+  status           String   @default("saved") // saved, applied, archived
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@map(name: "saved_trends")
+}
+

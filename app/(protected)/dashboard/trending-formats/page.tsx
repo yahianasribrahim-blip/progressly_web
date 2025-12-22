@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, TrendingUp, Lightbulb, Volume2, Sparkles, Eye, Heart, Share2, Zap } from "lucide-react";
+import { Loader2, TrendingUp, Lightbulb, Volume2, Sparkles, Eye, Heart, Share2, Zap, Bookmark, Check } from "lucide-react";
 
 interface TrendingFormat {
     id: string;
@@ -26,8 +26,10 @@ export default function TrendingFormatsPage() {
     const [formats, setFormats] = useState<TrendingFormat[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [source, setSource] = useState<string>("");
     const [hasFetched, setHasFetched] = useState(false);
+    const [requestCount, setRequestCount] = useState(0);
+    const [savedFormats, setSavedFormats] = useState<Set<string>>(new Set());
+    const [savingId, setSavingId] = useState<string | null>(null);
 
     const fetchFormats = async () => {
         setLoading(true);
@@ -37,12 +39,11 @@ export default function TrendingFormatsPage() {
             const data = await response.json();
 
             if (data.success) {
-                // Only show top 3 formats
+                // Show top 3 formats (already ranked by API)
                 setFormats(data.data.formats.slice(0, 3));
-                setSource(data.data.source);
+                setRequestCount(data.data.requestsUsed || 6); // Approx 6 requests per run
                 setHasFetched(true);
             } else {
-                // Show detailed error from API
                 const debugInfo = data.debug
                     ? `\n\nDebug: ${JSON.stringify(data.debug, null, 2)}`
                     : "";
@@ -58,14 +59,30 @@ export default function TrendingFormatsPage() {
         }
     };
 
-    const getEngagementColor = (potential: string) => {
-        switch (potential) {
-            case "High":
-                return "bg-green-500/10 text-green-600 border-green-500/20";
-            case "Medium":
-                return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20";
-            default:
-                return "bg-gray-500/10 text-gray-600 border-gray-500/20";
+    const saveToTrendBank = async (format: TrendingFormat) => {
+        setSavingId(format.id);
+        try {
+            const response = await fetch("/api/trends", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    formatName: format.formatName,
+                    formatDescription: format.formatDescription,
+                    whyItWorks: format.whyItWorks,
+                    howToApply: format.howMuslimCreatorsCanApply,
+                    halalAudio: format.halalAudioSuggestions,
+                    niches: format.exampleNiches,
+                    avgStats: format.avgStats,
+                }),
+            });
+
+            if (response.ok) {
+                setSavedFormats(prev => new Set(prev).add(format.id));
+            }
+        } catch (err) {
+            console.error("Error saving trend:", err);
+        } finally {
+            setSavingId(null);
         }
     };
 
@@ -96,7 +113,7 @@ export default function TrendingFormatsPage() {
                         <div className="text-center max-w-md">
                             <h2 className="text-xl font-semibold mb-2">Get Current Trending Formats</h2>
                             <p className="text-muted-foreground text-sm mb-6">
-                                We&apos;ll analyze what&apos;s trending right now and show you the top 3 formats you can apply to your content with halal audio options.
+                                We&apos;ll analyze what&apos;s trending right now and show you the top 3 formats you can apply to your content.
                             </p>
                             <Button
                                 onClick={fetchFormats}
@@ -142,23 +159,6 @@ export default function TrendingFormatsPage() {
             {/* Formats Grid - Only after fetching */}
             {hasFetched && !loading && !error && formats.length > 0 && (
                 <>
-                    {/* Info Banner */}
-                    <Card className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200/50">
-                        <CardContent className="p-4">
-                            <div className="flex items-start gap-3">
-                                <Sparkles className="h-5 w-5 text-purple-600 mt-0.5" />
-                                <div>
-                                    <p className="text-sm font-medium text-purple-900 dark:text-purple-100">
-                                        These are formats, not specific videos
-                                    </p>
-                                    <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
-                                        Apply these structures to YOUR niche with YOUR halal audio. The format is what makes it trend.
-                                    </p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
                     <div className="grid gap-6">
                         {formats.map((format, index) => (
                             <Card key={format.id} className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -175,9 +175,27 @@ export default function TrendingFormatsPage() {
                                                 </CardDescription>
                                             </div>
                                         </div>
-                                        <Badge className={getEngagementColor(format.engagementPotential)}>
-                                            {format.engagementPotential} Potential
-                                        </Badge>
+                                        {/* Save Button */}
+                                        <Button
+                                            variant={savedFormats.has(format.id) ? "secondary" : "outline"}
+                                            size="sm"
+                                            onClick={() => saveToTrendBank(format)}
+                                            disabled={savingId === format.id || savedFormats.has(format.id)}
+                                        >
+                                            {savedFormats.has(format.id) ? (
+                                                <>
+                                                    <Check className="h-4 w-4 mr-1" />
+                                                    Saved
+                                                </>
+                                            ) : savingId === format.id ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <>
+                                                    <Bookmark className="h-4 w-4 mr-1" />
+                                                    Save
+                                                </>
+                                            )}
+                                        </Button>
                                     </div>
                                 </CardHeader>
 
@@ -236,7 +254,7 @@ export default function TrendingFormatsPage() {
                                         </ul>
                                     </div>
 
-                                    {/* Halal Audio Suggestions - FIXED STYLING */}
+                                    {/* Halal Audio Suggestions */}
                                     <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                                         <div className="flex items-center gap-2 font-medium text-sm mb-2">
                                             <Volume2 className="h-4 w-4" />
@@ -271,8 +289,8 @@ export default function TrendingFormatsPage() {
                         ))}
                     </div>
 
-                    {/* Refresh Button */}
-                    <div className="flex justify-center">
+                    {/* Refresh Button & Request Count */}
+                    <div className="flex flex-col items-center gap-2">
                         <Button
                             variant="outline"
                             onClick={fetchFormats}
@@ -281,14 +299,10 @@ export default function TrendingFormatsPage() {
                             <TrendingUp className="h-4 w-4 mr-2" />
                             Get Fresh Formats
                         </Button>
-                    </div>
-
-                    {/* Source indicator */}
-                    {source && (
-                        <p className="text-xs text-center text-muted-foreground">
-                            {source === "live" ? "Based on live trending data" : "Showing recommended formats"}
+                        <p className="text-xs text-muted-foreground">
+                            ~{requestCount} API requests used per refresh
                         </p>
-                    )}
+                    </div>
                 </>
             )}
         </div>
