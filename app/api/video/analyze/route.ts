@@ -573,13 +573,13 @@ Return a JSON object with this EXACT structure:
     "audioType": "<'talking/voiceover', 'original audio with talking', 'background music only', 'mixed'>",
     "productionQuality": "<'basic phone filming', 'good lighting and angles', 'professional production'>",
     "lessonsToApply": [
-        "<SPECIFIC tip with example from the video - e.g., 'The fast color switch at 0:03 grabs attention - try this for your edits'>",
-        "<second SPECIFIC tip with example - always mention WHAT and WHERE in the video>",
-        "<third tip - keep it simple and useful>"
+        "<When you say something is 'good' or 'effective', you MUST explain HOW to do it. Example: Instead of 'use dramatic effects', say 'Switch from color to black-and-white right when the beat drops'>",
+        "<Second tip - tell them exactly WHAT to do, not just that something is good. Example: Instead of 'use quick cuts', say 'Cut to a new clip every 2-3 seconds to keep it fast'>",
+        "<Third tip - be specific and actionable>"
     ],
     "mistakesToAvoid": [
-        "<what could be better? Give a SPECIFIC tip - e.g., 'The text was hard to read - use bigger fonts next time'>",
-        "<second tip - be helpful, not mean>"
+        "<What could be done better? Tell them exactly HOW to fix it. Example: 'The text stayed too long - keep text on screen for only 1-2 seconds'>",
+        "<Second tip - keep it helpful and specific>"
     ],
     "hookAnalysis": {
         "hookType": "<type: 'text overlay', 'verbal hook', 'visual hook', 'curiosity hook'>",
