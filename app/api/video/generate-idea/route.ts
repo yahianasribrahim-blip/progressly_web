@@ -28,33 +28,48 @@ export async function POST(request: Request) {
         console.log("Intention:", videoIntention);
 
         // Fetch creator setup for personalized recommendations
-        let creatorSetup = null;
+        let teamSize = 1;
+        let experienceLevel = "beginner";
+        let primaryDevice = "Smartphone";
+        let hoursPerVideo = 2;
+        let videosPerWeek = 2;
+        let availableProps: string[] = [];
+        let filmingLocations: string[] = ["Home"];
+        let prefersNoMusic = false;
+        let hasCreatorSetup = false;
+
         try {
             const profile = await prisma.userProfile.findUnique({
                 where: { userId: session.user.id },
+                include: { creatorSetup: true },
             });
 
-            // Get creator setup separately if it exists
-            if (profile) {
-                const setup = await prisma.creatorSetup.findUnique({
-                    where: { profileId: profile.id },
-                });
-                creatorSetup = setup;
+            if (profile?.creatorSetup) {
+                hasCreatorSetup = true;
+                const setup = profile.creatorSetup;
+                teamSize = setup.teamSize || 1;
+                experienceLevel = setup.experienceLevel || "beginner";
+                primaryDevice = setup.primaryDevice || "Smartphone";
+                hoursPerVideo = setup.hoursPerVideo || 2;
+                videosPerWeek = setup.videosPerWeek || 2;
+                availableProps = setup.availableProps || [];
+                filmingLocations = setup.filmingLocations || ["Home"];
+                prefersNoMusic = setup.prefersNoMusic || false;
             }
         } catch (e) {
             console.log("Could not fetch creator setup:", e);
         }
 
-        const creatorContext = creatorSetup ? `
+        const creatorContext = hasCreatorSetup ? `
 CREATOR'S RESOURCES (CRITICAL - Generate ideas they can ACTUALLY make):
-- Team Size: ${creatorSetup.teamSize === 1 ? "Solo creator (alone)" : `${creatorSetup.teamSize} people`}
-- Experience Level: ${creatorSetup.experienceLevel}
-- Primary Device: ${creatorSetup.primaryDevice || "Smartphone"}
-- Time per Video: ${creatorSetup.hoursPerVideo} hours max
-- Videos per Week: ${creatorSetup.videosPerWeek}
-- Available Props: ${creatorSetup.availableProps?.join(", ") || "Basic items"}
-- Filming Locations: ${creatorSetup.filmingLocations?.join(", ") || "Home"}
-- Prefers No Music: ${creatorSetup.prefersNoMusic ? "Yes" : "No"}
+- Team Size: ${teamSize === 1 ? "Solo creator (alone)" : `${teamSize} people`}
+- Experience Level: ${experienceLevel}
+- Primary Device: ${primaryDevice}
+- Time per Video: ${hoursPerVideo} hours max
+- Videos per Week: ${videosPerWeek}
+- Available Props: ${availableProps.length > 0 ? availableProps.join(", ") : "Basic items"}
+- Filming Locations: ${filmingLocations.join(", ")}
+- Prefers No Music: ${prefersNoMusic ? "Yes" : "No"}
 ` : `
 CREATOR'S RESOURCES (Assume basic setup):
 - Solo creator
@@ -150,7 +165,7 @@ Return a JSON object with this EXACT structure:
         return NextResponse.json({
             success: true,
             idea,
-            hasCreatorContext: !!creatorSetup,
+            hasCreatorContext: hasCreatorSetup,
         });
     } catch (error) {
         console.error("Error generating idea:", error);
