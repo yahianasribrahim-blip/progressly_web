@@ -4,15 +4,15 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
 
-// API Configuration
+// API Configuration - Using tiktok-scraper2 API
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
-const WOOP_API_HOST = "tiktok-most-trending-and-viral-content.p.rapidapi.com";
+const TIKTOK_API_HOST = "tiktok-scraper2.p.rapidapi.com";
 
 // Generic trending hashtags to find globally popular formats
 const TRENDING_HASHTAGS = [
-    "fyp", "foryou", "viral", "trending", "foryoupage",
-    "transformation", "beforeandafter", "storytime", "grwm",
-    "tutorial", "howto", "dayinmylife", "vlog", "routine"
+    "fyp", "viral", "trending", "foryoupage",
+    "transformation", "storytime", "grwm",
+    "tutorial", "dayinmylife"
 ];
 
 interface TrendingFormat {
@@ -31,13 +31,84 @@ interface TrendingFormat {
     };
 }
 
-// Fetch trending videos from generic hashtags
+// Step 1: Get hashtag ID from hashtag name
+async function getHashtagId(hashtag: string): Promise<string | null> {
+    try {
+        const url = `https://${TIKTOK_API_HOST}/hashtag/info?hashtag=${encodeURIComponent(hashtag)}`;
+
+        const response = await fetch(url, {
+            method: "GET",
+            cache: "no-store",
+            headers: {
+                "x-rapidapi-host": TIKTOK_API_HOST,
+                "x-rapidapi-key": RAPIDAPI_KEY,
+                "Accept": "application/json",
+            },
+        });
+
+        if (!response.ok) {
+            console.error(`Failed to get hashtag info for #${hashtag}: ${response.status}`);
+            return null;
+        }
+
+        const data = await response.json();
+        // Try different response structures
+        const hashtagId = data.data?.challenge?.id || data.challengeInfo?.challenge?.id || data.id;
+
+        if (hashtagId) {
+            console.log(`Got hashtag ID for #${hashtag}: ${hashtagId}`);
+            return hashtagId;
+        }
+
+        console.log(`No hashtag ID found for #${hashtag}, response:`, JSON.stringify(data).substring(0, 200));
+        return null;
+    } catch (error) {
+        console.error(`Error getting hashtag ID for #${hashtag}:`, error);
+        return null;
+    }
+}
+
+// Step 2: Get videos for a hashtag ID
+async function getHashtagVideos(hashtagId: string, count: number = 30): Promise<any[]> {
+    try {
+        const url = `https://${TIKTOK_API_HOST}/hashtag/videos?hashtag_id=${hashtagId}&count=${count}`;
+        console.log(`Fetching videos: ${url}`);
+
+        const response = await fetch(url, {
+            method: "GET",
+            cache: "no-store",
+            headers: {
+                "x-rapidapi-host": TIKTOK_API_HOST,
+                "x-rapidapi-key": RAPIDAPI_KEY,
+                "Accept": "application/json",
+            },
+        });
+
+        if (!response.ok) {
+            console.error(`Failed to get videos for hashtag ID ${hashtagId}: ${response.status}`);
+            return [];
+        }
+
+        const data = await response.json();
+        // Try different response structures
+        const videos = data.data?.videos || data.itemList || data.videos || data.data || [];
+
+        console.log(`Got ${Array.isArray(videos) ? videos.length : 0} videos for hashtag ID ${hashtagId}`);
+        return Array.isArray(videos) ? videos : [];
+    } catch (error) {
+        console.error(`Error getting videos for hashtag ID ${hashtagId}:`, error);
+        return [];
+    }
+}
+
+// Fetch trending videos from generic hashtags using tiktok-scraper2 API
 async function fetchGlobalTrendingVideos(count: number = 20): Promise<{ videos: any[], debugInfo: any }> {
-    console.log("Fetching global trending videos...");
+    console.log("Fetching global trending videos using tiktok-scraper2...");
 
     const debugInfo: any = {
         apiResponses: [],
         errors: [],
+        hashtagsProcessed: [],
     };
 
     if (!RAPIDAPI_KEY) {
@@ -49,80 +120,51 @@ async function fetchGlobalTrendingVideos(count: number = 20): Promise<{ videos: 
     const allVideos: any[] = [];
     const seenIds = new Set<string>();
 
-    // Try multiple generic hashtags to get diverse formats
-    for (const hashtag of TRENDING_HASHTAGS.slice(0, 3)) { // Try just 3 to start
+    // Try hashtags one by one (limit to 3 to save API calls)
+    for (const hashtag of TRENDING_HASHTAGS.slice(0, 3)) {
         if (allVideos.length >= count) break;
 
         try {
-            const params = new URLSearchParams({
-                hashtag: hashtag,
-                sorting: "rise",
-                days: "7", // Expanded to 7 days
-                order: "desc",
-            });
+            // Step 1: Get hashtag ID
+            const hashtagId = await getHashtagId(hashtag);
 
-            const url = `https://${WOOP_API_HOST}/video?${params.toString()}`;
-            console.log(`Fetching: ${url}`);
+            if (!hashtagId) {
+                debugInfo.errors.push(`#${hashtag}: Could not get hashtag ID`);
+                continue;
+            }
 
-            const response = await fetch(url, {
-                method: "GET",
-                cache: "no-store",
-                headers: {
-                    "x-rapidapi-host": WOOP_API_HOST,
-                    "x-rapidapi-key": RAPIDAPI_KEY,
-                    "Accept": "application/json",
-                },
-            });
+            debugInfo.hashtagsProcessed.push({ hashtag, hashtagId });
 
-            const responseStatus = response.status;
-            const responseText = await response.text();
+            // Step 2: Get videos for this hashtag
+            const videos = await getHashtagVideos(hashtagId, 15);
 
             debugInfo.apiResponses.push({
                 hashtag,
-                status: responseStatus,
-                responsePreview: responseText.substring(0, 500),
+                hashtagId,
+                videosFound: videos.length,
             });
 
-            if (!response.ok) {
-                console.error(`Error for #${hashtag}: ${responseStatus} - ${responseText.substring(0, 200)}`);
-                debugInfo.errors.push(`#${hashtag}: ${responseStatus}`);
-                continue;
-            }
+            // Process videos
+            for (const v of videos) {
+                const videoId = v.id || v.video_id;
+                if (!videoId || seenIds.has(videoId)) continue;
+                seenIds.add(videoId);
 
-            let data;
-            try {
-                data = JSON.parse(responseText);
-            } catch (e) {
-                debugInfo.errors.push(`#${hashtag}: Failed to parse JSON`);
-                continue;
-            }
-
-            // Log the response structure
-            console.log(`#${hashtag} response keys:`, Object.keys(data));
-
-            const rawVideos = data.data?.stats || data.stats || data.data || data.videos || data.items || [];
-            console.log(`#${hashtag} rawVideos type:`, typeof rawVideos, Array.isArray(rawVideos) ? `length: ${rawVideos.length}` : "not array");
-
-            if (Array.isArray(rawVideos)) {
-                for (const v of rawVideos.slice(0, 5)) {
-                    const videoId = v.videoId || v.id;
-                    if (!videoId || seenIds.has(videoId)) continue;
-                    seenIds.add(videoId);
-
-                    allVideos.push({
-                        id: videoId,
-                        description: v.videoTitle || v.title || v.desc || "",
-                        views: v.playCount || v.views || 0,
-                        likes: v.likes || v.likeCount || 0,
-                        duration: v.videoDuration || v.duration || 0,
-                        coverUrl: v.coverUrl || v.cover || "",
-                    });
-                }
+                allVideos.push({
+                    id: videoId,
+                    description: v.desc || v.description || "",
+                    views: v.stats?.playCount || v.play_count || v.views || 0,
+                    likes: v.stats?.diggCount || v.like_count || v.likes || 0,
+                    shares: v.stats?.shareCount || v.share_count || v.shares || 0,
+                    duration: v.video?.duration || v.duration || 0,
+                    coverUrl: v.video?.cover || v.cover || "",
+                    author: v.author?.uniqueId || v.author?.nickname || "creator",
+                });
             }
 
             console.log(`#${hashtag}: added ${allVideos.length} total videos`);
         } catch (error) {
-            console.error(`Error fetching #${hashtag}:`, error);
+            console.error(`Error processing #${hashtag}:`, error);
             debugInfo.errors.push(`#${hashtag}: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
