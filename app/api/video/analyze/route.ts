@@ -831,15 +831,24 @@ function generateFinalAnalysis(
 
     if (creatorSetup && videoAnalysis) {
         const peopleCount = videoAnalysis.peopleCount.toLowerCase();
-        // Only warn if video has 2+ people (solo creator would need help)
+        const isEditCompilation = videoAnalysis.contentFormat === "edit_compilation";
+
+        // Only warn if video has 2+ people AND it's NOT an edit compilation
         // Don't warn for "no people" or "solo" - those are easy for solo creators
+        // Don't warn for edit compilations - the people are celebrities, not collaborators
         const hasMultiplePeople = !peopleCount.includes("solo") &&
             !peopleCount.includes("1") &&
             !peopleCount.includes("no people") &&
             !peopleCount.includes("0");
-        if (creatorSetup.teamSize === 1 && hasMultiplePeople) {
+        if (creatorSetup.teamSize === 1 && hasMultiplePeople && !isEditCompilation) {
             keyLearnings.push(`⚠️ This video has ${videoAnalysis.peopleCount}. As a solo creator, you'd need to adapt.`);
         }
+
+        // For edit compilations, show athletes detected with option to use others
+        if (isEditCompilation && videoAnalysis.celebritiesDetected && videoAnalysis.celebritiesDetected !== "none") {
+            keyLearnings.push(`🎬 This edit features: ${videoAnalysis.celebritiesDetected}. You can create a similar edit with these athletes or choose others in the same sport/genre.`);
+        }
+
         if (videoAnalysis.replicabilityRequirements.length > 0) {
             keyLearnings.push(`📋 To replicate: ${videoAnalysis.replicabilityRequirements.join(", ")}`);
         }
