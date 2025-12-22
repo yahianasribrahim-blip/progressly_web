@@ -66,10 +66,10 @@ const OPTIMIZER_TOOLS = [
         iconColor: "text-amber-600",
     },
     {
-        title: "Pre-Post Checklist",
-        description: "Final quality check before hitting publish",
+        title: "Content Bank",
+        description: "Your saved video ideas and plans",
         icon: CheckSquare,
-        href: "/dashboard/pre-post-checklist",
+        href: "/dashboard/content-bank",
         color: "from-rose-500 to-pink-500",
         bgColor: "bg-rose-50 dark:bg-rose-950/30",
         iconColor: "text-rose-600",

@@ -146,6 +146,8 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
     const [preQuestions, setPreQuestions] = useState<PreGenerationQuestion[]>([]);
     const [questionAnswers, setQuestionAnswers] = useState<Record<string, string>>({});
     const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+    const [isSavingIdea, setIsSavingIdea] = useState(false);
+    const [isIdeaSaved, setIsIdeaSaved] = useState(false);
 
     const formatNumber = (num: number): string => {
         if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
@@ -327,9 +329,44 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
     const handleSubmitQuestionAnswers = () => {
         const answers = preQuestions.map(q => ({
             question: q.question,
-            answer: questionAnswers[q.id] || "Not answered",
+            answer: questionAnswers[q.id] || "no answer"
         }));
+        setShowQuestionsModal(false);
         handleGenerateIdeaWithAnswers(answers);
+    };
+
+    // Save idea to Content Bank
+    const handleSaveToContentBank = async () => {
+        if (!generatedIdea || !video) return;
+
+        setIsSavingIdea(true);
+        try {
+            const response = await fetch("/api/ideas", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title: generatedIdea.title,
+                    concept: generatedIdea.concept,
+                    shotByShot: generatedIdea.shotByShot,
+                    tips: generatedIdea.tipsForSuccess,
+                    sourceVideo: video.url,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to save");
+            }
+
+            setIsIdeaSaved(true);
+            toast.success("Saved to Content Bank!");
+        } catch (err) {
+            console.error("Save error:", err);
+            toast.error("Failed to save idea");
+        } finally {
+            setIsSavingIdea(false);
+        }
     };
 
     const getScoreColor = (score: number) => {
@@ -906,6 +943,26 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                             </ul>
                                         </div>
                                     )}
+
+                                    {/* Save to Content Bank */}
+                                    <div className="pt-4 border-t">
+                                        <Button
+                                            onClick={handleSaveToContentBank}
+                                            disabled={isSavingIdea || isIdeaSaved}
+                                            className={isIdeaSaved
+                                                ? "w-full bg-emerald-600 hover:bg-emerald-600"
+                                                : "w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+                                            }
+                                        >
+                                            {isSavingIdea ? (
+                                                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
+                                            ) : isIdeaSaved ? (
+                                                <><CheckCircle className="h-4 w-4 mr-2" />Saved to Content Bank</>
+                                            ) : (
+                                                <>Save to Content Bank</>
+                                            )}
+                                        </Button>
+                                    </div>
                                 </CardContent>
                             </Card>
                         )}
