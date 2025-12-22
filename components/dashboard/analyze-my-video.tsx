@@ -59,6 +59,8 @@ interface SceneBreakdown {
 
 interface VideoAnalysis {
     contentType: string;
+    contentFormat: "original_content" | "edit_compilation" | "repost";
+    celebritiesDetected: string;
     contentDescription: string;
     sceneBySceneBreakdown: SceneBreakdown[];
     peopleCount: string;
@@ -293,6 +295,8 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                         description: video.description,
                         duration: video.duration,
                         contentType: videoAnalysis.contentType,
+                        contentFormat: videoAnalysis.contentFormat,
+                        celebritiesDetected: videoAnalysis.celebritiesDetected,
                         sceneBreakdown: videoAnalysis.sceneBySceneBreakdown,
                         whatWorked: videoAnalysis.lessonsToApply,
                         settingType: videoAnalysis.settingType,

@@ -22,7 +22,42 @@ export async function POST(request: Request) {
             );
         }
 
-        const prompt = `Based on this video analysis, generate 3-5 short, practical questions to ask the user BEFORE generating a video idea. The questions should help determine if they can realistically film a similar video.
+        const isEditCompilation = videoAnalysis.contentFormat === "edit_compilation";
+
+        const prompt = isEditCompilation ? `Based on this video analysis of an EDIT/COMPILATION (using celebrity/athlete footage), generate 3-5 short, practical questions to ask the user BEFORE generating an idea. The questions should help determine if they can recreate a SIMILAR EDIT.
+
+VIDEO ANALYSIS:
+- Content Type: ${videoAnalysis.contentType}
+- Celebrities/Athletes Featured: ${videoAnalysis.celebritiesDetected || "Unknown"}
+- Production Quality: ${videoAnalysis.productionQuality}
+
+RULES:
+1. This is an EDIT using existing footage - NOT original filming
+2. Ask about EDITING capabilities, not filming locations
+3. Focus on: editing software, source footage access, editing skills, similar content interests
+4. Keep questions SHORT (under 15 words each)
+5. Max 5 questions, minimum 3
+
+Return a JSON array of questions with this EXACT structure:
+[
+    {
+        "id": "editing_software",
+        "question": "Do you have video editing software (CapCut, Premiere, etc.)?",
+        "type": "yes_no",
+        "relevance": "Needed to create edits"
+    },
+    {
+        "id": "source_footage",
+        "question": "Do you have access to footage of this athlete/celebrity?",
+        "type": "yes_no",
+        "relevance": "The edit uses ${videoAnalysis.celebritiesDetected} footage"
+    }
+]
+
+Types can be: "yes_no", "choice" (if you want to offer options)
+For "choice" type, add an "options" array: ["Option 1", "Option 2", "Option 3"]`
+
+            : `Based on this video analysis, generate 3-5 short, practical questions to ask the user BEFORE generating a video idea. The questions should help determine if they can realistically film a similar video.
 
 VIDEO ANALYSIS:
 - Content Type: ${videoAnalysis.contentType}

@@ -342,6 +342,8 @@ interface SceneBreakdown {
 
 interface VideoAnalysis {
     contentType: string;
+    contentFormat: "original_content" | "edit_compilation" | "repost";
+    celebritiesDetected: string;
     contentDescription: string;
     sceneBySceneBreakdown: SceneBreakdown[];
     peopleCount: string;
@@ -551,6 +553,8 @@ Return a JSON object with this EXACT structure:
         "reason": "<if not safe, explain why - e.g., 'sexually suggestive dancing', 'partial nudity'. If safe, leave empty string>"
     },
     "contentType": "<specific type like 'car modification tips', 'comedy skit', 'cooking tutorial'>",
+    "contentFormat": "<IMPORTANT: 'original_content' if creator filmed themselves/their own content. 'edit_compilation' if video uses footage of CELEBRITIES, ATHLETES, MOVIES, TV SHOWS, or other people's content (like soccer player edits, boxing highlights, movie clips). 'repost' if it's just reposted content with no editing>",
+    "celebritiesDetected": "<if contentFormat is 'edit_compilation', list who: e.g., 'Mbappe, Ronaldo'. If original content, say 'none'>",
     "contentDescription": "<2-3 SHORT sentences using SIMPLE, casual words. Describe what happens in the video like you're texting a friend. Avoid fancy vocabulary.>",
     "sceneBySceneBreakdown": [
         {"timestamp": "0:00-0:03", "description": "Opening/Hook", "whatsHappening": "<exact description of opening>"},
@@ -647,6 +651,8 @@ Return a JSON object with this EXACT structure:
 
         return {
             contentType: parsed.contentType || "Video content",
+            contentFormat: parsed.contentFormat || "original_content",
+            celebritiesDetected: parsed.celebritiesDetected || "none",
             contentDescription: parsed.contentDescription || "Unable to analyze",
             sceneBySceneBreakdown: parsed.sceneBySceneBreakdown || [],
             peopleCount: parsed.peopleCount || "Unknown",
@@ -752,6 +758,8 @@ Return JSON with this structure (acknowledge limitations - you only see the thum
 
         return {
             contentType: parsed.contentType || "Video",
+            contentFormat: parsed.contentFormat || "original_content",
+            celebritiesDetected: parsed.celebritiesDetected || "none",
             contentDescription: parsed.contentDescription || "Analysis based on thumbnail only",
             sceneBySceneBreakdown: parsed.sceneBySceneBreakdown || [],
             peopleCount: parsed.peopleCount || "Unknown",
@@ -774,6 +782,8 @@ Return JSON with this structure (acknowledge limitations - you only see the thum
 function getDefaultAnalysis(): VideoAnalysis {
     return {
         contentType: "Unable to analyze",
+        contentFormat: "original_content",
+        celebritiesDetected: "none",
         contentDescription: "Could not analyze video",
         sceneBySceneBreakdown: [],
         peopleCount: "Unknown",

@@ -78,7 +78,57 @@ CREATOR'S RESOURCES (Assume basic setup):
 - Home filming location
 `;
 
-        const prompt = `You are a TikTok content strategist. Based on the inspiration video analysis and the creator's available resources, generate a PERSONALIZED, ACHIEVABLE video plan.
+        const isEditCompilation = inspirationVideo.contentFormat === "edit_compilation";
+
+        const prompt = isEditCompilation ? `You are a TikTok content strategist specializing in VIDEO EDITS. Based on this EDIT/COMPILATION video and the creator's editing capabilities, generate a PERSONALIZED, ACHIEVABLE edit plan.
+
+INSPIRATION EDIT:
+- Content Type: ${inspirationVideo.contentType}
+- Duration: ${inspirationVideo.duration} seconds
+- Celebrities/Athletes Featured: ${inspirationVideo.celebritiesDetected || "Unknown"}
+- What Made This Edit Work: ${inspirationVideo.whatWorked?.join(", ") || "N/A"}
+
+VIDEO INTENTION: ${videoIntention}
+
+${creatorContext}
+
+${userAnswers && userAnswers.length > 0 ? `
+USER'S EDITING SITUATION:
+${userAnswers.map((a: { question: string; answer: string }) => `- ${a.question}: ${a.answer}`).join("\n")}
+
+IMPORTANT: Respect these answers! If they said "no" to something, DO NOT suggest it.
+` : ""}
+
+RULES FOR EDIT COMPILATIONS:
+1. This is an EDIT using existing footage - NOT original filming
+2. Focus on EDITING TECHNIQUES: transitions, effects, clip selection, pacing, music sync
+3. Suggest where to find source footage (YouTube highlights, official channels, etc.)
+4. Include specific editing software instructions if possible
+5. Break down the edit style: beat drops, zooms, speed ramps, text overlays, etc.
+6. Make it achievable with their editing setup
+7. NEVER suggest they need to film the athletes/celebrities themselves
+
+Return a JSON object with this EXACT structure:
+{
+    "title": "<catchy title for their edit idea>",
+    "concept": "<2-3 sentences explaining the edit style and why it works>",
+    "estimatedDuration": "<e.g., '30-45 seconds'>",
+    "shotByShot": [
+        {
+            "shotNumber": 1,
+            "timestamp": "0:00-0:03",
+            "action": "<what clip to use and how to edit it>",
+            "cameraAngle": "<zoom, pan, or static - for the edit effect>",
+            "lighting": "<color grading: dark, vibrant, vintage, etc.>",
+            "notes": "<editing tips: speed ramp, beat sync, transition type>"
+        }
+    ],
+    "equipmentNeeded": ["<editing software>", "<source footage location>"],
+    "locationSuggestions": ["<N/A for edits - this is for source footage websites: YouTube, etc.>"],
+    "tipsForSuccess": ["<3-4 specific editing tips to make this pop>"]
+}`
+
+            : `You are a TikTok content strategist. Based on the inspiration video analysis and the creator's available resources, generate a PERSONALIZED, ACHIEVABLE video plan.
 
 INSPIRATION VIDEO:
 - Content Type: ${inspirationVideo.contentType}
