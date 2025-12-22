@@ -529,6 +529,7 @@ RULES:
    - ASMR/Satisfying content: Focus on visual and audio quality, pacing, not educational value
    - Educational: Focus on clarity, information delivery, structure
    - Comedy: Focus on timing, punchlines, relatability
+8. Focus on MEANINGFUL details that affect the video's effectiveness. Skip trivial observations (e.g., minor clothing adjustments, tiny movements). Only describe what matters to the content.
 
 CONTENT MODERATION:
 - Flag content as inappropriate if it contains:
