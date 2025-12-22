@@ -550,14 +550,14 @@ Return a JSON object with this EXACT structure:
         "reason": "<if not safe, explain why - e.g., 'sexually suggestive dancing', 'partial nudity'. If safe, leave empty string>"
     },
     "contentType": "<specific type like 'car modification tips', 'comedy skit', 'cooking tutorial'>",
-    "contentDescription": "<4-5 sentences describing the FULL video from start to finish - what the creator shows, says, and does>",
+    "contentDescription": "<2-3 SHORT sentences using SIMPLE, casual words. Describe what happens in the video like you're texting a friend. Avoid fancy vocabulary.>",
     "sceneBySceneBreakdown": [
         {"timestamp": "0:00-0:03", "description": "Opening/Hook", "whatsHappening": "<exact description of opening>"},
         {"timestamp": "0:03-0:15", "description": "First Topic", "whatsHappening": "<what happens in this section>"},
         {"timestamp": "0:15-0:30", "description": "Second Topic", "whatsHappening": "<what happens>"},
         {"timestamp": "0:30-end", "description": "Conclusion", "whatsHappening": "<how video ends>"}
     ],
-    "peopleCount": "<exact: 'solo creator', '2 people', 'group of 5'>",
+    "peopleCount": "<BE ACCURATE: 'no people visible' if ZERO humans appear, 'solo creator' if 1, '2 people' if 2, etc. COUNT CAREFULLY - do not guess>",
     "settingType": "<specific: 'parking lot with Infiniti G37', 'home kitchen', 'bedroom with ring light'>",
     "audioType": "<'talking/voiceover', 'original audio with talking', 'background music only', 'mixed'>",
     "productionQuality": "<'basic phone filming', 'good lighting and angles', 'professional production'>",

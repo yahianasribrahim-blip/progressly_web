@@ -383,7 +383,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                             className="text-sm"
                         />
                         <p className="text-xs text-muted-foreground">
-                            Required - helps the AI understand the video&apos;s purpose and give relevant feedback
+                            The more specific you are, the better your analysis will be
                         </p>
                     </div>
                 </CardContent>

@@ -254,8 +254,18 @@ STEP 2: HOOK TYPE DECISION MATRIX
 - Platform is scroll-heavy
 - Examples: "Nobody talks about this part…" / "This looks fake, but it's real."
 
-STEP 3: GENERATE ALL 3 HOOK TYPES
-- You MUST generate hooks in all 3 styles (bold, curiosity, pattern-interrupt)
+🟣 MYSTERIOUS/ATMOSPHERIC HOOKS work when:
+- Script has slow, calm, mysterious, eerie, or reflective tone
+- Content: storytelling, creepy history, abandoned places, unsolved mysteries, atmospheric videos, moody/aesthetic content
+- Emotional goal: quiet intrigue, calm curiosity, contemplation
+- NEVER use exclamation points or high-energy phrases like "You won't believe"
+- Use subdued, question-based openings that create quiet wonder, NOT excitement
+- Examples: "What really happened here?" / "Some things are better left unexplained." / "There's a reason no one talks about this."
+- IMPORTANT: Do NOT confuse with high-energy "creepy" or shock content. Mysterious = calm, slow, reflective. NOT intense or scary.
+
+STEP 3: GENERATE ALL 4 HOOK TYPES
+- You MUST generate hooks in all 4 styles (bold, curiosity, pattern-interrupt, mysterious/atmospheric)
+- For mysterious/atmospheric: subdued, question-based, NO exclamation points
 - Then RANK them based on: audience alignment, emotional immediacy, scroll-stopping power, natural fit
 - Explain WHY the top-ranked hook works best FOR THIS SPECIFIC CONTENT
 
