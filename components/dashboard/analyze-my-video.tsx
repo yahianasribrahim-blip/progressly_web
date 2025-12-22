@@ -20,6 +20,8 @@ import {
     Brain,
     TrendingUp,
     TrendingDown,
+    Bookmark,
+    BookmarkCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,7 +72,7 @@ interface VideoAnalysis {
         score: number;
     };
     replicabilityRequirements: string[];
-    analysisMethod: "video_frames" | "thumbnail_only";
+    analysisMethod: "video_frames" | "thumbnail_only" | "full_video" | "cover_only";
 }
 
 interface Analysis {
@@ -125,11 +127,51 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
     const [videoAnalysis, setVideoAnalysis] = useState<VideoAnalysis | null>(null);
     const [analysis, setAnalysis] = useState<Analysis | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
 
     const formatNumber = (num: number): string => {
         if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
         if (num >= 1000) return (num / 1000).toFixed(1) + "K";
         return num.toString();
+    };
+
+    const handleSaveBreakdown = async () => {
+        if (!video || !videoAnalysis || isSaving) return;
+
+        setIsSaving(true);
+        try {
+            const response = await fetch("/api/analysis/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    niche: `Video: ${video.creator}`,
+                    analysisData: {
+                        type: "video_breakdown",
+                        video,
+                        stats,
+                        engagement,
+                        videoAnalysis,
+                        analysis,
+                        videoUrl,
+                        videoIntention,
+                        savedAt: new Date().toISOString(),
+                    },
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to save breakdown");
+            }
+
+            setIsSaved(true);
+            toast.success("Breakdown saved! View it in 'Saved Breakdowns'");
+        } catch (error) {
+            console.error("Error saving breakdown:", error);
+            toast.error("Failed to save breakdown");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleAnalyze = async () => {
@@ -390,6 +432,34 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Save Breakdown Button */}
+                    <div className="flex justify-end">
+                        <Button
+                            variant={isSaved ? "secondary" : "outline"}
+                            size="sm"
+                            onClick={handleSaveBreakdown}
+                            disabled={isSaving || isSaved}
+                            className="gap-2"
+                        >
+                            {isSaving ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : isSaved ? (
+                                <>
+                                    <BookmarkCheck className="h-4 w-4 text-emerald-500" />
+                                    Saved
+                                </>
+                            ) : (
+                                <>
+                                    <Bookmark className="h-4 w-4" />
+                                    Save Breakdown
+                                </>
+                            )}
+                        </Button>
+                    </div>
 
                     {/* Video Info */}
                     <Card>
