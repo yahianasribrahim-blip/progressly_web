@@ -234,7 +234,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
         }
 
         // Check if most words are actual English words (not gibberish)
-        // List of 300+ common English words for validation
+        // List of common English words for validation
         const commonWords = new Set([
             // Common words
             "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
@@ -251,12 +251,30 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
             "in", "on", "at", "by", "for", "with", "about", "against", "between", "into",
             "through", "during", "before", "after", "above", "below", "to", "from", "up",
             "down", "out", "off", "over", "under", "again", "further", "once",
+            // People words
+            "guy", "guys", "girl", "girls", "man", "men", "woman", "women", "person", "people",
+            "kid", "kids", "child", "children", "baby", "friend", "friends", "someone", "anyone",
+            // Action words
+            "showing", "doing", "going", "coming", "taking", "making", "getting", "putting",
+            "breaking", "fixing", "cleaning", "washing", "driving", "walking", "running",
+            "talking", "eating", "drinking", "cooking", "working", "playing", "waiting",
+            "sitting", "standing", "looking", "watching", "trying", "buying", "selling",
+            "opening", "closing", "starting", "stopping", "turning", "moving", "leaving",
+            // Common nouns
+            "car", "cars", "truck", "bike", "house", "door", "window", "phone", "camera",
+            "water", "food", "drink", "thing", "things", "stuff", "way", "time", "part",
+            "place", "world", "hand", "hands", "head", "face", "eye", "eyes", "body",
+            "street", "road", "store", "school", "work", "job", "money", "price", "cost",
+            // Descriptive words  
+            "mid", "full", "half", "whole", "real", "fake", "main", "side", "back", "front",
+            "inside", "outside", "crazy", "funny", "cool", "nice", "bad", "weird", "amazing",
+            "beautiful", "ugly", "clean", "dirty", "broken", "fixed", "empty", "stuck",
             // Content creation words
             "video", "content", "tutorial", "review", "vlog", "blog", "comedy", "funny",
             "educational", "informative", "entertainment", "lifestyle", "fashion", "beauty",
             "makeup", "skincare", "fitness", "workout", "health", "wellness", "food",
             "cooking", "recipe", "travel", "adventure", "gaming", "music", "dance",
-            "art", "craft", "diy", "howto", "tips", "tricks", "hack", "hacks",
+            "art", "craft", "diy", "howto", "tips", "tricks", "hack", "hacks", "detail",
             "story", "storytime", "day", "life", "routine", "morning", "night", "daily",
             "weekly", "monthly", "challenge", "trend", "trending", "viral", "popular",
             "new", "old", "first", "last", "next", "show", "showing", "share", "sharing",
@@ -280,16 +298,24 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
             "put", "set", "keep", "let", "begin", "start", "end", "finish", "stop",
             "open", "close", "turn", "change", "follow", "help", "support", "thank",
             "please", "sorry", "hello", "hi", "hey", "bye", "goodbye", "welcome",
-            "yes", "no", "maybe", "ok", "okay", "sure", "right", "wrong", "true", "false"
+            "yes", "no", "maybe", "ok", "okay", "sure", "right", "wrong", "true", "false",
+            // Technical/hobby words
+            "pressure", "power", "wash", "detail", "detailing", "clean", "cleaning",
+            "repair", "fix", "install", "setup", "build", "assemble", "paint", "spray"
         ]);
+
+        // Strip punctuation from words before checking (handle guy's -> guy)
+        const cleanWord = (w: string) => w.replace(/[''`]/g, '').replace(/s$/, ''); // Remove apostrophes and trailing s
 
         // Check how many words are recognizable English
         const wordsToCheck = words.filter(w => w.length > 2); // Skip very short words
-        const recognizedWords = wordsToCheck.filter(w => commonWords.has(w));
+        const recognizedWords = wordsToCheck.filter(w =>
+            commonWords.has(w) || commonWords.has(cleanWord(w))
+        );
         const recognitionRate = wordsToCheck.length > 0 ? recognizedWords.length / wordsToCheck.length : 0;
 
-        // If less than 40% of words are recognized, likely gibberish
-        if (wordsToCheck.length >= 4 && recognitionRate < 0.4) {
+        // If less than 25% of words are recognized, likely gibberish
+        if (wordsToCheck.length >= 5 && recognitionRate < 0.25) {
             toast.error("Please describe the video's purpose using clear, understandable English words.");
             return;
         }
