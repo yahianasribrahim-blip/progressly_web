@@ -41,7 +41,7 @@ function getMagicLinkEmailHtml({
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb; padding: 40px 20px;">
   <div style="max-width: 480px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
     <div style="text-align: center; margin-bottom: 24px;">
-      <img src="${logoUrl}" alt="${siteName}" style="height: 40px; width: auto;" />
+      <span style="font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #7c3aed, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">✦ ${siteName}</span>
     </div>
     <h1 style="font-size: 20px; font-weight: 600; color: #111827; margin: 0 0 16px; text-align: center;">
       ${mailType === "login" ? "Welcome back!" : `Welcome to ${siteName}!`}
