@@ -8,20 +8,28 @@ import { getUserByEmail } from "./user";
 
 export const resend = new Resend(env.RESEND_API_KEY);
 
+// Helper to capitalize first letter of each word
+function capitalizeFirstLetter(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
 // Simple HTML email template (avoids react-email webpack issues)
 function getMagicLinkEmailHtml({
   firstName,
   actionUrl,
   mailType,
   siteName,
+  siteUrl,
 }: {
   firstName: string;
   actionUrl: string;
   mailType: "login" | "register";
   siteName: string;
+  siteUrl: string;
 }) {
   const buttonText = mailType === "login" ? "Sign In" : "Activate Account";
   const actionText = mailType === "login" ? "sign in to" : "activate";
+  const logoUrl = `${siteUrl}/_static/email-logo.png`;
 
   return `
 <!DOCTYPE html>
@@ -33,9 +41,7 @@ function getMagicLinkEmailHtml({
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb; padding: 40px 20px;">
   <div style="max-width: 480px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
     <div style="text-align: center; margin-bottom: 24px;">
-      <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #7c3aed, #a855f7); border-radius: 12px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
-        <span style="color: white; font-size: 24px; font-weight: bold;">P</span>
-      </div>
+      <img src="${logoUrl}" alt="${siteName}" style="height: 40px; width: auto;" />
     </div>
     <h1 style="font-size: 20px; font-weight: 600; color: #111827; margin: 0 0 16px; text-align: center;">
       ${mailType === "login" ? "Welcome back!" : `Welcome to ${siteName}!`}
@@ -83,8 +89,9 @@ export const sendVerificationRequest: EmailConfig["sendVerificationRequest"] =
       authSubject = "Activate your account";
     }
 
-    // Use user's name if available, otherwise use email prefix
-    const firstName = user?.name || identifier.split("@")[0];
+    // Use user's name if available, otherwise use email prefix (capitalized)
+    const emailPrefix = identifier.split("@")[0];
+    const firstName = user?.name || capitalizeFirstLetter(emailPrefix);
 
     try {
       const { data, error } = await resend.emails.send({
@@ -99,9 +106,8 @@ export const sendVerificationRequest: EmailConfig["sendVerificationRequest"] =
           actionUrl: url,
           mailType: isExistingUser && userVerified ? "login" : "register",
           siteName: siteConfig.name,
+          siteUrl: siteConfig.url,
         }),
-        // Set this to prevent Gmail from threading emails.
-        // More info: https://resend.com/changelog/custom-email-headers
         headers: {
           "X-Entity-Ref-ID": new Date().getTime() + "",
         },
@@ -110,9 +116,8 @@ export const sendVerificationRequest: EmailConfig["sendVerificationRequest"] =
       if (error || !data) {
         throw new Error(error?.message);
       }
-
-      // console.log(data)
     } catch (error) {
       throw new Error("Failed to send verification email.");
     }
   };
+
