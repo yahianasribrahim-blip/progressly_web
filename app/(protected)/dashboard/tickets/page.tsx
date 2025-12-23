@@ -321,17 +321,23 @@ export default function TicketsPage() {
 
             {/* Tickets List */}
             {tickets.length === 0 ? (
-                <Card className="border-dashed">
-                    <CardContent className="flex items-center justify-between py-6 px-8">
-                        <div className="flex items-center gap-3">
-                            <MessageCircle className="h-6 w-6 text-muted-foreground" />
-                            <p className="text-muted-foreground font-medium">No tickets yet</p>
+                <Card className="border-dashed border-2">
+                    <CardContent className="flex flex-col items-center justify-center py-16 px-8 gap-6">
+                        <div className="flex flex-col items-center gap-3 text-center">
+                            <div className="p-4 rounded-full bg-muted">
+                                <MessageCircle className="h-10 w-10 text-muted-foreground" />
+                            </div>
+                            <p className="text-muted-foreground font-medium text-lg">No tickets yet</p>
+                            <p className="text-muted-foreground text-sm max-w-md">
+                                Have a question or need help? Open a support ticket and we&apos;ll get back to you as soon as possible.
+                            </p>
                         </div>
-                        <Button onClick={() => setShowNewTicket(true)}>
+                        <Button onClick={() => setShowNewTicket(true)} size="lg" className="h-12 px-8">
                             Open your first ticket
                         </Button>
                     </CardContent>
                 </Card>
+
             ) : (
                 <div className="space-y-4">
                     {tickets.map((ticket) => {
