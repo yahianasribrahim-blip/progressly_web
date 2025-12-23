@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import OpenAI from "openai";
-import { prisma } from "@/lib/db";
-import { canUseOptimization, recordOptimizationUsage, PLAN_LIMITS } from "@/lib/user";
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -14,37 +12,6 @@ export async function POST(request: Request) {
 
         if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        // Get user's plan from database
-        const user = await prisma.user.findUnique({
-            where: { id: session.user.id },
-            select: { stripePriceId: true }
-        });
-
-        // Determine plan from stripePriceId
-        let plan: "free" | "starter" | "pro" = "free";
-        if (user?.stripePriceId) {
-            const starterPriceId = process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID;
-            const proPriceId = process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID;
-            if (user.stripePriceId === proPriceId) {
-                plan = "pro";
-            } else if (user.stripePriceId === starterPriceId) {
-                plan = "starter";
-            }
-        }
-
-        // Check usage limits
-        const usageCheck = await canUseOptimization(session.user.id, plan);
-        if (!usageCheck.allowed) {
-            const planLimits = PLAN_LIMITS[plan];
-            return NextResponse.json({
-                error: usageCheck.message || "Optimization limit reached",
-                limitReached: true,
-                currentPlan: plan,
-                limit: planLimits.optimizationsPerMonth,
-                remaining: 0,
-            }, { status: 403 });
         }
 
         const formData = await request.formData();
@@ -80,15 +47,9 @@ export async function POST(request: Request) {
         // Use GPT-4 Vision to analyze the cover image
         const analysis = await analyzeCoverWithVision(imageData, platform);
 
-        // Record the usage after successful optimization
-        await recordOptimizationUsage(session.user.id);
-        const updatedUsage = await canUseOptimization(session.user.id, plan);
-
         return NextResponse.json({
             success: true,
             ...analysis,
-            remaining: updatedUsage.remaining,
-            plan,
         });
     } catch (error) {
         console.error("Error grading cover:", error);

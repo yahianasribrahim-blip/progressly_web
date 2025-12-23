@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { auth } from "@/auth";
-import { canUseFormatRefresh, recordFormatRefreshUsage, PLAN_LIMITS } from "@/lib/user";
-import { prisma } from "@/lib/db";
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
@@ -474,39 +472,6 @@ export async function GET(request: Request) {
         }, { status: 401 });
     }
 
-    // Get user's plan from database
-    const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { stripePriceId: true }
-    });
-
-    // Determine plan from stripePriceId
-    let plan: "free" | "starter" | "pro" = "free";
-    if (user?.stripePriceId) {
-        // Check if it matches starter or pro price IDs
-        const starterPriceId = process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID;
-        const proPriceId = process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID;
-        if (user.stripePriceId === proPriceId) {
-            plan = "pro";
-        } else if (user.stripePriceId === starterPriceId) {
-            plan = "starter";
-        }
-    }
-
-    // Check usage limits
-    const usageCheck = await canUseFormatRefresh(session.user.id, plan);
-    if (!usageCheck.allowed) {
-        const planLimits = PLAN_LIMITS[plan];
-        return NextResponse.json({
-            success: false,
-            error: usageCheck.message || "Format refresh limit reached",
-            limitReached: true,
-            currentPlan: plan,
-            limit: planLimits.formatRefreshesPerMonth,
-            remaining: 0,
-        }, { status: 403 });
-    }
-
     // Get niche from query params
     const { searchParams } = new URL(request.url);
     const niche = searchParams.get("niche") || "general content";
@@ -561,10 +526,6 @@ export async function GET(request: Request) {
 
         console.log(`Step 2 success: Extracted ${formats.length} formats for ${niche}`);
 
-        // Record the usage after successful generation
-        await recordFormatRefreshUsage(session.user.id);
-        const updatedUsage = await canUseFormatRefresh(session.user.id, plan);
-
         return NextResponse.json({
             success: true,
             data: {
@@ -573,9 +534,6 @@ export async function GET(request: Request) {
                 videosAnalyzed: trendingVideos.length,
                 generatedAt: new Date().toISOString(),
                 source: "live",
-                requestsUsed: 6, // Approximate
-                remaining: updatedUsage.remaining,
-                plan,
             }
         });
     } catch (error) {
