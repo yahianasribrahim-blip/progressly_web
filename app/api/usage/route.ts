@@ -44,7 +44,12 @@ export async function GET() {
             plan,
             currentMonth: usage.currentMonth,
             currentYear: usage.currentYear,
+        }, {
+            headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate',
+            },
         });
+
     } catch (error) {
         console.error("Error fetching usage:", error);
         return NextResponse.json(
