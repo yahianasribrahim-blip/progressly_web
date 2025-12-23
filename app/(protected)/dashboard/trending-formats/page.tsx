@@ -163,49 +163,44 @@ export default function TrendingFormatsPage() {
                         </div>
                         <div className="text-center max-w-lg w-full">
                             <h2 className="text-xl font-semibold mb-2">Get Trending Formats</h2>
-                            <p className="text-sm text-muted-foreground mb-6">
-                                Describe how you create content so we can match formats to your style
-                            </p>
 
-                            {/* Content Style Input */}
-                            <div className="mb-6 px-4">
-                                <label className="text-sm font-medium mb-2 block">
-                                    How do you create your content?
-                                </label>
-                                {loadingNiche ? (
-                                    <div className="flex items-center justify-center py-2">
-                                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                                        <span className="ml-2 text-sm text-muted-foreground">Loading...</span>
-                                    </div>
-                                ) : (
-                                    <Input
-                                        type="text"
-                                        placeholder="e.g., I film myself doing street racing, I cook halal recipes at home..."
-                                        value={niche}
-                                        onChange={(e) => setNiche(e.target.value)}
-                                        onKeyDown={handleKeyPress}
-                                        className="text-center"
-                                    />
-                                )}
-                                <p className="text-xs text-muted-foreground mt-2">
-                                    Include WHAT you do and HOW you film it
-                                </p>
-                                {niche && !loadingNiche && (
-                                    <p className="text-xs text-purple-600 mt-1">
-                                        ✓ Using your saved style from settings
+                            {loadingNiche ? (
+                                <div className="flex items-center justify-center py-4">
+                                    <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+                                    <span className="ml-2 text-muted-foreground">Loading your content profile...</span>
+                                </div>
+                            ) : niche ? (
+                                <>
+                                    <p className="text-sm text-muted-foreground mb-4">
+                                        AI will generate formats personalized to your content style
                                     </p>
-                                )}
-                            </div>
-
-                            <Button
-                                onClick={fetchFormats}
-                                size="lg"
-                                disabled={!niche.trim() || loadingNiche}
-                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                            >
-                                <Zap className="h-5 w-5 mr-2" />
-                                Get Trending Formats
-                            </Button>
+                                    <div className="mb-6 p-4 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
+                                        <p className="text-xs text-purple-600 dark:text-purple-400 font-medium mb-1">Your Content Profile</p>
+                                        <p className="text-sm text-muted-foreground line-clamp-3">{niche}</p>
+                                    </div>
+                                    <Button
+                                        onClick={fetchFormats}
+                                        size="lg"
+                                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                                    >
+                                        <Zap className="h-5 w-5 mr-2" />
+                                        Get Trending Formats
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-sm text-muted-foreground mb-4">
+                                        You need to complete your content profile first so we can personalize format suggestions.
+                                    </p>
+                                    <Button
+                                        onClick={() => window.location.href = "/dashboard/account"}
+                                        size="lg"
+                                        variant="outline"
+                                    >
+                                        Complete Your Profile
+                                    </Button>
+                                </>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

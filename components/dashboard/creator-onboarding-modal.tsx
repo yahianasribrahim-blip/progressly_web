@@ -13,6 +13,7 @@ import {
     ChevronLeft,
     Loader2,
     Check,
+    Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,12 @@ interface CreatorOnboardingModalProps {
 
 interface FormData {
     teamSize: number;
+    // Content description questions
+    contentActivity: string;
+    filmingStyle: string;
+    resourcesAccess: string;
+    contentConstraints: string;
+    // Equipment
     primaryDevice: string;
     hasExternalMic: boolean;
     hasLighting: boolean;
@@ -53,6 +60,7 @@ interface FormData {
 
 const STEPS = [
     { id: "team", title: "Your Team", icon: Users },
+    { id: "content", title: "Your Content", icon: Video },
     { id: "device", title: "Your Device", icon: Smartphone },
     { id: "equipment", title: "Equipment & Props", icon: Package },
     { id: "time", title: "Time Commitment", icon: Clock },
@@ -90,6 +98,12 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
 
     const [formData, setFormData] = useState<FormData>({
         teamSize: 1,
+        // Content description
+        contentActivity: "",
+        filmingStyle: "",
+        resourcesAccess: "",
+        contentConstraints: "",
+        // Equipment
         primaryDevice: "",
         hasExternalMic: false,
         hasLighting: false,
@@ -210,7 +224,71 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                     </div>
                 );
 
-            case 1: // Device
+            case 1: // Content - New detailed questions
+                return (
+                    <div className="space-y-5">
+                        <div>
+                            <Label className="text-base font-semibold">Tell us about your content</Label>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                Be as specific as possible — this helps us give you realistic format suggestions.
+                            </p>
+                        </div>
+
+                        {/* Question 1: What activity */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">What exactly do you film yourself doing?</Label>
+                            <Input
+                                placeholder="e.g., Street racing BMWs, cooking halal recipes, reviewing tech products..."
+                                value={formData.contentActivity}
+                                onChange={(e) => setFormData(prev => ({ ...prev, contentActivity: e.target.value }))}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Be specific about the activity, not just the niche
+                            </p>
+                        </div>
+
+                        {/* Question 2: How they film */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">How do you typically film your videos?</Label>
+                            <Input
+                                placeholder="e.g., POV from inside the car, tripod in my kitchen, handheld walking..."
+                                value={formData.filmingStyle}
+                                onChange={(e) => setFormData(prev => ({ ...prev, filmingStyle: e.target.value }))}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Camera angles, movement style, setup
+                            </p>
+                        </div>
+
+                        {/* Question 3: Resources/Access */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">What locations or resources do you have access to?</Label>
+                            <Input
+                                placeholder="e.g., My home kitchen, public roads, no track access, small budget..."
+                                value={formData.resourcesAccess}
+                                onChange={(e) => setFormData(prev => ({ ...prev, resourcesAccess: e.target.value }))}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Include what you DON&apos;T have access to as well
+                            </p>
+                        </div>
+
+                        {/* Question 4: Constraints */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">Any constraints or limitations?</Label>
+                            <Input
+                                placeholder="e.g., Can only film on weekends, limited editing skills, no face on camera..."
+                                value={formData.contentConstraints}
+                                onChange={(e) => setFormData(prev => ({ ...prev, contentConstraints: e.target.value }))}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Time, skills, preferences that affect what you can create
+                            </p>
+                        </div>
+                    </div>
+                );
+
+            case 2: // Device
                 return (
                     <div className="space-y-6">
                         <div>
@@ -243,7 +321,7 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                     </div>
                 );
 
-            case 2: // Equipment & Props
+            case 3: // Equipment & Props
                 return (
                     <div className="space-y-6">
                         <div>
@@ -336,7 +414,7 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                     </div>
                 );
 
-            case 3: // Time
+            case 4: // Time
                 return (
                     <div className="space-y-8">
                         <div>
@@ -392,7 +470,7 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                     </div>
                 );
 
-            case 4: // Experience
+            case 5: // Experience
                 return (
                     <div className="space-y-6">
                         <div>
@@ -431,7 +509,7 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                     </div>
                 );
 
-            case 5: // Preferences
+            case 6: // Preferences
                 return (
                     <div className="space-y-6">
                         <div>

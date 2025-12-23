@@ -51,6 +51,12 @@ export async function POST(request: Request) {
         const body = await request.json();
         const {
             teamSize,
+            // Content description fields
+            contentActivity,
+            filmingStyle,
+            resourcesAccess,
+            contentConstraints,
+            // Equipment
             primaryDevice,
             hasExternalMic,
             hasLighting,
@@ -64,6 +70,15 @@ export async function POST(request: Request) {
             experienceLevel,
             targetAudience,
         } = body;
+
+        // Generate combined contentNiche from detailed fields
+        const contentNicheParts = [
+            contentActivity && `Activity: ${contentActivity}`,
+            filmingStyle && `Filming: ${filmingStyle}`,
+            resourcesAccess && `Access: ${resourcesAccess}`,
+            contentConstraints && `Constraints: ${contentConstraints}`,
+        ].filter(Boolean);
+        const contentNiche = contentNicheParts.length > 0 ? contentNicheParts.join(". ") : null;
 
         // First, ensure user has a profile
         let profile = await prisma.userProfile.findUnique({
@@ -85,6 +100,13 @@ export async function POST(request: Request) {
             where: { profileId: profile.id },
             update: {
                 teamSize: teamSize || 1,
+                // Content description
+                contentActivity: contentActivity || null,
+                filmingStyle: filmingStyle || null,
+                resourcesAccess: resourcesAccess || null,
+                contentConstraints: contentConstraints || null,
+                contentNiche: contentNiche,
+                // Equipment
                 primaryDevice: primaryDevice || null,
                 hasExternalMic: hasExternalMic || false,
                 hasLighting: hasLighting || false,
@@ -101,6 +123,13 @@ export async function POST(request: Request) {
             create: {
                 profileId: profile.id,
                 teamSize: teamSize || 1,
+                // Content description
+                contentActivity: contentActivity || null,
+                filmingStyle: filmingStyle || null,
+                resourcesAccess: resourcesAccess || null,
+                contentConstraints: contentConstraints || null,
+                contentNiche: contentNiche,
+                // Equipment
                 primaryDevice: primaryDevice || null,
                 hasExternalMic: hasExternalMic || false,
                 hasLighting: hasLighting || false,

@@ -191,8 +191,14 @@ model CreatorSetup {
   // Experience level
   experienceLevel   String       @default("beginner")  // beginner, intermediate, advanced
   
-  // Content niche for trending formats
-  contentNiche      String?      // Free text, e.g. "hijab styling", "halal cooking"
+  // Detailed content description (from onboarding)
+  contentActivity    String?      // "Street racing BMWs", "cooking halal recipes"
+  filmingStyle       String?      // "POV from inside car", "tripod in kitchen"
+  resourcesAccess    String?      // "Public roads only, no track access"
+  contentConstraints String?      // "Can only film weekends, limited editing skills"
+  
+  // Content niche for trending formats (combines all above into summary)
+  contentNiche      String?      // Free text, auto-generated from above fields
   
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt

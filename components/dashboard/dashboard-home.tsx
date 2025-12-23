@@ -142,7 +142,7 @@ export function DashboardHome({
                             {plan === "pro" ? "∞" : plan === "starter" ? "10" : "2"}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {plan === "pro" ? "unlimited on Pro plan" : `per month`}
+                            {plan === "pro" ? "unlimited on Pro plan" : `left this month`}
                         </p>
                     </CardContent>
                 </Card>
@@ -156,7 +156,7 @@ export function DashboardHome({
                             {plan === "pro" ? "∞" : plan === "starter" ? "20" : "5"}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {plan === "pro" ? "unlimited on Pro plan" : `per month`}
+                            {plan === "pro" ? "unlimited on Pro plan" : `left this month`}
                         </p>
                     </CardContent>
                 </Card>
