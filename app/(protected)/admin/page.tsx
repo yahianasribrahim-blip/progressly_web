@@ -8,6 +8,18 @@ export const metadata = {
   description: "Admin dashboard for managing Progressly",
 };
 
+// Price mapping for revenue calculation
+const PRICE_MAP: Record<string, number> = {
+  // Creator Monthly
+  "price_1Sb7hNLQIkjmWYDF0oowtF8F": 12,
+  // Creator Yearly
+  "price_1Sem3GLQIkjmWYDF1rRKulee": 99,
+  // Pro Monthly
+  "price_1Sb7i1LQIkjmWYDF8jTGCDkI": 29,
+  // Pro Yearly
+  "price_1Sem3yLQIkjmWYDFLFTG5qNL": 249,
+};
+
 export default async function AdminPage() {
   const session = await auth();
 
@@ -29,10 +41,10 @@ export default async function AdminPage() {
   const [
     totalUsers,
     usersThisMonth,
-    activeSubscriptions,
+    activeSubscribers,
     openTickets,
-    recentTickets,
     subscriptionBreakdown,
+    activeUsersToday,
   ] = await Promise.all([
     // Total users
     prisma.user.count(),
@@ -46,27 +58,18 @@ export default async function AdminPage() {
       },
     }),
 
-    // Active paid subscriptions
-    prisma.user.count({
+    // Active paid subscriptions with price info
+    prisma.user.findMany({
       where: {
         stripeSubscriptionId: { not: null },
         stripeCurrentPeriodEnd: { gt: new Date() },
       },
+      select: { stripePriceId: true },
     }),
 
     // Open tickets
     prisma.supportTicket.count({
       where: { status: "open" },
-    }),
-
-    // Recent tickets with messages
-    prisma.supportTicket.findMany({
-      take: 20,
-      orderBy: { updatedAt: "desc" },
-      include: {
-        user: { select: { name: true, email: true } },
-        messages: { orderBy: { createdAt: "asc" } },
-      },
     }),
 
     // Subscription breakdown by price
@@ -75,16 +78,36 @@ export default async function AdminPage() {
       _count: true,
       where: {
         stripeSubscriptionId: { not: null },
+        stripeCurrentPeriodEnd: { gt: new Date() },
+      },
+    }),
+
+    // Active users today (users who logged in today - approximated by updatedAt)
+    prisma.user.count({
+      where: {
+        updatedAt: {
+          gte: new Date(new Date().setHours(0, 0, 0, 0)),
+        },
       },
     }),
   ]);
 
+  // Calculate monthly revenue
+  let monthlyRevenue = 0;
+  for (const sub of activeSubscribers) {
+    if (sub.stripePriceId && PRICE_MAP[sub.stripePriceId]) {
+      const price = PRICE_MAP[sub.stripePriceId];
+      // If yearly, divide by 12 for monthly equivalent
+      if (sub.stripePriceId.includes("Sem3")) {
+        monthlyRevenue += price / 12;
+      } else {
+        monthlyRevenue += price;
+      }
+    }
+  }
+
   // Calculate usage stats
-  const [
-    totalSavedIdeas,
-    totalSavedTrends,
-    totalTickets,
-  ] = await Promise.all([
+  const [totalSavedIdeas, totalSavedTrends, totalTickets] = await Promise.all([
     prisma.savedIdea.count(),
     prisma.savedTrend.count(),
     prisma.supportTicket.count(),
@@ -93,7 +116,9 @@ export default async function AdminPage() {
   const stats = {
     totalUsers,
     usersThisMonth,
-    activeSubscriptions,
+    activeSubscriptions: activeSubscribers.length,
+    activeUsersToday,
+    monthlyRevenue: Math.round(monthlyRevenue * 100) / 100,
     openTickets,
     totalSavedIdeas,
     totalSavedTrends,
@@ -102,8 +127,8 @@ export default async function AdminPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <AdminDashboard stats={stats} tickets={recentTickets} />
+    <div className="p-6">
+      <AdminDashboard stats={stats} />
     </div>
   );
 }

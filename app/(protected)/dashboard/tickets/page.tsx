@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Loader2, MessageCircle, Plus, Send, X, ArrowLeft } from "lucide-react";
+import { Loader2, MessageCircle, Plus, Send, X, ArrowLeft, Trash2, Bell } from "lucide-react";
 
 interface Ticket {
     id: string;
@@ -29,6 +29,7 @@ export default function TicketsPage() {
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
+    const [deleting, setDeleting] = useState<string | null>(null);
     const [showNewTicket, setShowNewTicket] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
     const [newTitle, setNewTitle] = useState("");
@@ -91,10 +92,12 @@ export default function TicketsPage() {
             });
             const data = await response.json();
             if (data.success) {
-                setSelectedTicket({
+                const updatedTicket = {
                     ...selectedTicket,
                     messages: [...selectedTicket.messages, data.message],
-                });
+                };
+                setSelectedTicket(updatedTicket);
+                setTickets(tickets.map(t => t.id === selectedTicket.id ? updatedTicket : t));
                 setNewMessage("");
             }
         } catch (error) {
@@ -124,6 +127,47 @@ export default function TicketsPage() {
         }
     };
 
+    const deleteTicket = async (ticketId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!confirm("Are you sure you want to delete this ticket?")) return;
+
+        setDeleting(ticketId);
+        try {
+            const response = await fetch(`/api/tickets/${ticketId}`, {
+                method: "DELETE",
+            });
+            if (response.ok) {
+                setTickets(tickets.filter(t => t.id !== ticketId));
+                if (selectedTicket?.id === ticketId) {
+                    setSelectedTicket(null);
+                }
+            }
+        } catch (error) {
+            console.error("Error deleting ticket:", error);
+        } finally {
+            setDeleting(null);
+        }
+    };
+
+    // Check if ticket has unread admin reply (last message is from admin)
+    const hasUnreadAdminReply = (ticket: Ticket) => {
+        if (ticket.messages.length === 0) return false;
+        const lastMessage = ticket.messages[ticket.messages.length - 1];
+        return lastMessage.isAdmin;
+    };
+
+    // Get last message preview
+    const getLastMessagePreview = (ticket: Ticket) => {
+        if (ticket.messages.length === 0) return null;
+        const lastMessage = ticket.messages[ticket.messages.length - 1];
+        return {
+            content: lastMessage.content.length > 60
+                ? lastMessage.content.substring(0, 60) + "..."
+                : lastMessage.content,
+            isAdmin: lastMessage.isAdmin,
+        };
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -135,26 +179,28 @@ export default function TicketsPage() {
     // Ticket detail view
     if (selectedTicket) {
         return (
-            <div className="flex flex-col gap-6 p-6 max-w-4xl mx-auto">
+            <div className="flex flex-col gap-6 p-6 max-w-5xl mx-auto">
                 <div className="flex items-center justify-between">
                     <Button variant="ghost" onClick={() => setSelectedTicket(null)}>
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Back to Tickets
                     </Button>
-                    {selectedTicket.status === "open" && (
-                        <Button variant="outline" onClick={closeTicket}>
-                            <X className="h-4 w-4 mr-2" />
-                            Close Ticket
-                        </Button>
-                    )}
+                    <div className="flex gap-2">
+                        {selectedTicket.status === "open" && (
+                            <Button variant="outline" onClick={closeTicket}>
+                                <X className="h-4 w-4 mr-2" />
+                                Close Ticket
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 <Card>
                     <CardHeader>
                         <div className="flex items-start justify-between">
                             <div>
-                                <CardTitle>{selectedTicket.title}</CardTitle>
-                                <CardDescription className="mt-1">
+                                <CardTitle className="text-xl">{selectedTicket.title}</CardTitle>
+                                <CardDescription className="mt-2 text-base">
                                     {selectedTicket.description}
                                 </CardDescription>
                             </div>
@@ -165,7 +211,7 @@ export default function TicketsPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {/* Messages */}
-                        <div className="border rounded-lg p-4 min-h-[300px] max-h-[400px] overflow-y-auto space-y-3">
+                        <div className="border rounded-lg p-6 min-h-[350px] max-h-[500px] overflow-y-auto space-y-4">
                             {selectedTicket.messages.length === 0 ? (
                                 <p className="text-muted-foreground text-center py-8">
                                     No messages yet. Send a message to start the conversation.
@@ -174,14 +220,14 @@ export default function TicketsPage() {
                                 selectedTicket.messages.map((msg) => (
                                     <div
                                         key={msg.id}
-                                        className={`p-3 rounded-lg max-w-[80%] ${msg.isAdmin
+                                        className={`p-4 rounded-lg max-w-[75%] ${msg.isAdmin
                                                 ? "bg-purple-100 dark:bg-purple-900/30 ml-auto"
                                                 : "bg-muted"
                                             }`}
                                     >
                                         <p className="text-sm">{msg.content}</p>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {msg.isAdmin ? "Support" : "You"} • {new Date(msg.createdAt).toLocaleString()}
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            {msg.isAdmin ? "Support Team" : "You"} • {new Date(msg.createdAt).toLocaleString()}
                                         </p>
                                     </div>
                                 ))
@@ -190,14 +236,15 @@ export default function TicketsPage() {
 
                         {/* Send message */}
                         {selectedTicket.status === "open" && (
-                            <div className="flex gap-2">
+                            <div className="flex gap-3">
                                 <Input
                                     placeholder="Type your message..."
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     onKeyDown={(e) => e.key === "Enter" && !sendingMessage && sendMessage()}
+                                    className="flex-1"
                                 />
-                                <Button onClick={sendMessage} disabled={sendingMessage || !newMessage.trim()}>
+                                <Button onClick={sendMessage} disabled={sendingMessage || !newMessage.trim()} size="lg">
                                     {sendingMessage ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />
                                     ) : (
@@ -213,21 +260,21 @@ export default function TicketsPage() {
     }
 
     return (
-        <div className="flex flex-col gap-6 p-6 max-w-4xl mx-auto">
+        <div className="flex flex-col gap-6 p-6 max-w-5xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20">
-                        <MessageCircle className="h-6 w-6 text-blue-600" />
+                <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20">
+                        <MessageCircle className="h-7 w-7 text-blue-600" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold">Support Tickets</h1>
-                        <p className="text-muted-foreground text-sm">
+                        <p className="text-muted-foreground">
                             Get help with any issues you&apos;re experiencing
                         </p>
                     </div>
                 </div>
-                <Button onClick={() => setShowNewTicket(true)}>
+                <Button onClick={() => setShowNewTicket(true)} size="lg">
                     <Plus className="h-4 w-4 mr-2" />
                     New Ticket
                 </Button>
@@ -285,30 +332,67 @@ export default function TicketsPage() {
                 </Card>
             ) : (
                 <div className="space-y-3">
-                    {tickets.map((ticket) => (
-                        <Card
-                            key={ticket.id}
-                            className="cursor-pointer hover:shadow-md transition-shadow"
-                            onClick={() => setSelectedTicket(ticket)}
-                        >
-                            <CardContent className="p-4">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <h3 className="font-medium">{ticket.title}</h3>
-                                        <p className="text-sm text-muted-foreground line-clamp-1">
-                                            {ticket.description}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {new Date(ticket.createdAt).toLocaleDateString()} • {ticket.messages.length} messages
-                                        </p>
+                    {tickets.map((ticket) => {
+                        const lastMessage = getLastMessagePreview(ticket);
+                        const hasNewReply = hasUnreadAdminReply(ticket);
+
+                        return (
+                            <Card
+                                key={ticket.id}
+                                className={`cursor-pointer hover:shadow-md transition-shadow ${hasNewReply ? "border-purple-300 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-950/20" : ""
+                                    }`}
+                                onClick={() => setSelectedTicket(ticket)}
+                            >
+                                <CardContent className="p-5">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-semibold text-lg">{ticket.title}</h3>
+                                                {hasNewReply && (
+                                                    <Badge className="bg-purple-600 text-white">
+                                                        <Bell className="h-3 w-3 mr-1" />
+                                                        New Reply
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
+                                                {ticket.description}
+                                            </p>
+                                            {lastMessage && (
+                                                <div className="mt-3 p-2 rounded bg-muted/50 text-sm">
+                                                    <span className={`font-medium ${lastMessage.isAdmin ? "text-purple-600" : ""}`}>
+                                                        {lastMessage.isAdmin ? "Support: " : "You: "}
+                                                    </span>
+                                                    <span className="text-muted-foreground">{lastMessage.content}</span>
+                                                </div>
+                                            )}
+                                            <p className="text-xs text-muted-foreground mt-2">
+                                                {new Date(ticket.createdAt).toLocaleDateString()} • {ticket.messages.length} messages
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant={ticket.status === "open" ? "default" : "secondary"}>
+                                                {ticket.status}
+                                            </Badge>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-muted-foreground hover:text-red-600"
+                                                onClick={(e) => deleteTicket(ticket.id, e)}
+                                                disabled={deleting === ticket.id}
+                                            >
+                                                {deleting === ticket.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-4 w-4" />
+                                                )}
+                                            </Button>
+                                        </div>
                                     </div>
-                                    <Badge variant={ticket.status === "open" ? "default" : "secondary"}>
-                                        {ticket.status}
-                                    </Badge>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
                 </div>
             )}
         </div>

@@ -27,3 +27,25 @@ export async function PATCH(
         return NextResponse.json({ success: false, error: "Failed to update ticket" }, { status: 500 });
     }
 }
+
+// DELETE - Delete a ticket
+export async function DELETE(
+    request: Request,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+        }
+
+        await prisma.supportTicket.delete({
+            where: { id: params.id, userId: session.user.id },
+        });
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("Error deleting ticket:", error);
+        return NextResponse.json({ success: false, error: "Failed to delete ticket" }, { status: 500 });
+    }
+}

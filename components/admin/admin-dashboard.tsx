@@ -1,28 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, CreditCard, MessageCircle, TrendingUp, Folder, Send, Loader2 } from "lucide-react";
-
-interface Ticket {
-    id: string;
-    title: string;
-    description: string;
-    status: string;
-    createdAt: Date | string;
-    updatedAt: Date | string;
-    user: { name: string | null; email: string | null };
-    messages: { id: string; content: string; isAdmin: boolean; createdAt: Date | string }[];
-}
+import { Users, CreditCard, MessageCircle, TrendingUp, Folder, BarChart3, DollarSign, Activity } from "lucide-react";
 
 interface AdminStats {
     totalUsers: number;
     usersThisMonth: number;
     activeSubscriptions: number;
+    activeUsersToday: number;
+    monthlyRevenue: number;
     openTickets: number;
     totalSavedIdeas: number;
     totalSavedTrends: number;
@@ -32,221 +19,179 @@ interface AdminStats {
 
 interface AdminDashboardProps {
     stats: AdminStats;
-    tickets: Ticket[];
 }
 
-export function AdminDashboard({ stats, tickets: initialTickets }: AdminDashboardProps) {
-    const [tickets, setTickets] = useState(initialTickets);
-    const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-    const [replyMessage, setReplyMessage] = useState("");
-    const [sending, setSending] = useState(false);
+// Mock tools usage data - in production this would come from usage tracking
+const TOOLS_USAGE = [
+    { name: "Video Breakdown", count: 0, color: "bg-blue-500" },
+    { name: "Trending Formats", count: 0, color: "bg-purple-500" },
+    { name: "Cover Optimizer", count: 0, color: "bg-green-500" },
+    { name: "Script Optimizer", count: 0, color: "bg-orange-500" },
+    { name: "Caption Optimizer", count: 0, color: "bg-pink-500" },
+];
 
-    const sendReply = async () => {
-        if (!selectedTicket || !replyMessage.trim()) return;
+// Price ID to plan name mapping
+const PRICE_NAMES: Record<string, string> = {
+    "price_1Sb7hNLQIkjmWYDF0oowtF8F": "Creator Monthly",
+    "price_1Sem3GLQIkjmWYDF1rRKulee": "Creator Yearly",
+    "price_1Sb7i1LQIkjmWYDF8jTGCDkI": "Pro Monthly",
+    "price_1Sem3yLQIkjmWYDFLFTG5qNL": "Pro Yearly",
+};
 
-        setSending(true);
-        try {
-            const response = await fetch(`/api/admin/tickets/${selectedTicket.id}/reply`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content: replyMessage }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                // Update local state
-                setSelectedTicket({
-                    ...selectedTicket,
-                    messages: [...selectedTicket.messages, data.message],
-                });
-                setReplyMessage("");
-            }
-        } catch (error) {
-            console.error("Error sending reply:", error);
-        } finally {
-            setSending(false);
-        }
-    };
+export function AdminDashboard({ stats }: AdminDashboardProps) {
+    // Calculate max usage for chart scaling
+    const maxUsage = Math.max(...TOOLS_USAGE.map(t => t.count), 1);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-                <p className="text-muted-foreground">Manage Progressly and view analytics</p>
+                <p className="text-muted-foreground text-lg">Progressly Analytics & Overview</p>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {/* Top Stats Row */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                {/* Monthly Revenue */}
+                <Card className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+                        <DollarSign className="h-5 w-5 text-green-600" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold text-green-600">${stats.monthlyRevenue.toFixed(2)}</div>
+                        <p className="text-sm text-muted-foreground">
+                            From {stats.activeSubscriptions} active subscriptions
+                        </p>
+                    </CardContent>
+                </Card>
+
+                {/* Total Users */}
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <Users className="h-5 w-5 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalUsers}</div>
-                        <p className="text-xs text-muted-foreground">
+                        <div className="text-3xl font-bold">{stats.totalUsers}</div>
+                        <p className="text-sm text-muted-foreground">
                             +{stats.usersThisMonth} this month
                         </p>
                     </CardContent>
                 </Card>
 
+                {/* Active Users Today */}
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
-                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Active Today</CardTitle>
+                        <Activity className="h-5 w-5 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.activeSubscriptions}</div>
-                        <p className="text-xs text-muted-foreground">
-                            Paying customers
+                        <div className="text-3xl font-bold">{stats.activeUsersToday}</div>
+                        <p className="text-sm text-muted-foreground">
+                            Users online today
                         </p>
                     </CardContent>
                 </Card>
 
+                {/* Open Tickets */}
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
-                        <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                        <MessageCircle className="h-5 w-5 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.openTickets}</div>
-                        <p className="text-xs text-muted-foreground">
+                        <div className="text-3xl font-bold">{stats.openTickets}</div>
+                        <p className="text-sm text-muted-foreground">
                             {stats.totalTickets} total tickets
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Content Saved</CardTitle>
-                        <Folder className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{stats.totalSavedIdeas + stats.totalSavedTrends}</div>
-                        <p className="text-xs text-muted-foreground">
-                            {stats.totalSavedIdeas} ideas, {stats.totalSavedTrends} trends
                         </p>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Subscription Breakdown */}
+            {/* Two Column Layout */}
+            <div className="grid gap-6 lg:grid-cols-2">
+                {/* Tools Usage Chart */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <BarChart3 className="h-5 w-5" />
+                            Most Used Tools
+                        </CardTitle>
+                        <CardDescription>Tool usage ranking (tracking coming soon)</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {TOOLS_USAGE.map((tool, idx) => (
+                            <div key={idx} className="space-y-2">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="font-medium">{tool.name}</span>
+                                    <span className="text-muted-foreground">{tool.count} uses</span>
+                                </div>
+                                <div className="h-3 bg-muted rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full ${tool.color} rounded-full transition-all`}
+                                        style={{ width: `${Math.max((tool.count / maxUsage) * 100, 5)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                        <p className="text-xs text-muted-foreground pt-2">
+                            * Usage tracking will be implemented to show real data
+                        </p>
+                    </CardContent>
+                </Card>
+
+                {/* Subscription Breakdown */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5" />
+                            Subscription Breakdown
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {stats.subscriptionBreakdown.length === 0 ? (
+                            <div className="text-center py-8">
+                                <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                                <p className="text-muted-foreground">No active subscriptions yet</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {stats.subscriptionBreakdown.map((sub, idx) => (
+                                    <div key={idx} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                                        <span className="text-sm font-medium">
+                                            {sub.stripePriceId ? PRICE_NAMES[sub.stripePriceId] || sub.stripePriceId : "Free"}
+                                        </span>
+                                        <Badge variant="secondary" className="text-base px-3">{sub._count} users</Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Content Stats */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5" />
-                        Subscription Breakdown
+                        <Folder className="h-5 w-5" />
+                        Platform Content
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {stats.subscriptionBreakdown.length === 0 ? (
-                        <p className="text-muted-foreground">No active subscriptions yet</p>
-                    ) : (
-                        <div className="space-y-2">
-                            {stats.subscriptionBreakdown.map((sub, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-2 bg-muted rounded">
-                                    <span className="text-sm font-mono">{sub.stripePriceId || "Free"}</span>
-                                    <Badge variant="secondary">{sub._count} users</Badge>
-                                </div>
-                            ))}
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <div className="p-4 bg-muted rounded-lg text-center">
+                            <p className="text-3xl font-bold">{stats.totalSavedIdeas}</p>
+                            <p className="text-sm text-muted-foreground">Saved Ideas (Content Bank)</p>
                         </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            {/* Tickets Section */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <MessageCircle className="h-5 w-5" />
-                        Support Tickets
-                    </CardTitle>
-                    <CardDescription>Respond to user support requests</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid md:grid-cols-2 gap-4">
-                        {/* Tickets List */}
-                        <div className="border rounded-lg overflow-hidden">
-                            <div className="bg-muted p-2 font-medium text-sm">All Tickets</div>
-                            <div className="max-h-[400px] overflow-y-auto">
-                                {tickets.length === 0 ? (
-                                    <p className="p-4 text-muted-foreground text-center">No tickets yet</p>
-                                ) : (
-                                    tickets.map((ticket) => (
-                                        <div
-                                            key={ticket.id}
-                                            className={`p-3 border-b cursor-pointer hover:bg-muted/50 ${selectedTicket?.id === ticket.id ? "bg-muted" : ""
-                                                }`}
-                                            onClick={() => setSelectedTicket(ticket)}
-                                        >
-                                            <div className="flex items-start justify-between">
-                                                <div>
-                                                    <p className="font-medium text-sm">{ticket.title}</p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {ticket.user.name || ticket.user.email}
-                                                    </p>
-                                                </div>
-                                                <Badge variant={ticket.status === "open" ? "default" : "secondary"}>
-                                                    {ticket.status}
-                                                </Badge>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
+                        <div className="p-4 bg-muted rounded-lg text-center">
+                            <p className="text-3xl font-bold">{stats.totalSavedTrends}</p>
+                            <p className="text-sm text-muted-foreground">Saved Trends (Trend Bank)</p>
                         </div>
-
-                        {/* Ticket Detail */}
-                        <div className="border rounded-lg overflow-hidden">
-                            <div className="bg-muted p-2 font-medium text-sm">
-                                {selectedTicket ? selectedTicket.title : "Select a ticket"}
-                            </div>
-                            {selectedTicket ? (
-                                <div className="flex flex-col h-[350px]">
-                                    {/* Description */}
-                                    <div className="p-3 border-b bg-muted/30">
-                                        <p className="text-sm">{selectedTicket.description}</p>
-                                    </div>
-
-                                    {/* Messages */}
-                                    <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                                        {selectedTicket.messages.map((msg) => (
-                                            <div
-                                                key={msg.id}
-                                                className={`p-2 rounded text-sm max-w-[85%] ${msg.isAdmin
-                                                    ? "bg-purple-100 dark:bg-purple-900/30 ml-auto"
-                                                    : "bg-muted"
-                                                    }`}
-                                            >
-                                                <p>{msg.content}</p>
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    {msg.isAdmin ? "You" : "User"} • {new Date(msg.createdAt).toLocaleString()}
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Reply */}
-                                    {selectedTicket.status === "open" && (
-                                        <div className="p-2 border-t flex gap-2">
-                                            <Input
-                                                placeholder="Type your reply..."
-                                                value={replyMessage}
-                                                onChange={(e) => setReplyMessage(e.target.value)}
-                                                onKeyDown={(e) => e.key === "Enter" && !sending && sendReply()}
-                                            />
-                                            <Button onClick={sendReply} disabled={sending || !replyMessage.trim()}>
-                                                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                                            </Button>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="p-8 text-center text-muted-foreground">
-                                    Click a ticket to view details
-                                </div>
-                            )}
+                        <div className="p-4 bg-muted rounded-lg text-center">
+                            <p className="text-3xl font-bold">{stats.totalSavedIdeas + stats.totalSavedTrends}</p>
+                            <p className="text-sm text-muted-foreground">Total Saved Content</p>
                         </div>
                     </div>
                 </CardContent>
