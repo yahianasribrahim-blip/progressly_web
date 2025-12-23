@@ -157,9 +157,15 @@ export async function POST(request: Request) {
         });
     } catch (error) {
         console.error("Error saving creator setup:", error);
+        // Log more details about the error
+        if (error instanceof Error) {
+            console.error("Error message:", error.message);
+            console.error("Error stack:", error.stack);
+        }
         return NextResponse.json(
-            { error: "Failed to save creator setup" },
+            { error: "Failed to save creator setup", details: error instanceof Error ? error.message : "Unknown error" },
             { status: 500 }
         );
     }
 }
+
