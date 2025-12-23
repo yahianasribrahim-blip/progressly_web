@@ -28,16 +28,11 @@ export default function TrendingFormatsPage() {
     const [loadingNiche, setLoadingNiche] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [hasFetched, setHasFetched] = useState(false);
-    const [requestCount, setRequestCount] = useState(0);
     const [niche, setNiche] = useState<string>("");
     const [fetchedNiche, setFetchedNiche] = useState<string>("");
     // Map format.id -> database savedTrend.id for unsaving
     const [savedFormats, setSavedFormats] = useState<Map<string, string>>(new Map());
     const [savingId, setSavingId] = useState<string | null>(null);
-    // Usage tracking
-    const [remainingRefreshes, setRemainingRefreshes] = useState<number | null>(null);
-    const [limitReached, setLimitReached] = useState(false);
-    const [userPlan, setUserPlan] = useState<string>("free");
 
     // Fetch saved niche from creator settings on mount
     useEffect(() => {
@@ -71,25 +66,7 @@ export default function TrendingFormatsPage() {
 
             if (data.success) {
                 setFormats(data.data.formats.slice(0, 3));
-                setRequestCount(data.data.requestsUsed || 6);
                 setFetchedNiche(niche.trim());
-                setHasFetched(true);
-                // Update usage tracking
-                if (data.data.remaining !== undefined) {
-                    setRemainingRefreshes(data.data.remaining);
-                }
-                if (data.data.plan) {
-                    setUserPlan(data.data.plan);
-                }
-                setLimitReached(false);
-            } else if (data.limitReached) {
-                // Handle limit reached response
-                setLimitReached(true);
-                setRemainingRefreshes(0);
-                if (data.currentPlan) {
-                    setUserPlan(data.currentPlan);
-                }
-                setError(data.error || "Format refresh limit reached");
                 setHasFetched(true);
             } else {
                 const debugInfo = data.debug
@@ -174,31 +151,6 @@ export default function TrendingFormatsPage() {
                             </p>
                         </div>
                     </div>
-                    {/* Usage indicator */}
-                    {remainingRefreshes !== null && (
-                        <div className="flex items-center gap-2">
-                            <Badge
-                                variant={remainingRefreshes > 0 || userPlan === "pro" ? "secondary" : "destructive"}
-                                className="px-3 py-1"
-                            >
-                                {userPlan === "pro" ? (
-                                    <span>∞ Refreshes</span>
-                                ) : (
-                                    <span>{remainingRefreshes} refresh{remainingRefreshes !== 1 ? "es" : ""} left</span>
-                                )}
-                            </Badge>
-                            {remainingRefreshes === 0 && userPlan !== "pro" && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                                    onClick={() => window.location.href = "/dashboard/billing"}
-                                >
-                                    Upgrade
-                                </Button>
-                            )}
-                        </div>
-                    )}
                 </div>
             </div>
 
