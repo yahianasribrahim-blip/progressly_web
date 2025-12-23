@@ -14,8 +14,7 @@ export default {
     Resend({
       apiKey: env.RESEND_API_KEY,
       from: env.EMAIL_FROM,
-      // Custom template causes webpack build issues - using default Resend template
-      // sendVerificationRequest,
+      sendVerificationRequest,
     }),
   ],
 } satisfies NextAuthConfig;
