@@ -45,4 +45,12 @@ export const sidebarLinks: SidebarNavItem[] = [
   },
 ];
 
-
+// Admin-only links (shown separately based on user role)
+export const adminLinks: SidebarNavItem[] = [
+  {
+    title: "ADMIN",
+    items: [
+      { href: "/admin", icon: "settings", title: "Admin Dashboard" },
+    ],
+  },
+];
