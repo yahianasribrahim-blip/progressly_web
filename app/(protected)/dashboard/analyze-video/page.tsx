@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/session";
 import { constructMetadata } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { AnalyzeMyVideo } from "@/components/dashboard/analyze-my-video";
+import { UsageBadge } from "@/components/dashboard/usage-badge";
 
 export const metadata = constructMetadata({
     title: "Analyze My Video – Progressly",
@@ -22,8 +23,11 @@ export default async function AnalyzeVideoPage() {
             <DashboardHeader
                 heading="Analyze My Video"
                 text="Paste your TikTok video URL to get detailed performance insights and improvement suggestions."
-            />
+            >
+                <UsageBadge type="analysis" />
+            </DashboardHeader>
             <AnalyzeMyVideo />
         </div>
     );
 }
+

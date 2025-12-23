@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Loader2, TrendingUp, Lightbulb, Volume2, Sparkles, Eye, Heart, Share2, Zap, Bookmark, Check } from "lucide-react";
+import { UsageBadge } from "@/components/dashboard/usage-badge";
+
 
 interface TrendingFormat {
     id: string;
@@ -151,8 +153,10 @@ export default function TrendingFormatsPage() {
                             </p>
                         </div>
                     </div>
+                    <UsageBadge type="formatSearch" />
                 </div>
             </div>
+
 
             {/* Initial State - Before fetching */}
             {!hasFetched && !loading && (

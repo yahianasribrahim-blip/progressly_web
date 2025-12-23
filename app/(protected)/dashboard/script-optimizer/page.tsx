@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/session";
 import { constructMetadata } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { ScriptOptimizer } from "@/components/dashboard/script-optimizer";
+import { UsageBadge } from "@/components/dashboard/usage-badge";
 
 export const metadata = constructMetadata({
     title: "Script Optimizer – Progressly",
@@ -22,8 +23,11 @@ export default async function ScriptOptimizerPage() {
             <DashboardHeader
                 heading="Script Optimizer"
                 text="Write scripts that hook viewers and keep them watching. Get personalized suggestions based on your setup."
-            />
+            >
+                <UsageBadge type="optimization" />
+            </DashboardHeader>
             <ScriptOptimizer />
         </div>
     );
 }
+
