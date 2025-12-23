@@ -12,29 +12,26 @@ export default async function HeroLanding() {
           href="/pricing"
           className={cn(
             buttonVariants({ variant: "outline", size: "sm", rounded: "full" }),
-            "px-4",
+            "px-4 border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/40",
           )}
         >
-          <span className="mr-3">✨</span>
-          <span className="hidden md:flex">New:&nbsp;</span>AI-Powered Content
-          Suggestions Now Live!
+          <span className="mr-2">🔥</span>
+          <span className="font-semibold text-amber-700 dark:text-amber-300">Limited Beta Pricing</span>
+          <span className="ml-2 text-muted-foreground">— Lock in 50% off forever</span>
         </Link>
 
         <h1 className="text-balance font-urban text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-[66px]">
-          Create Content That{" "}
+          Stop Guessing.{" "}
           <span className="text-gradient_indigo-purple font-extrabold">
-            Actually Grows
-          </span>{" "}
-          Your Audience
+            Start Growing.
+          </span>
         </h1>
 
         <p
-          className="max-w-2xl text-balance leading-normal text-muted-foreground sm:text-xl sm:leading-8"
+          className="max-w-xl text-balance leading-normal text-muted-foreground sm:text-xl sm:leading-8"
           style={{ animationDelay: "0.35s", animationFillMode: "forwards" }}
         >
-          Stop guessing what to post. Progressly uses AI to analyze trends on
-          TikTok — giving you actionable content ideas
-          that resonate with your audience.
+          AI-powered video analysis that shows you exactly what works on TikTok.
         </p>
 
         <div
