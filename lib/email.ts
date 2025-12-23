@@ -47,7 +47,7 @@ function getMagicLinkEmailHtml({
       ${mailType === "login" ? "Welcome back!" : `Welcome to ${siteName}!`}
     </h1>
     <p style="font-size: 16px; color: #374151; line-height: 1.6; margin: 0 0 24px;">
-      Hi ${firstName},
+      Hello,
     </p>
     <p style="font-size: 16px; color: #374151; line-height: 1.6; margin: 0 0 32px;">
       Click the button below to ${actionText} your account.
