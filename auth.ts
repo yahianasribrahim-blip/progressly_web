@@ -53,7 +53,10 @@ export const {
 
       const dbUser = await getUserById(token.sub);
 
-      if (!dbUser) return token;
+      // If user no longer exists (was deleted), invalidate the session
+      if (!dbUser) {
+        return null as unknown as typeof token;
+      }
 
       token.name = dbUser.name;
       token.email = dbUser.email;
