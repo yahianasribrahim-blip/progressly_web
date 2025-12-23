@@ -34,6 +34,10 @@ export default function TrendingFormatsPage() {
     // Map format.id -> database savedTrend.id for unsaving
     const [savedFormats, setSavedFormats] = useState<Map<string, string>>(new Map());
     const [savingId, setSavingId] = useState<string | null>(null);
+    // Usage tracking
+    const [remainingRefreshes, setRemainingRefreshes] = useState<number | null>(null);
+    const [limitReached, setLimitReached] = useState(false);
+    const [userPlan, setUserPlan] = useState<string>("free");
 
     // Fetch saved niche from creator settings on mount
     useEffect(() => {
@@ -69,6 +73,23 @@ export default function TrendingFormatsPage() {
                 setFormats(data.data.formats.slice(0, 3));
                 setRequestCount(data.data.requestsUsed || 6);
                 setFetchedNiche(niche.trim());
+                setHasFetched(true);
+                // Update usage tracking
+                if (data.data.remaining !== undefined) {
+                    setRemainingRefreshes(data.data.remaining);
+                }
+                if (data.data.plan) {
+                    setUserPlan(data.data.plan);
+                }
+                setLimitReached(false);
+            } else if (data.limitReached) {
+                // Handle limit reached response
+                setLimitReached(true);
+                setRemainingRefreshes(0);
+                if (data.currentPlan) {
+                    setUserPlan(data.currentPlan);
+                }
+                setError(data.error || "Format refresh limit reached");
                 setHasFetched(true);
             } else {
                 const debugInfo = data.debug
@@ -141,16 +162,43 @@ export default function TrendingFormatsPage() {
         <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20">
-                        <TrendingUp className="h-6 w-6 text-purple-600" />
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20">
+                            <TrendingUp className="h-6 w-6 text-purple-600" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold">Trending Formats</h1>
+                            <p className="text-muted-foreground text-sm">
+                                Discover formats tailored to your content niche
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-bold">Trending Formats</h1>
-                        <p className="text-muted-foreground text-sm">
-                            Discover formats tailored to your content niche
-                        </p>
-                    </div>
+                    {/* Usage indicator */}
+                    {remainingRefreshes !== null && (
+                        <div className="flex items-center gap-2">
+                            <Badge
+                                variant={remainingRefreshes > 0 || userPlan === "pro" ? "secondary" : "destructive"}
+                                className="px-3 py-1"
+                            >
+                                {userPlan === "pro" ? (
+                                    <span>∞ Refreshes</span>
+                                ) : (
+                                    <span>{remainingRefreshes} refresh{remainingRefreshes !== 1 ? "es" : ""} left</span>
+                                )}
+                            </Badge>
+                            {remainingRefreshes === 0 && userPlan !== "pro" && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                                    onClick={() => window.location.href = "/dashboard/billing"}
+                                >
+                                    Upgrade
+                                </Button>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -193,7 +241,7 @@ export default function TrendingFormatsPage() {
                                         You need to complete your content profile first so we can personalize format suggestions.
                                     </p>
                                     <Button
-                                        onClick={() => window.location.href = "/dashboard/account"}
+                                        onClick={() => window.location.href = "/dashboard/settings"}
                                         size="lg"
                                         variant="outline"
                                     >

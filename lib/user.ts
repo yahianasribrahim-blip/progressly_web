@@ -107,6 +107,8 @@ export const getUserSubscription = async (userId: string) => {
 export const PLAN_LIMITS = {
   free: {
     analysesPerWeek: 1,
+    formatRefreshesPerMonth: 2,
+    optimizationsPerMonth: 5,
     hooksLimit: 3,
     formatsLimit: 1,
     savedAnalysesLimit: 0,
@@ -115,6 +117,8 @@ export const PLAN_LIMITS = {
   },
   starter: {
     analysesPerWeek: 3,
+    formatRefreshesPerMonth: 10,
+    optimizationsPerMonth: 20,
     hooksLimit: 10,
     formatsLimit: 5,
     savedAnalysesLimit: 10,
@@ -123,6 +127,8 @@ export const PLAN_LIMITS = {
   },
   pro: {
     analysesPerDay: 1,
+    formatRefreshesPerMonth: -1, // unlimited
+    optimizationsPerMonth: -1, // unlimited
     hooksLimit: 10,
     formatsLimit: 5,
     savedAnalysesLimit: -1, // unlimited
@@ -138,10 +144,15 @@ export interface UserProfile {
   username?: string;
   niche?: string;
   platforms?: string[];
+  // Analysis tracking
   analysesUsedThisWeek: number;
   analysesUsedToday: number;
   lastAnalysisDate?: Date;
   weekStartDate?: Date;
+  // Monthly tracking
+  formatRefreshesThisMonth: number;
+  optimizationsThisMonth: number;
+  monthStartDate?: Date;
 }
 
 // In-memory storage for development (replace with DB after migration)
@@ -158,6 +169,8 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
     userId,
     analysesUsedThisWeek: 0,
     analysesUsedToday: 0,
+    formatRefreshesThisMonth: 0,
+    optimizationsThisMonth: 0,
   };
   mockProfiles.set(userId, profile);
   return profile;
@@ -232,5 +245,95 @@ export const recordAnalysisUsage = async (userId: string): Promise<void> => {
   profile.analysesUsedToday += 1;
   profile.lastAnalysisDate = new Date();
 
+  mockProfiles.set(userId, profile);
+};
+
+// Helper to reset monthly counters if needed
+const resetMonthlyCountersIfNeeded = (profile: UserProfile): void => {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  if (!profile.monthStartDate || new Date(profile.monthStartDate) < monthStart) {
+    profile.formatRefreshesThisMonth = 0;
+    profile.optimizationsThisMonth = 0;
+    profile.monthStartDate = monthStart;
+  }
+};
+
+// Check if user can use a format refresh
+export const canUseFormatRefresh = async (
+  userId: string,
+  plan: "free" | "starter" | "pro"
+): Promise<{ allowed: boolean; remaining: number; message?: string }> => {
+  const profile = await getUserProfile(userId);
+  if (!profile) {
+    return { allowed: false, remaining: 0, message: "Profile not found" };
+  }
+
+  resetMonthlyCountersIfNeeded(profile);
+  mockProfiles.set(userId, profile);
+
+  if (plan === "pro") {
+    return { allowed: true, remaining: -1 }; // unlimited
+  }
+
+  const limit = plan === "starter"
+    ? PLAN_LIMITS.starter.formatRefreshesPerMonth
+    : PLAN_LIMITS.free.formatRefreshesPerMonth;
+  const remaining = limit - profile.formatRefreshesThisMonth;
+
+  return {
+    allowed: remaining > 0,
+    remaining,
+    message: remaining <= 0 ? "Monthly format refresh limit reached. Upgrade for more!" : undefined,
+  };
+};
+
+// Record a format refresh usage
+export const recordFormatRefreshUsage = async (userId: string): Promise<void> => {
+  const profile = await getUserProfile(userId);
+  if (!profile) return;
+
+  resetMonthlyCountersIfNeeded(profile);
+  profile.formatRefreshesThisMonth += 1;
+  mockProfiles.set(userId, profile);
+};
+
+// Check if user can use an optimization (script, caption, cover)
+export const canUseOptimization = async (
+  userId: string,
+  plan: "free" | "starter" | "pro"
+): Promise<{ allowed: boolean; remaining: number; message?: string }> => {
+  const profile = await getUserProfile(userId);
+  if (!profile) {
+    return { allowed: false, remaining: 0, message: "Profile not found" };
+  }
+
+  resetMonthlyCountersIfNeeded(profile);
+  mockProfiles.set(userId, profile);
+
+  if (plan === "pro") {
+    return { allowed: true, remaining: -1 }; // unlimited
+  }
+
+  const limit = plan === "starter"
+    ? PLAN_LIMITS.starter.optimizationsPerMonth
+    : PLAN_LIMITS.free.optimizationsPerMonth;
+  const remaining = limit - profile.optimizationsThisMonth;
+
+  return {
+    allowed: remaining > 0,
+    remaining,
+    message: remaining <= 0 ? "Monthly optimization limit reached. Upgrade for more!" : undefined,
+  };
+};
+
+// Record an optimization usage
+export const recordOptimizationUsage = async (userId: string): Promise<void> => {
+  const profile = await getUserProfile(userId);
+  if (!profile) return;
+
+  resetMonthlyCountersIfNeeded(profile);
+  profile.optimizationsThisMonth += 1;
   mockProfiles.set(userId, profile);
 };
