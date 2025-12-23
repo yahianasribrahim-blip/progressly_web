@@ -260,22 +260,22 @@ export default function TicketsPage() {
     }
 
     return (
-        <div className="flex flex-col gap-6 p-6 max-w-5xl mx-auto">
+        <div className="flex flex-col gap-8 p-6 max-w-6xl mx-auto">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20">
-                        <MessageCircle className="h-7 w-7 text-blue-600" />
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20">
+                        <MessageCircle className="h-8 w-8 text-blue-600" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold">Support Tickets</h1>
-                        <p className="text-muted-foreground">
+                        <h1 className="text-3xl font-bold">Support Tickets</h1>
+                        <p className="text-muted-foreground mt-1">
                             Get help with any issues you&apos;re experiencing
                         </p>
                     </div>
                 </div>
-                <Button onClick={() => setShowNewTicket(true)} size="lg">
-                    <Plus className="h-4 w-4 mr-2" />
+                <Button onClick={() => setShowNewTicket(true)} size="lg" className="h-12 px-6">
+                    <Plus className="h-5 w-5 mr-2" />
                     New Ticket
                 </Button>
             </div>
@@ -333,7 +333,7 @@ export default function TicketsPage() {
                     </CardContent>
                 </Card>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                     {tickets.map((ticket) => {
                         const lastMessage = getLastMessagePreview(ticket);
                         const hasNewReply = hasUnreadAdminReply(ticket);
@@ -341,11 +341,11 @@ export default function TicketsPage() {
                         return (
                             <Card
                                 key={ticket.id}
-                                className={`cursor-pointer hover:shadow-md transition-shadow ${hasNewReply ? "border-purple-300 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-950/20" : ""
+                                className={`cursor-pointer hover:shadow-lg transition-all hover:scale-[1.01] ${hasNewReply ? "border-purple-300 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-950/20" : ""
                                     }`}
                                 onClick={() => setSelectedTicket(ticket)}
                             >
-                                <CardContent className="p-5">
+                                <CardContent className="p-6">
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
