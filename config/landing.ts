@@ -51,46 +51,46 @@ export const infos: InfoLdg[] = [
 
 export const features: FeatureLdg[] = [
   {
-    title: "Trending Topics",
+    title: "Know What Works",
     description:
-      "Discover what's trending in your niche right now. Get ahead of the curve with real-time trend analysis across all major platforms.",
+      "Stop guessing why some videos go viral. Get instant insights into what makes content perform so you can replicate success.",
     link: "/",
     icon: "trendingUp",
   },
   {
-    title: "AI Content Ideas",
+    title: "Never Run Out of Ideas",
     description:
-      "Never run out of content ideas. Our AI generates video concepts, captions, and hooks tailored to your niche and audience.",
+      "See what's trending in your niche right now and get personalized content suggestions tailored to your style.",
     link: "/",
     icon: "sparkles",
   },
   {
-    title: "Smart Hashtags",
+    title: "Hook Viewers Instantly",
     description:
-      "Optimized hashtag sets that maximize your reach. We analyze what's working and avoid shadowbanned tags.",
+      "Learn the exact patterns that grab attention in the first 2 seconds and keep viewers watching until the end.",
     link: "/",
-    icon: "hash",
+    icon: "video",
   },
   {
-    title: "Performance Analytics",
+    title: "Get More Clicks",
     description:
-      "Track your content performance across platforms. Understand what works and double down on winning strategies.",
+      "Create thumbnails and covers that stand out in the feed. Know exactly what to fix before you hit publish.",
     link: "/",
-    icon: "lineChart",
+    icon: "image",
   },
   {
-    title: "Best Time to Post",
+    title: "Write Better Captions",
     description:
-      "Know exactly when your audience is most active. Post at optimal times for maximum engagement.",
+      "Craft scroll-stopping captions with proven engagement patterns, strategic hashtags, and compelling CTAs.",
     link: "/",
-    icon: "calendar",
+    icon: "messageSquare",
   },
   {
-    title: "Content Alerts",
+    title: "Save Your Best Ideas",
     description:
-      "Get notified about trending topics, engagement spikes, and potential content risks in real-time.",
+      "Build a library of winning formats and content ideas you can reference anytime inspiration strikes.",
     link: "/",
-    icon: "bell",
+    icon: "folder",
   },
 ];
 

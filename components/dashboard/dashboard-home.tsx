@@ -197,26 +197,6 @@ export function DashboardHome({
                     ))}
                 </div>
             </div>
-
-            {/* CTA Section */}
-            <Card className="bg-gradient-to-r from-violet-500 to-purple-600 border-0 text-white">
-                <CardContent className="p-6 md:p-8">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div>
-                            <h3 className="text-xl font-bold">Start with Video Breakdown</h3>
-                            <p className="text-violet-100 mt-1">
-                                Paste a video you admire and learn exactly what makes it work.
-                            </p>
-                        </div>
-                        <Link href="/dashboard/analyze-video">
-                            <Button size="lg" className="bg-white text-violet-600 hover:bg-violet-50 gap-2">
-                                <Video className="h-4 w-4" />
-                                Analyze a Video
-                            </Button>
-                        </Link>
-                    </div>
-                </CardContent>
-            </Card>
         </div>
     );
 }
