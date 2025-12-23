@@ -79,16 +79,6 @@ const COMMON_PROPS = [
     "Props/Costumes",
 ];
 
-const COMMON_LOCATIONS = [
-    "Bedroom",
-    "Living Room",
-    "Office/Desk",
-    "Kitchen",
-    "Outdoors",
-    "Car",
-    "Gym",
-    "Studio",
-];
 
 export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboardingModalProps) {
     const router = useRouter();
@@ -163,14 +153,6 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
         }));
     };
 
-    const toggleLocation = (location: string) => {
-        setFormData(prev => ({
-            ...prev,
-            filmingLocations: prev.filmingLocations.includes(location)
-                ? prev.filmingLocations.filter(l => l !== location)
-                : [...prev.filmingLocations, location],
-        }));
-    };
 
     const addCustomProp = () => {
         if (customProp.trim() && !formData.availableProps.includes(customProp.trim())) {
@@ -371,29 +353,9 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                                 <Button variant="outline" onClick={addCustomProp}>Add</Button>
                             </div>
                         </div>
-
-                        {/* Filming locations */}
-                        <div className="space-y-3">
-                            <Label className="text-sm font-medium text-muted-foreground">Filming Locations</Label>
-                            <div className="flex flex-wrap gap-2">
-                                {COMMON_LOCATIONS.map((location) => (
-                                    <Button
-                                        key={location}
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => toggleLocation(location)}
-                                        className={cn(
-                                            formData.filmingLocations.includes(location) && "border-violet-500 bg-violet-50 dark:bg-violet-950/30"
-                                        )}
-                                    >
-                                        {formData.filmingLocations.includes(location) && <Check className="h-3 w-3 mr-1" />}
-                                        {location}
-                                    </Button>
-                                ))}
-                            </div>
-                        </div>
                     </div>
                 );
+
 
             case 4: // Time
                 return (
