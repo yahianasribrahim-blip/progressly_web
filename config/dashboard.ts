@@ -36,6 +36,13 @@ export const sidebarLinks: SidebarNavItem[] = [
       { href: "/dashboard/settings", icon: "settings", title: "Account" },
     ],
   },
+  {
+    title: "SUPPORT",
+    items: [
+      { href: "/dashboard/tickets", icon: "messageCircle", title: "Tickets" },
+      { href: "/dashboard/contact", icon: "mail", title: "Contact Us" },
+    ],
+  },
 ];
 
 

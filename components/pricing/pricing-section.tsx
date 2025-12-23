@@ -19,62 +19,59 @@ const PLANS = [
     {
         id: "free",
         name: "Free",
-        description: "For creators just getting started",
+        description: "Try out the core features",
         monthlyPrice: 0,
         yearlyPrice: 0,
         originalYearlyPrice: 0,
         icon: Sparkles,
         color: "from-gray-500 to-gray-600",
-        cta: "Try Free",
+        cta: "Start Free",
         features: [
-            { text: "1 analysis per week", included: true },
-            { text: "3 hooks (limited)", included: true },
-            { text: "1 format example", included: true },
-            { text: "Example videos", included: false, note: "blurred" },
-            { text: "Save analyses", included: false },
-            { text: "Copy to clipboard", included: false },
-            { text: "Refresh button", included: false },
+            { text: "3 video analyses/month", included: true },
+            { text: "5 optimizations/month", included: true },
+            { text: "2 format refreshes/month", included: true },
+            { text: "10 saved items", included: true },
+            { text: "Save breakdowns", included: false },
+            { text: "Priority support", included: false },
         ],
     },
     {
-        id: "starter",
-        name: "Starter",
-        description: "Perfect for growing creators",
-        monthlyPrice: 29,
-        yearlyPrice: 290,
-        originalYearlyPrice: 350, // Shows the "original" price crossed out
+        id: "creator",
+        name: "Creator",
+        description: "For growing content creators",
+        monthlyPrice: 12,
+        yearlyPrice: 99,
+        originalYearlyPrice: 144, // 12 * 12
         icon: Zap,
         color: "from-blue-500 to-indigo-600",
-        cta: "Start Posting With Confidence",
+        cta: "Start Creating",
         popular: true,
         features: [
-            { text: "3 analyses per week", included: true },
-            { text: "All hooks (10+)", included: true },
-            { text: "All format examples", included: true },
-            { text: "Example videos", included: true },
-            { text: "Save up to 10 analyses", included: true },
-            { text: "Copy to clipboard", included: true },
-            { text: "Weekly refreshed data", included: true },
+            { text: "20 video analyses/month", included: true },
+            { text: "30 optimizations/month", included: true },
+            { text: "10 format refreshes/month", included: true },
+            { text: "Unlimited saved items", included: true },
+            { text: "Save breakdowns", included: true },
+            { text: "All trending format details", included: true },
         ],
     },
     {
         id: "pro",
         name: "Pro",
         description: "For serious content creators",
-        monthlyPrice: 79,
-        yearlyPrice: 790,
-        originalYearlyPrice: 950, // Shows the "original" price crossed out
+        monthlyPrice: 29,
+        yearlyPrice: 249,
+        originalYearlyPrice: 348, // 29 * 12
         icon: Crown,
         color: "from-violet-500 to-purple-600",
-        cta: "Remove Guesswork Completely",
+        cta: "Go Pro",
         features: [
-            { text: "1 analysis per day", included: true },
-            { text: "Everything in Starter", included: true },
-            { text: "Daily refreshed trends", included: true },
-            { text: "Unlimited saved analyses", included: true },
-            { text: "Faster analysis generation", included: true },
-            { text: "Early access to new features", included: true },
+            { text: "60 video analyses/month", included: true },
+            { text: "Unlimited optimizations", included: true },
+            { text: "30 format refreshes/month", included: true },
+            { text: "Unlimited saved items", included: true },
             { text: "Priority support", included: true },
+            { text: "Early access to new features", included: true },
         ],
     },
 ];
@@ -82,7 +79,7 @@ const PLANS = [
 export function PricingSection({ userId, subscriptionPlan }: PricingSectionProps) {
     const [isAnnual, setIsAnnual] = useState(false);
 
-    const savings = 17; // 17% savings on annual
+    const savings = 30; // ~30% savings on annual
 
     return (
         <div className="container space-y-12">
@@ -198,9 +195,6 @@ export function PricingSection({ userId, subscriptionPlan }: PricingSectionProps
                                                 !feature.included && "text-muted-foreground line-through"
                                             )}>
                                                 {feature.text}
-                                                {feature.note && (
-                                                    <span className="text-muted-foreground"> ({feature.note})</span>
-                                                )}
                                             </span>
                                         </li>
                                     ))}
@@ -244,34 +238,33 @@ export function PricingSection({ userId, subscriptionPlan }: PricingSectionProps
 
                 <div className="space-y-4">
                     <div className="rounded-lg border p-4">
-                        <h3 className="font-semibold mb-2">What counts as an "analysis"?</h3>
+                        <h3 className="font-semibold mb-2">What counts as a &quot;video analysis&quot;?</h3>
                         <p className="text-sm text-muted-foreground">
-                            Each time you click "Analyze My Niche" and generate fresh hooks, formats,
-                            and hashtags, that counts as one analysis. The results remain visible until
-                            you run a new analysis.
+                            Each time you use the Video Breakdown tool to analyze your content, that counts as one analysis.
+                            Cover, Script, and Caption optimizers count toward your monthly optimization limit.
                         </p>
                     </div>
 
                     <div className="rounded-lg border p-4">
-                        <h3 className="font-semibold mb-2">When do my analysis credits reset?</h3>
+                        <h3 className="font-semibold mb-2">When do my credits reset?</h3>
                         <p className="text-sm text-muted-foreground">
-                            Free and Starter plans reset weekly (every Sunday). Pro plan resets daily at midnight.
+                            All plans reset on the 1st of each month. Unused credits do not roll over.
                         </p>
                     </div>
 
                     <div className="rounded-lg border p-4">
                         <h3 className="font-semibold mb-2">Can I cancel anytime?</h3>
                         <p className="text-sm text-muted-foreground">
-                            Yes! You can cancel your subscription at any time. You'll continue to have
+                            Yes! You can cancel your subscription at any time. You&apos;ll continue to have
                             access until the end of your billing period.
                         </p>
                     </div>
 
                     <div className="rounded-lg border p-4">
-                        <h3 className="font-semibold mb-2">Is my data secure?</h3>
+                        <h3 className="font-semibold mb-2">What are &quot;optimizations&quot;?</h3>
                         <p className="text-sm text-muted-foreground">
-                            Absolutely. We use industry-standard encryption and never share your data
-                            with third parties. Your saved analyses are private to your account.
+                            Optimizations include Cover Optimizer (thumbnail feedback), Script Optimizer, and Caption Optimizer.
+                            These are combined into one monthly limit on Free and Creator plans. Pro gets unlimited.
                         </p>
                     </div>
                 </div>

@@ -22,6 +22,7 @@ import {
   Loader2,
   LucideIcon,
   LucideProps,
+  Mail,
   MessagesSquare,
   MessageSquare,
   Moon,
@@ -189,4 +190,5 @@ export const Icons = {
   messageSquare: MessageSquare,
   image: Image,
   folder: Folder,
+  mail: Mail,
 };

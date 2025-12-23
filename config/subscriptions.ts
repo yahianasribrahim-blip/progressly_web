@@ -4,17 +4,16 @@ import { env } from "@/env.mjs";
 export const pricingData: SubscriptionPlan[] = [
   {
     title: "Free",
-    description: "For creators just getting started",
+    description: "Try out the core features",
     benefits: [
-      "1 analysis per week",
-      "3 hooks (limited)",
-      "1 format example",
-      "Basic trending data",
+      "3 video analyses/month",
+      "5 optimizations/month (cover, script, caption)",
+      "2 format refreshes/month",
+      "10 saved items (Content Bank + Trend Bank)",
     ],
     limitations: [
-      "No saved analyses",
-      "Example videos blurred",
-      "No copy functionality",
+      "Limited usage",
+      "Basic support only",
     ],
     prices: {
       monthly: 0,
@@ -26,21 +25,20 @@ export const pricingData: SubscriptionPlan[] = [
     },
   },
   {
-    title: "Starter",
-    description: "Perfect for growing creators",
+    title: "Creator",
+    description: "For growing content creators",
     benefits: [
-      "3 analyses per week",
-      "All hooks (10+)",
-      "All format examples",
-      "Example videos access",
-      "Save up to 10 analyses",
-      "Copy to clipboard",
-      "Weekly refreshed data",
+      "20 video analyses/month",
+      "30 optimizations/month (cover, script, caption)",
+      "10 format refreshes/month",
+      "Unlimited saved items",
+      "Save video breakdowns",
+      "All trending format details",
     ],
     limitations: [],
     prices: {
-      monthly: 29,
-      yearly: 290,
+      monthly: 12,
+      yearly: 99,
     },
     stripeIds: {
       monthly: env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PLAN_ID,
@@ -51,18 +49,17 @@ export const pricingData: SubscriptionPlan[] = [
     title: "Pro",
     description: "For serious content creators",
     benefits: [
-      "1 analysis per day",
-      "Everything in Starter",
-      "Daily refreshed trends",
-      "Unlimited saved analyses",
-      "Faster analysis generation",
-      "Early access to features",
+      "60 video analyses/month",
+      "Unlimited optimizations",
+      "30 format refreshes/month",
+      "Unlimited saved items",
       "Priority support",
+      "Early access to new features",
     ],
     limitations: [],
     prices: {
-      monthly: 79,
-      yearly: 790,
+      monthly: 29,
+      yearly: 249,
     },
     stripeIds: {
       monthly: env.NEXT_PUBLIC_STRIPE_BUSINESS_MONTHLY_PLAN_ID,
@@ -73,72 +70,98 @@ export const pricingData: SubscriptionPlan[] = [
 
 export const plansColumns = [
   "free",
-  "starter",
+  "creator",
   "pro",
 ] as const;
 
 export const comparePlans: PlansRow[] = [
   {
-    feature: "Analyses per period",
-    free: "1/week",
-    starter: "3/week",
-    pro: "1/day",
-    tooltip: "How many times you can run 'Analyze My Niche'",
+    feature: "Video Analyses",
+    free: "3/month",
+    creator: "20/month",
+    pro: "60/month",
+    tooltip: "AI breakdown of your video content",
   },
   {
-    feature: "Hooks provided",
-    free: "3",
-    starter: "10+",
-    pro: "10+",
-    tooltip: "Number of hook examples shown per analysis",
+    feature: "Cover Optimizer",
+    free: "5/month",
+    creator: "30/month",
+    pro: "Unlimited",
+    tooltip: "AI feedback on your thumbnails",
   },
   {
-    feature: "Format examples",
-    free: "1",
-    starter: "5+",
-    pro: "5+",
+    feature: "Script Optimizer",
+    free: "5/month",
+    creator: "30/month",
+    pro: "Unlimited",
+    tooltip: "AI improvement of your video scripts",
   },
   {
-    feature: "Example videos",
-    free: false,
-    starter: true,
-    pro: true,
-    tooltip: "Access to reference videos from top creators",
-  },
-  {
-    feature: "Hashtag groups",
-    free: true,
-    starter: true,
-    pro: true,
-  },
-  {
-    feature: "Copy to clipboard",
-    free: false,
-    starter: true,
-    pro: true,
-  },
-  {
-    feature: "Save analyses",
-    free: false,
-    starter: "Up to 10",
+    feature: "Caption Optimizer",
+    free: "5/month",
+    creator: "30/month",
     pro: "Unlimited",
   },
   {
-    feature: "Data refresh rate",
-    free: "Weekly",
-    starter: "Weekly",
-    pro: "Daily",
+    feature: "Trending Formats",
+    free: "2/month",
+    creator: "10/month",
+    pro: "30/month",
+    tooltip: "Refresh to discover new trending formats",
   },
   {
-    feature: "Priority support",
+    feature: "Content Bank",
+    free: "10 items",
+    creator: "Unlimited",
+    pro: "Unlimited",
+    tooltip: "Save video ideas for later",
+  },
+  {
+    feature: "Trend Bank",
+    free: "10 items",
+    creator: "Unlimited",
+    pro: "Unlimited",
+    tooltip: "Save trending formats to use later",
+  },
+  {
+    feature: "Saved Breakdowns",
     free: false,
-    starter: false,
+    creator: true,
+    pro: true,
+    tooltip: "Save full video analysis breakdowns",
+  },
+  {
+    feature: "Priority Support",
+    free: false,
+    creator: false,
     pro: true,
   },
   {
-    feature: "Early feature access",
+    feature: "Early Feature Access",
     free: false,
-    starter: false,
+    creator: false,
     pro: true,
   },
 ];
+
+// Usage limits for each plan
+export const planLimits = {
+  free: {
+    videoAnalyses: 3,
+    optimizations: 5, // Combined: cover + script + caption
+    formatRefreshes: 2,
+    savedItems: 10, // Content Bank + Trend Bank combined
+  },
+  creator: {
+    videoAnalyses: 20,
+    optimizations: 30,
+    formatRefreshes: 10,
+    savedItems: -1, // -1 = unlimited
+  },
+  pro: {
+    videoAnalyses: 60,
+    optimizations: -1, // unlimited
+    formatRefreshes: 30,
+    savedItems: -1,
+  },
+};
