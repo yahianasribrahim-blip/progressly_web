@@ -51,46 +51,46 @@ export const infos: InfoLdg[] = [
 
 export const features: FeatureLdg[] = [
   {
-    title: "Video Breakdown",
+    title: "Trending Topics",
     description:
-      "AI analyzes your video content and gives you specific suggestions to improve hooks, pacing, and overall engagement.",
-    link: "/",
-    icon: "video",
-  },
-  {
-    title: "Trending Formats",
-    description:
-      "Discover what's actually working on TikTok right now. Get format ideas tailored to your specific content creation style.",
+      "Discover what's trending in your niche right now. Get ahead of the curve with real-time trend analysis across all major platforms.",
     link: "/",
     icon: "trendingUp",
   },
   {
-    title: "Cover Optimizer",
+    title: "AI Content Ideas",
     description:
-      "Get AI feedback on your thumbnails to maximize click-through rates. Know exactly what to fix before you post.",
+      "Never run out of content ideas. Our AI generates video concepts, captions, and hooks tailored to your niche and audience.",
     link: "/",
-    icon: "image",
+    icon: "sparkles",
   },
   {
-    title: "Script Optimizer",
+    title: "Smart Hashtags",
     description:
-      "Transform your scripts with proven engagement patterns. Stronger hooks, better flow, and compelling CTAs.",
+      "Optimized hashtag sets that maximize your reach. We analyze what's working and avoid shadowbanned tags.",
     link: "/",
-    icon: "fileText",
+    icon: "hash",
   },
   {
-    title: "Caption Optimizer",
+    title: "Performance Analytics",
     description:
-      "Write captions that drive engagement. AI suggestions for hooks, hashtags, and calls-to-action.",
+      "Track your content performance across platforms. Understand what works and double down on winning strategies.",
     link: "/",
-    icon: "messageSquare",
+    icon: "lineChart",
   },
   {
-    title: "Content & Trend Bank",
+    title: "Best Time to Post",
     description:
-      "Save your favorite video ideas and trending formats. Build a library of content inspiration you can access anytime.",
+      "Know exactly when your audience is most active. Post at optimal times for maximum engagement.",
     link: "/",
-    icon: "folder",
+    icon: "calendar",
+  },
+  {
+    title: "Content Alerts",
+    description:
+      "Get notified about trending topics, engagement spikes, and potential content risks in real-time.",
+    link: "/",
+    icon: "bell",
   },
 ];
 
