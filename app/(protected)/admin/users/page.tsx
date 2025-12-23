@@ -42,7 +42,7 @@ export default async function AdminUsersPage() {
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
-            <UsersManagement users={users} />
+            <UsersManagement users={users} currentUserId={session.user.id} />
         </div>
     );
 }
