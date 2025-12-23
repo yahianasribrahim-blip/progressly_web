@@ -24,10 +24,10 @@ export default function BentoGrid() {
                   100%
                 </span>
               </div>
-              <h2 className="mt-6 text-center font-heading text-3xl md:text-4xl lg:text-[40px]">
+              <h2 className="mt-6 text-center font-medium text-lg">
                 Tailored
               </h2>
-              <p className="mt-3 text-center text-muted-foreground text-sm">
+              <p className="mt-2 text-center text-muted-foreground">
                 Each analysis comes with all of the data{" "}
                 <span className="italic font-semibold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
                   YOU
@@ -152,12 +152,12 @@ export default function BentoGrid() {
                 </div>
               </div>
 
-              <div className="relative z-10 mt-4 space-y-1.5 text-center">
+              <div className="relative z-10 mt-4 space-y-2 text-center">
                 <h2 className="text-lg font-medium text-foreground">
                   Stop Guessing Your Next Video
                 </h2>
                 <p className="text-muted-foreground">
-                  Clear, actionable recommendations based on what's already performing.
+                  Clear, actionable recommendations based on what&apos;s already performing.
                 </p>
               </div>
             </div>

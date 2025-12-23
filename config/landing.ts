@@ -51,46 +51,46 @@ export const infos: InfoLdg[] = [
 
 export const features: FeatureLdg[] = [
   {
-    title: "Trending Topics",
+    title: "Video Breakdown",
     description:
-      "Discover what's trending in your niche right now. Get ahead of the curve with real-time trend analysis across all major platforms.",
+      "AI analyzes your video content and gives you specific suggestions to improve hooks, pacing, and overall engagement.",
+    link: "/",
+    icon: "video",
+  },
+  {
+    title: "Trending Formats",
+    description:
+      "Discover what's actually working on TikTok right now. Get format ideas tailored to your specific content creation style.",
     link: "/",
     icon: "trendingUp",
   },
   {
-    title: "AI Content Ideas",
+    title: "Cover Optimizer",
     description:
-      "Never run out of content ideas. Our AI generates video concepts, captions, and hooks tailored to your niche and audience.",
+      "Get AI feedback on your thumbnails to maximize click-through rates. Know exactly what to fix before you post.",
     link: "/",
-    icon: "sparkles",
+    icon: "image",
   },
   {
-    title: "Smart Hashtags",
+    title: "Script Optimizer",
     description:
-      "Optimized hashtag sets that maximize your reach. We analyze what's working and avoid shadowbanned tags.",
+      "Transform your scripts with proven engagement patterns. Stronger hooks, better flow, and compelling CTAs.",
     link: "/",
-    icon: "hash",
+    icon: "fileText",
   },
   {
-    title: "Performance Analytics",
+    title: "Caption Optimizer",
     description:
-      "Track your content performance across platforms. Understand what works and double down on winning strategies.",
+      "Write captions that drive engagement. AI suggestions for hooks, hashtags, and calls-to-action.",
     link: "/",
-    icon: "lineChart",
+    icon: "messageSquare",
   },
   {
-    title: "Best Time to Post",
+    title: "Content & Trend Bank",
     description:
-      "Know exactly when your audience is most active. Post at optimal times for maximum engagement.",
+      "Save your favorite video ideas and trending formats. Build a library of content inspiration you can access anytime.",
     link: "/",
-    icon: "calendar",
-  },
-  {
-    title: "Content Alerts",
-    description:
-      "Get notified about trending topics, engagement spikes, and potential content risks in real-time.",
-    link: "/",
-    icon: "bell",
+    icon: "folder",
   },
 ];
 

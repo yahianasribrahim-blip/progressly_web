@@ -5,6 +5,7 @@ import HeroLanding from "@/components/sections/hero-landing";
 import InfoLanding from "@/components/sections/info-landing";
 import PreviewLanding from "@/components/sections/preview-landing";
 import ComparisonSection from "@/components/sections/comparison-section";
+import ToolsShowcase from "@/components/sections/tools-showcase";
 
 export default function IndexPage() {
   return (
@@ -12,6 +13,7 @@ export default function IndexPage() {
       <HeroLanding />
       <PreviewLanding />
       <BentoGrid />
+      <ToolsShowcase />
       <InfoLanding data={infos[0]} reverse={true} />
       <Features />
       <ComparisonSection />
