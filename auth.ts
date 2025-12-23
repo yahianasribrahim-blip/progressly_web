@@ -48,27 +48,12 @@ export const {
       return session;
     },
 
-    async jwt({ token, user, trigger }) {
+    async jwt({ token }) {
       if (!token.sub) return token;
-
-      // For initial sign-in, user object is passed
-      if (trigger === "signIn" && user) {
-        // New user or returning user - let them through
-        return token;
-      }
 
       const dbUser = await getUserById(token.sub);
 
-      // If user no longer exists (was deleted) but token.role exists (meaning they had a session before)
-      // then invalidate the session
-      if (!dbUser) {
-        if (token.role) {
-          // User was previously authenticated but now deleted
-          return null as unknown as typeof token;
-        }
-        // New user still being created, let them through
-        return token;
-      }
+      if (!dbUser) return token;
 
       token.name = dbUser.name;
       token.email = dbUser.email;
