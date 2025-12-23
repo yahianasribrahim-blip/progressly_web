@@ -80,7 +80,21 @@ export async function POST(request: Request) {
         ].filter(Boolean);
         const contentNiche = contentNicheParts.length > 0 ? contentNicheParts.join(". ") : null;
 
-        // First, ensure user has a profile
+        // First, verify the user exists in the database
+        const userExists = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { id: true },
+        });
+
+        if (!userExists) {
+            console.error("User not found in database:", session.user.id);
+            return NextResponse.json(
+                { error: "User not found. Please sign out and sign in again." },
+                { status: 404 }
+            );
+        }
+
+        // Then, ensure user has a profile
         let profile = await prisma.userProfile.findUnique({
             where: { userId: session.user.id },
         });
@@ -94,6 +108,7 @@ export async function POST(request: Request) {
                 },
             });
         }
+
 
         // Upsert creator setup
         const creatorSetup = await prisma.creatorSetup.upsert({
