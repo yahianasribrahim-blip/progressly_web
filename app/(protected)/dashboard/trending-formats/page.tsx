@@ -399,9 +399,6 @@ export default function TrendingFormatsPage() {
                             <TrendingUp className="h-4 w-4 mr-2" />
                             Get Fresh Formats
                         </Button>
-                        <p className="text-xs text-muted-foreground">
-                            ~{requestCount} API requests used per refresh
-                        </p>
                     </div>
                 </>
             )}

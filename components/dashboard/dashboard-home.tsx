@@ -120,7 +120,7 @@ export function DashboardHome({
             <div className="grid gap-4 md:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Analyses Left This Week</CardTitle>
+                        <CardTitle className="text-sm font-medium">Video Breakdowns</CardTitle>
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -128,34 +128,36 @@ export function DashboardHome({
                             {plan === "pro" ? "∞" : remaining}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {plan === "pro" ? "unlimited on Pro plan" : `resets every week`}
+                            {plan === "pro" ? "unlimited on Pro plan" : `left this week`}
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Your Plan</CardTitle>
+                        <CardTitle className="text-sm font-medium">Format Refreshes</CardTitle>
                         <Sparkles className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold capitalize">{plan}</div>
+                        <div className="text-2xl font-bold">
+                            {plan === "pro" ? "∞" : plan === "starter" ? "10" : "2"}
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                            {plan === "pro" ? "all features unlocked" : (
-                                <Link href="/dashboard/billing" className="text-violet-600 hover:underline">
-                                    upgrade for more
-                                </Link>
-                            )}
+                            {plan === "pro" ? "unlimited on Pro plan" : `per month`}
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Tools Available</CardTitle>
+                        <CardTitle className="text-sm font-medium">Optimizations</CardTitle>
                         <Zap className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">5</div>
-                        <p className="text-xs text-muted-foreground">ready to optimize your content</p>
+                        <div className="text-2xl font-bold">
+                            {plan === "pro" ? "∞" : plan === "starter" ? "20" : "5"}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            {plan === "pro" ? "unlimited on Pro plan" : `per month`}
+                        </p>
                     </CardContent>
                 </Card>
             </div>

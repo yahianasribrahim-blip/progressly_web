@@ -119,8 +119,11 @@ async function fetchGlobalTrendingVideos(count: number = 20): Promise<{ videos: 
     const allVideos: any[] = [];
     const seenIds = new Set<string>();
 
+    // Shuffle hashtags to get different results each refresh
+    const shuffledHashtags = [...TRENDING_HASHTAGS].sort(() => Math.random() - 0.5);
+
     // Try hashtags one by one (limit to 3 to save API calls)
-    for (const hashtag of TRENDING_HASHTAGS.slice(0, 3)) {
+    for (const hashtag of shuffledHashtags.slice(0, 3)) {
         if (allVideos.length >= count) break;
 
         try {
@@ -201,10 +204,14 @@ async function extractFormatsWithGemini(videos: any[], niche: string): Promise<T
         .map((v, i) => `Video ${i + 1}: "${v.description}" (${v.views} views, ${v.duration}s)`)
         .join("\n");
 
+    // Add a random seed to encourage different results each time
+    const variationSeed = Math.random().toString(36).substring(7);
+
     // The niche now includes their content creation style (e.g., "I film myself doing street racing" vs "I talk about racing history")
     const prompt = `You are a content strategist helping a Muslim content creator.
 
 THEIR CONTENT STYLE: "${nicheName}"
+VARIATION: Generate FRESH ideas (seed: ${variationSeed}) - DO NOT repeat common suggestions like "Day 1 vs Day 365" or "GRWM". Be creative and unique.
 
 This describes HOW they create content - whether they film themselves doing activities, create tutorials, do reviews, talk to camera, etc. Your suggestions MUST match their filming style.
 
