@@ -72,8 +72,30 @@ model User {
   savedIdeas SavedIdea[]
   savedTrends SavedTrend[]
   supportTickets SupportTicket[]
+  usageTracking UsageTracking?
 
   @@map(name: "users")
+}
+
+// Usage tracking for plan limits
+model UsageTracking {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Monthly counts
+  formatSearchesThisMonth Int      @default(0)
+  optimizationsThisMonth  Int      @default(0)
+  analysesThisMonth       Int      @default(0)
+  
+  // Month tracking for resets
+  currentMonth            Int      @default(1)
+  currentYear             Int      @default(2024)
+  
+  updatedAt               DateTime @updatedAt
+  
+  @@index([userId])
+  @@map(name: "usage_tracking")
 }
 
 model VerificationToken {

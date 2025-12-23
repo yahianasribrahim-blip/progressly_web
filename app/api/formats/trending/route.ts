@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { auth } from "@/auth";
+import { canUseFormatSearch, recordFormatSearchUsage } from "@/lib/user";
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
@@ -472,6 +473,17 @@ export async function GET(request: Request) {
         }, { status: 401 });
     }
 
+    // Check usage limits
+    const usageCheck = await canUseFormatSearch(session.user.id);
+    if (!usageCheck.allowed) {
+        return NextResponse.json({
+            success: false,
+            error: usageCheck.message || "Format search limit reached. Upgrade for more!",
+            limitReached: true,
+            remaining: usageCheck.remaining,
+        }, { status: 429 });
+    }
+
     // Get niche from query params
     const { searchParams } = new URL(request.url);
     const niche = searchParams.get("niche") || "general content";
@@ -525,6 +537,9 @@ export async function GET(request: Request) {
         }
 
         console.log(`Step 2 success: Extracted ${formats.length} formats for ${niche}`);
+
+        // Record usage on success
+        await recordFormatSearchUsage(session.user.id);
 
         return NextResponse.json({
             success: true,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { canUseAnalysis, recordAnalysisUsage } from "@/lib/user";
 import { GoogleGenerativeAI, Part, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 // Initialize Gemini
@@ -34,6 +35,16 @@ export async function POST(request: Request) {
 
         if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Check usage limits
+        const usageCheck = await canUseAnalysis(session.user.id);
+        if (!usageCheck.allowed) {
+            return NextResponse.json({
+                error: usageCheck.message || "Video analysis limit reached. Upgrade for more!",
+                limitReached: true,
+                remaining: usageCheck.remaining,
+            }, { status: 429 });
         }
 
         const body = await request.json();
@@ -302,6 +313,9 @@ export async function POST(request: Request) {
             creatorSetup,
             views
         );
+
+        // Record usage on success
+        await recordAnalysisUsage(session.user.id);
 
         return NextResponse.json({
             success: true,

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
     Video,
@@ -16,6 +17,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+
+interface UsageData {
+    formatSearches: { used: number; limit: number; unlimited: boolean };
+    optimizations: { used: number; limit: number; unlimited: boolean };
+    analyses: { used: number; limit: number; unlimited: boolean };
+}
+
 
 interface DashboardHomeProps {
     userId: string;
@@ -83,8 +91,38 @@ export function DashboardHome({
     limitMessage,
 }: DashboardHomeProps) {
     const greeting = getGreeting();
+    const [usageData, setUsageData] = useState<UsageData | null>(null);
+
+    useEffect(() => {
+        const fetchUsage = async () => {
+            try {
+                const res = await fetch("/api/usage");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        setUsageData(data.usage);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch usage:", error);
+            }
+        };
+        fetchUsage();
+    }, []);
+
+    // Calculate remaining values from usage data
+    const analysesRemaining = usageData?.analyses.unlimited
+        ? -1
+        : (usageData?.analyses.limit || 0) - (usageData?.analyses.used || 0);
+    const formatSearchesRemaining = usageData?.formatSearches.unlimited
+        ? -1
+        : (usageData?.formatSearches.limit || 0) - (usageData?.formatSearches.used || 0);
+    const optimizationsRemaining = usageData?.optimizations.unlimited
+        ? -1
+        : (usageData?.optimizations.limit || 0) - (usageData?.optimizations.used || 0);
 
     return (
+
         <div className="space-y-8">
             {/* Hero Section */}
             <div className="rounded-xl bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-pink-500/10 border p-6 md:p-8">
@@ -125,10 +163,10 @@ export function DashboardHome({
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {plan === "pro" ? "∞" : remaining}
+                            {analysesRemaining === -1 ? "∞" : usageData ? analysesRemaining : remaining}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {plan === "pro" ? "unlimited on Pro plan" : `left this week`}
+                            {analysesRemaining === -1 ? "unlimited on Pro plan" : `left this week`}
                         </p>
                     </CardContent>
                 </Card>
@@ -139,10 +177,10 @@ export function DashboardHome({
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {plan === "pro" ? "∞" : plan === "starter" ? "10" : "2"}
+                            {formatSearchesRemaining === -1 ? "∞" : usageData ? formatSearchesRemaining : (plan === "starter" ? "10" : "2")}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {plan === "pro" ? "unlimited on Pro plan" : `left this month`}
+                            {formatSearchesRemaining === -1 ? "unlimited on Pro plan" : `left this month`}
                         </p>
                     </CardContent>
                 </Card>
@@ -153,14 +191,15 @@ export function DashboardHome({
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {plan === "pro" ? "∞" : plan === "starter" ? "20" : "5"}
+                            {optimizationsRemaining === -1 ? "∞" : usageData ? optimizationsRemaining : (plan === "starter" ? "20" : "5")}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {plan === "pro" ? "unlimited on Pro plan" : `left this month`}
+                            {optimizationsRemaining === -1 ? "unlimited on Pro plan" : `left this month`}
                         </p>
                     </CardContent>
                 </Card>
             </div>
+
 
             {/* Optimizer Tools Grid */}
             <div>

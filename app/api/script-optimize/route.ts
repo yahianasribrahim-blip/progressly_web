@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
+import { canUseOptimization, recordOptimizationUsage } from "@/lib/user";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -25,6 +26,16 @@ export async function POST(request: Request) {
 
         if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Check usage limits
+        const usageCheck = await canUseOptimization(session.user.id);
+        if (!usageCheck.allowed) {
+            return NextResponse.json({
+                error: usageCheck.message || "Monthly optimization limit reached. Upgrade for more!",
+                limitReached: true,
+                remaining: usageCheck.remaining,
+            }, { status: 429 });
         }
 
         const body = await request.json();
@@ -76,6 +87,9 @@ export async function POST(request: Request) {
             niche || "",
             contextInfo
         );
+
+        // Record usage on success
+        await recordOptimizationUsage(session.user.id);
 
         return NextResponse.json({
             success: true,

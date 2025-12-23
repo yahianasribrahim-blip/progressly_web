@@ -236,42 +236,58 @@ export const canPerformAnalysis = async (
   }
 };
 
-// Record an analysis usage
-export const recordAnalysisUsage = async (userId: string): Promise<void> => {
-  const profile = await getUserProfile(userId);
-  if (!profile) return;
+// ============================================
+// DATABASE-BACKED USAGE TRACKING
+// ============================================
 
-  profile.analysesUsedThisWeek += 1;
-  profile.analysesUsedToday += 1;
-  profile.lastAnalysisDate = new Date();
-
-  mockProfiles.set(userId, profile);
-};
-
-// Helper to reset monthly counters if needed
-const resetMonthlyCountersIfNeeded = (profile: UserProfile): void => {
+// Get or create usage tracking record for user
+export const getOrCreateUsageTracking = async (userId: string) => {
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const currentMonth = now.getMonth() + 1; // 1-12
+  const currentYear = now.getFullYear();
 
-  if (!profile.monthStartDate || new Date(profile.monthStartDate) < monthStart) {
-    profile.formatRefreshesThisMonth = 0;
-    profile.optimizationsThisMonth = 0;
-    profile.monthStartDate = monthStart;
+  let tracking = await prisma.usageTracking.findUnique({
+    where: { userId },
+  });
+
+  if (!tracking) {
+    // Create new tracking record
+    tracking = await prisma.usageTracking.create({
+      data: {
+        userId,
+        currentMonth,
+        currentYear,
+        formatSearchesThisMonth: 0,
+        optimizationsThisMonth: 0,
+        analysesThisMonth: 0,
+      },
+    });
+  } else {
+    // Check if we need to reset for new month
+    if (tracking.currentMonth !== currentMonth || tracking.currentYear !== currentYear) {
+      tracking = await prisma.usageTracking.update({
+        where: { userId },
+        data: {
+          currentMonth,
+          currentYear,
+          formatSearchesThisMonth: 0,
+          optimizationsThisMonth: 0,
+          analysesThisMonth: 0,
+        },
+      });
+    }
   }
+
+  return tracking;
 };
 
-// Check if user can use a format refresh
-export const canUseFormatRefresh = async (
-  userId: string,
-  plan: "free" | "starter" | "pro"
+// Check if user can use a format search
+export const canUseFormatSearch = async (
+  userId: string
 ): Promise<{ allowed: boolean; remaining: number; message?: string }> => {
-  const profile = await getUserProfile(userId);
-  if (!profile) {
-    return { allowed: false, remaining: 0, message: "Profile not found" };
-  }
-
-  resetMonthlyCountersIfNeeded(profile);
-  mockProfiles.set(userId, profile);
+  const tracking = await getOrCreateUsageTracking(userId);
+  const subscription = await getUserSubscription(userId);
+  const plan = subscription?.plan || "free";
 
   if (plan === "pro") {
     return { allowed: true, remaining: -1 }; // unlimited
@@ -280,37 +296,34 @@ export const canUseFormatRefresh = async (
   const limit = plan === "starter"
     ? PLAN_LIMITS.starter.formatRefreshesPerMonth
     : PLAN_LIMITS.free.formatRefreshesPerMonth;
-  const remaining = limit - profile.formatRefreshesThisMonth;
+  const remaining = limit - tracking.formatSearchesThisMonth;
 
   return {
     allowed: remaining > 0,
     remaining,
-    message: remaining <= 0 ? "Monthly format refresh limit reached. Upgrade for more!" : undefined,
+    message: remaining <= 0 ? "Monthly Trending Format Search limit reached. Upgrade for more!" : undefined,
   };
 };
 
-// Record a format refresh usage
-export const recordFormatRefreshUsage = async (userId: string): Promise<void> => {
-  const profile = await getUserProfile(userId);
-  if (!profile) return;
 
-  resetMonthlyCountersIfNeeded(profile);
-  profile.formatRefreshesThisMonth += 1;
-  mockProfiles.set(userId, profile);
+// Record a format search usage
+export const recordFormatSearchUsage = async (userId: string): Promise<void> => {
+  await getOrCreateUsageTracking(userId); // Ensure record exists and reset if needed
+  await prisma.usageTracking.update({
+    where: { userId },
+    data: {
+      formatSearchesThisMonth: { increment: 1 },
+    },
+  });
 };
 
 // Check if user can use an optimization (script, caption, cover)
 export const canUseOptimization = async (
-  userId: string,
-  plan: "free" | "starter" | "pro"
+  userId: string
 ): Promise<{ allowed: boolean; remaining: number; message?: string }> => {
-  const profile = await getUserProfile(userId);
-  if (!profile) {
-    return { allowed: false, remaining: 0, message: "Profile not found" };
-  }
-
-  resetMonthlyCountersIfNeeded(profile);
-  mockProfiles.set(userId, profile);
+  const tracking = await getOrCreateUsageTracking(userId);
+  const subscription = await getUserSubscription(userId);
+  const plan = subscription?.plan || "free";
 
   if (plan === "pro") {
     return { allowed: true, remaining: -1 }; // unlimited
@@ -319,7 +332,7 @@ export const canUseOptimization = async (
   const limit = plan === "starter"
     ? PLAN_LIMITS.starter.optimizationsPerMonth
     : PLAN_LIMITS.free.optimizationsPerMonth;
-  const remaining = limit - profile.optimizationsThisMonth;
+  const remaining = limit - tracking.optimizationsThisMonth;
 
   return {
     allowed: remaining > 0,
@@ -330,10 +343,59 @@ export const canUseOptimization = async (
 
 // Record an optimization usage
 export const recordOptimizationUsage = async (userId: string): Promise<void> => {
-  const profile = await getUserProfile(userId);
-  if (!profile) return;
+  await getOrCreateUsageTracking(userId); // Ensure record exists and reset if needed
+  await prisma.usageTracking.update({
+    where: { userId },
+    data: {
+      optimizationsThisMonth: { increment: 1 },
+    },
+  });
+};
 
-  resetMonthlyCountersIfNeeded(profile);
-  profile.optimizationsThisMonth += 1;
-  mockProfiles.set(userId, profile);
+// Check if user can use a video analysis
+export const canUseAnalysis = async (
+  userId: string
+): Promise<{ allowed: boolean; remaining: number; message?: string }> => {
+  const tracking = await getOrCreateUsageTracking(userId);
+  const subscription = await getUserSubscription(userId);
+  const plan = subscription?.plan || "free";
+
+  if (plan === "pro") {
+    return { allowed: true, remaining: -1 }; // unlimited
+  }
+
+  // Uses analysesPerWeek limit (we track monthly but check weekly-ish limits)
+  const limit = plan === "starter"
+    ? PLAN_LIMITS.starter.analysesPerWeek
+    : PLAN_LIMITS.free.analysesPerWeek;
+  const remaining = limit - tracking.analysesThisMonth;
+
+  return {
+    allowed: remaining > 0,
+    remaining,
+    message: remaining <= 0 ? "Video analysis limit reached. Upgrade for more!" : undefined,
+  };
+};
+
+// Record an analysis usage
+export const recordAnalysisUsage = async (userId: string): Promise<void> => {
+  await getOrCreateUsageTracking(userId); // Ensure record exists and reset if needed
+  await prisma.usageTracking.update({
+    where: { userId },
+    data: {
+      analysesThisMonth: { increment: 1 },
+    },
+  });
+};
+
+// Get user's full usage data for dashboard
+export const getUserUsage = async (userId: string) => {
+  const tracking = await getOrCreateUsageTracking(userId);
+  return {
+    formatSearchesThisMonth: tracking.formatSearchesThisMonth,
+    optimizationsThisMonth: tracking.optimizationsThisMonth,
+    analysesThisMonth: tracking.analysesThisMonth,
+    currentMonth: tracking.currentMonth,
+    currentYear: tracking.currentYear,
+  };
 };
