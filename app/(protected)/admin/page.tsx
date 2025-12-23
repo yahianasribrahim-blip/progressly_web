@@ -107,11 +107,26 @@ export default async function AdminPage() {
   }
 
   // Calculate usage stats
-  const [totalSavedIdeas, totalSavedTrends, totalTickets] = await Promise.all([
+  const [totalSavedIdeas, totalSavedTrends, totalTickets, toolUsageAggregates] = await Promise.all([
     prisma.savedIdea.count(),
     prisma.savedTrend.count(),
     prisma.supportTicket.count(),
+    // Aggregate tool usage from UsageTracking
+    prisma.usageTracking.aggregate({
+      _sum: {
+        formatSearchesThisMonth: true,
+        optimizationsThisMonth: true,
+        analysesThisMonth: true,
+      },
+    }),
   ]);
+
+  // Extract tool usage totals
+  const toolUsage = {
+    videoBreakdowns: toolUsageAggregates._sum.analysesThisMonth || 0,
+    trendingFormats: toolUsageAggregates._sum.formatSearchesThisMonth || 0,
+    optimizations: toolUsageAggregates._sum.optimizationsThisMonth || 0,
+  };
 
   const stats = {
     totalUsers,
@@ -124,7 +139,9 @@ export default async function AdminPage() {
     totalSavedTrends,
     totalTickets,
     subscriptionBreakdown,
+    toolUsage,
   };
+
 
   return (
     <div className="p-6">

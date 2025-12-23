@@ -15,20 +15,16 @@ interface AdminStats {
     totalSavedTrends: number;
     totalTickets: number;
     subscriptionBreakdown: { stripePriceId: string | null; _count: number }[];
+    toolUsage: {
+        videoBreakdowns: number;
+        trendingFormats: number;
+        optimizations: number;
+    };
 }
 
 interface AdminDashboardProps {
     stats: AdminStats;
 }
-
-// Mock tools usage data - in production this would come from usage tracking
-const TOOLS_USAGE = [
-    { name: "Video Breakdown", count: 0, color: "bg-blue-500" },
-    { name: "Trending Formats", count: 0, color: "bg-purple-500" },
-    { name: "Cover Optimizer", count: 0, color: "bg-green-500" },
-    { name: "Script Optimizer", count: 0, color: "bg-orange-500" },
-    { name: "Caption Optimizer", count: 0, color: "bg-pink-500" },
-];
 
 // Price ID to plan name mapping
 const PRICE_NAMES: Record<string, string> = {
@@ -39,8 +35,16 @@ const PRICE_NAMES: Record<string, string> = {
 };
 
 export function AdminDashboard({ stats }: AdminDashboardProps) {
+    // Build tools usage from real stats
+    const TOOLS_USAGE = [
+        { name: "Video Breakdown", count: stats.toolUsage.videoBreakdowns, color: "bg-blue-500" },
+        { name: "Trending Formats", count: stats.toolUsage.trendingFormats, color: "bg-purple-500" },
+        { name: "Optimizations (Script/Caption/Cover)", count: stats.toolUsage.optimizations, color: "bg-green-500" },
+    ];
+
     // Calculate max usage for chart scaling
     const maxUsage = Math.max(...TOOLS_USAGE.map(t => t.count), 1);
+
 
     return (
         <div className="space-y-8">
@@ -118,7 +122,7 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
                             <BarChart3 className="h-5 w-5" />
                             Most Used Tools
                         </CardTitle>
-                        <CardDescription>Tool usage ranking (tracking coming soon)</CardDescription>
+                        <CardDescription>Aggregate tool usage this month</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {TOOLS_USAGE.map((tool, idx) => (
@@ -135,9 +139,7 @@ export function AdminDashboard({ stats }: AdminDashboardProps) {
                                 </div>
                             </div>
                         ))}
-                        <p className="text-xs text-muted-foreground pt-2">
-                            * Usage tracking will be implemented to show real data
-                        </p>
+
                     </CardContent>
                 </Card>
 
