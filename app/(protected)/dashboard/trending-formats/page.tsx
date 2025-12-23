@@ -186,6 +186,9 @@ export default function TrendingFormatsPage() {
                                         <Zap className="h-5 w-5 mr-2" />
                                         Get Trending Formats
                                     </Button>
+                                    <p className="text-xs text-muted-foreground mt-3">
+                                        Note: This counts as a Trending Format Search
+                                    </p>
                                 </>
                             ) : (
                                 <>
@@ -394,6 +397,9 @@ export default function TrendingFormatsPage() {
                             <TrendingUp className="h-4 w-4 mr-2" />
                             Get Fresh Formats
                         </Button>
+                        <p className="text-xs text-muted-foreground">
+                            Note: This counts as a Trending Format Search
+                        </p>
                     </div>
                 </>
             )}

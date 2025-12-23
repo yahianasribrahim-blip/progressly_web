@@ -224,9 +224,9 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                     </div>
                 );
 
-            case 1: // Content - New detailed questions
+            case 1: // Content - Simplified to 3 key questions
                 return (
-                    <div className="space-y-5">
+                    <div className="space-y-6">
                         <div>
                             <Label className="text-base font-semibold">Tell us about your content</Label>
                             <p className="text-sm text-muted-foreground mt-1">
@@ -234,56 +234,37 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                             </p>
                         </div>
 
-                        {/* Question 1: What activity */}
+                        {/* Question 1: What do you film */}
                         <div className="space-y-2">
-                            <Label className="text-sm font-medium">What exactly do you film yourself doing?</Label>
-                            <Input
-                                placeholder="e.g., Street racing BMWs, cooking halal recipes, reviewing tech products..."
+                            <Label className="text-sm font-medium">What do you film?</Label>
+                            <textarea
+                                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                placeholder="Example: I film myself street racing BMWs on public roads and occasionally at private track days. I also create car review content where I break down the specs and performance of different luxury vehicles, mostly German brands like BMW, Mercedes, and Porsche."
                                 value={formData.contentActivity}
                                 onChange={(e) => setFormData(prev => ({ ...prev, contentActivity: e.target.value }))}
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Be specific about the activity, not just the niche
-                            </p>
                         </div>
 
-                        {/* Question 2: How they film */}
+                        {/* Question 2: How do you film it */}
                         <div className="space-y-2">
-                            <Label className="text-sm font-medium">How do you typically film your videos?</Label>
-                            <Input
-                                placeholder="e.g., POV from inside the car, tripod in my kitchen, handheld walking..."
+                            <Label className="text-sm font-medium">How do you film it?</Label>
+                            <textarea
+                                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                placeholder="Example: Most of my content is POV footage from inside the car using a suction mount on the windshield. I use a GoPro for exterior shots of the car in motion. For review content, I set up a tripod outside and walk around the car explaining features. I film alone, so I can't do complex moving shots."
                                 value={formData.filmingStyle}
                                 onChange={(e) => setFormData(prev => ({ ...prev, filmingStyle: e.target.value }))}
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Camera angles, movement style, setup
-                            </p>
                         </div>
 
-                        {/* Question 3: Resources/Access */}
+                        {/* Question 3: Any restrictions or constraints */}
                         <div className="space-y-2">
-                            <Label className="text-sm font-medium">What locations or resources do you have access to?</Label>
-                            <Input
-                                placeholder="e.g., My home kitchen, public roads, no track access, small budget..."
-                                value={formData.resourcesAccess}
-                                onChange={(e) => setFormData(prev => ({ ...prev, resourcesAccess: e.target.value }))}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Include what you DON&apos;T have access to as well
-                            </p>
-                        </div>
-
-                        {/* Question 4: Constraints */}
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium">Any constraints or limitations?</Label>
-                            <Input
-                                placeholder="e.g., Can only film on weekends, limited editing skills, no face on camera..."
+                            <Label className="text-sm font-medium">Do you have any restrictions or constraints?</Label>
+                            <textarea
+                                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                placeholder="Example: I can only film on weekends since I work full-time. I don't have track access so I'm limited to public roads and parking lots. I prefer not to show my face on camera, and I have limited video editing skills so I need formats that don't require complex effects or transitions."
                                 value={formData.contentConstraints}
                                 onChange={(e) => setFormData(prev => ({ ...prev, contentConstraints: e.target.value }))}
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Time, skills, preferences that affect what you can create
-                            </p>
                         </div>
                     </div>
                 );
