@@ -221,8 +221,8 @@ export default function TicketsPage() {
                                     <div
                                         key={msg.id}
                                         className={`p-4 rounded-lg max-w-[75%] ${msg.isAdmin
-                                                ? "bg-purple-100 dark:bg-purple-900/30 ml-auto"
-                                                : "bg-muted"
+                                            ? "bg-purple-100 dark:bg-purple-900/30 ml-auto"
+                                            : "bg-muted"
                                             }`}
                                     >
                                         <p className="text-sm">{msg.content}</p>
@@ -322,10 +322,12 @@ export default function TicketsPage() {
             {/* Tickets List */}
             {tickets.length === 0 ? (
                 <Card className="border-dashed">
-                    <CardContent className="flex flex-col items-center justify-center py-16">
-                        <MessageCircle className="h-12 w-12 text-muted-foreground mb-4" />
-                        <p className="text-muted-foreground">No tickets yet</p>
-                        <Button variant="outline" className="mt-4" onClick={() => setShowNewTicket(true)}>
+                    <CardContent className="flex items-center justify-between py-6 px-8">
+                        <div className="flex items-center gap-3">
+                            <MessageCircle className="h-6 w-6 text-muted-foreground" />
+                            <p className="text-muted-foreground font-medium">No tickets yet</p>
+                        </div>
+                        <Button onClick={() => setShowNewTicket(true)}>
                             Open your first ticket
                         </Button>
                     </CardContent>

@@ -32,8 +32,8 @@ export default async function HeroLanding() {
           className="max-w-2xl text-balance leading-normal text-muted-foreground sm:text-xl sm:leading-8"
           style={{ animationDelay: "0.35s", animationFillMode: "forwards" }}
         >
-          Stop guessing what to post. Progressly uses AI to analyze trends across
-          Instagram, TikTok, and YouTube — giving you actionable content ideas
+          Stop guessing what to post. Progressly uses AI to analyze trends on
+          TikTok — giving you actionable content ideas
           that resonate with your audience.
         </p>
 
