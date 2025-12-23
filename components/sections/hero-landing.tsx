@@ -8,17 +8,13 @@ export default async function HeroLanding() {
   return (
     <section className="space-y-6 py-12 sm:py-20 lg:py-24">
       <div className="container flex max-w-5xl flex-col items-center gap-5 text-center">
-        <Link
-          href="/pricing"
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm", rounded: "full" }),
-            "px-4 border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/40",
-          )}
+        <div
+          className="px-4 py-2 rounded-full border bg-muted/50 text-sm text-center max-w-2xl"
         >
-          <span className="mr-2">🔥</span>
-          <span className="font-semibold text-amber-700 dark:text-amber-300">Limited Beta Pricing</span>
-          <span className="ml-2 text-muted-foreground">— Lock in 50% off forever</span>
-        </Link>
+          <span className="mr-2">⚡</span>
+          <span className="text-muted-foreground">Your competition is still doing video research manually.</span>
+          <span className="font-medium text-foreground ml-1">Be the first to let AI do it for you.</span>
+        </div>
 
         <h1 className="text-balance font-urban text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-[66px]">
           Stop Guessing.{" "}
