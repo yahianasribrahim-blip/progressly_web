@@ -60,8 +60,8 @@ export const {
         });
 
         if (dbUser?.isDeactivated) {
-          // Redirect to a page explaining the account is deactivated
-          return false;
+          // Redirect to account deactivated page
+          return "/account-deactivated";
         }
       }
       return true;

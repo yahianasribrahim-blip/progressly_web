@@ -13,18 +13,18 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { UserAvatar } from "@/components/shared/user-avatar";
 
-function DeleteAccountModal({
-  showDeleteAccountModal,
-  setShowDeleteAccountModal,
+function DeactivateAccountModal({
+  showDeactivateAccountModal,
+  setShowDeactivateAccountModal,
 }: {
-  showDeleteAccountModal: boolean;
-  setShowDeleteAccountModal: Dispatch<SetStateAction<boolean>>;
+  showDeactivateAccountModal: boolean;
+  setShowDeactivateAccountModal: Dispatch<SetStateAction<boolean>>;
 }) {
   const { data: session } = useSession();
-  const [deleting, setDeleting] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
 
-  async function deleteAccount() {
-    setDeleting(true);
+  async function deactivateAccount() {
+    setDeactivating(true);
     try {
       const res = await fetch(`/api/user`, {
         method: "DELETE",
@@ -44,21 +44,21 @@ function DeleteAccountModal({
           }, 500),
         );
       } else {
-        setDeleting(false);
-        const data = await res.json().catch(() => ({ error: "Failed to delete account" }));
-        throw new Error(data.error || "Failed to delete account");
+        setDeactivating(false);
+        const data = await res.json().catch(() => ({ error: "Failed to deactivate account" }));
+        throw new Error(data.error || "Failed to deactivate account");
       }
     } catch (err) {
-      setDeleting(false);
-      throw err instanceof Error ? err.message : "Failed to delete account";
+      setDeactivating(false);
+      throw err instanceof Error ? err.message : "Failed to deactivate account";
     }
   }
 
 
   return (
     <Modal
-      showModal={showDeleteAccountModal}
-      setShowModal={setShowDeleteAccountModal}
+      showModal={showDeactivateAccountModal}
+      setShowModal={setShowDeactivateAccountModal}
       className="gap-0"
     >
       <div className="flex flex-col items-center justify-center space-y-3 border-b p-4 pt-8 sm:px-16">
@@ -68,21 +68,24 @@ function DeleteAccountModal({
             image: session?.user?.image || null,
           }}
         />
-        <h3 className="text-lg font-semibold">Delete Account</h3>
+        <h3 className="text-lg font-semibold">Deactivate Account</h3>
         <p className="text-center text-sm text-muted-foreground">
           Your account will be <b>deactivated for 7 days</b> before permanent deletion.
-          Contact support within that time to reactivate.
         </p>
-
-        {/* TODO: Use getUserSubscriptionPlan(session.user.id) to display the user's subscription if he have a paid plan */}
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-200">
+          <p className="font-medium">You can restore your account anytime within 7 days!</p>
+          <p className="text-xs mt-1 text-amber-700 dark:text-amber-300">
+            Just log in again and you&apos;ll have the option to reactivate.
+          </p>
+        </div>
       </div>
 
       <form
         onSubmit={async (e) => {
           e.preventDefault();
-          toast.promise(deleteAccount(), {
-            loading: "Deleting account...",
-            success: "Account deleted successfully!",
+          toast.promise(deactivateAccount(), {
+            loading: "Deactivating account...",
+            success: "Account deactivated. You have 7 days to restore it.",
             error: (err) => err,
           });
         }}
@@ -92,7 +95,7 @@ function DeleteAccountModal({
           <label htmlFor="verification" className="block text-sm">
             To verify, type{" "}
             <span className="font-semibold text-black dark:text-white">
-              confirm delete account
+              confirm deactivate account
             </span>{" "}
             below
           </label>
@@ -100,7 +103,7 @@ function DeleteAccountModal({
             type="text"
             name="verification"
             id="verification"
-            pattern="confirm delete account"
+            pattern="confirm deactivate account"
             required
             autoFocus={false}
             autoComplete="off"
@@ -109,33 +112,38 @@ function DeleteAccountModal({
         </div>
 
         <Button
-          variant={deleting ? "disable" : "destructive"}
-          disabled={deleting}
+          variant={deactivating ? "disable" : "destructive"}
+          disabled={deactivating}
         >
-          Confirm delete account
+          Deactivate my account
         </Button>
       </form>
     </Modal>
   );
 }
 
-export function useDeleteAccountModal() {
-  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+export function useDeactivateAccountModal() {
+  const [showDeactivateAccountModal, setShowDeactivateAccountModal] = useState(false);
 
-  const DeleteAccountModalCallback = useCallback(() => {
+  const DeactivateAccountModalCallback = useCallback(() => {
     return (
-      <DeleteAccountModal
-        showDeleteAccountModal={showDeleteAccountModal}
-        setShowDeleteAccountModal={setShowDeleteAccountModal}
+      <DeactivateAccountModal
+        showDeactivateAccountModal={showDeactivateAccountModal}
+        setShowDeactivateAccountModal={setShowDeactivateAccountModal}
       />
     );
-  }, [showDeleteAccountModal, setShowDeleteAccountModal]);
+  }, [showDeactivateAccountModal, setShowDeactivateAccountModal]);
 
   return useMemo(
     () => ({
-      setShowDeleteAccountModal,
-      DeleteAccountModal: DeleteAccountModalCallback,
+      setShowDeactivateAccountModal,
+      DeactivateAccountModal: DeactivateAccountModalCallback,
     }),
-    [setShowDeleteAccountModal, DeleteAccountModalCallback],
+    [setShowDeactivateAccountModal, DeactivateAccountModalCallback],
   );
+}
+
+// Keep backwards compatibility with old hook name
+export function useDeleteAccountModal() {
+  return useDeactivateAccountModal();
 }
