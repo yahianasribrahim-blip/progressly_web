@@ -27,6 +27,7 @@ export default function TrendBankPage() {
     const [trends, setTrends] = useState<SavedTrend[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [isMuslimCreator, setIsMuslimCreator] = useState(false);
 
     const fetchTrends = async () => {
         try {
@@ -62,6 +63,19 @@ export default function TrendBankPage() {
 
     useEffect(() => {
         fetchTrends();
+        // Fetch Muslim creator status
+        async function fetchCreatorSetup() {
+            try {
+                const response = await fetch("/api/creator-setup");
+                const data = await response.json();
+                if (data.creatorSetup?.isMuslimCreator) {
+                    setIsMuslimCreator(true);
+                }
+            } catch (error) {
+                console.error("Error fetching creator setup:", error);
+            }
+        }
+        fetchCreatorSetup();
     }, []);
 
     return (
@@ -189,6 +203,23 @@ export default function TrendBankPage() {
                                         ))}
                                     </ul>
                                 </div>
+
+                                {/* Halal Audio - Only for Muslim creators */}
+                                {isMuslimCreator && trend.halalAudio?.length > 0 && (
+                                    <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                        <div className="flex items-center gap-2 font-medium text-sm mb-2">
+                                            <Volume2 className="h-4 w-4" />
+                                            Halal Audio Options
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {trend.halalAudio.map((audio, i) => (
+                                                <Badge key={i} variant="secondary" className="text-sm py-1 px-3">
+                                                    {audio}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Niches & Date */}
                                 <div className="flex items-center justify-between pt-2">

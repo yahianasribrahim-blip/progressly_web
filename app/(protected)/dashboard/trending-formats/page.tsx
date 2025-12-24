@@ -35,6 +35,7 @@ export default function TrendingFormatsPage() {
     // Map format.id -> database savedTrend.id for unsaving
     const [savedFormats, setSavedFormats] = useState<Map<string, string>>(new Map());
     const [savingId, setSavingId] = useState<string | null>(null);
+    const [isMuslimCreator, setIsMuslimCreator] = useState(false);
 
     // Fetch saved niche from creator settings on mount
     useEffect(() => {
@@ -44,6 +45,9 @@ export default function TrendingFormatsPage() {
                 const data = await response.json();
                 if (data.creatorSetup?.contentNiche) {
                     setNiche(data.creatorSetup.contentNiche);
+                }
+                if (data.creatorSetup?.isMuslimCreator) {
+                    setIsMuslimCreator(true);
                 }
             } catch (error) {
                 console.error("Error fetching saved niche:", error);
@@ -367,6 +371,27 @@ export default function TrendingFormatsPage() {
                                             ))}
                                         </ul>
                                     </div>
+
+                                    {/* Halal Audio Suggestions - Only for Muslim creators */}
+                                    {isMuslimCreator && format.halalAudioSuggestions?.length > 0 && (
+                                        <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                            <div className="flex items-center gap-2 font-medium text-sm mb-2">
+                                                <Volume2 className="h-4 w-4" />
+                                                Halal Audio Options
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {format.halalAudioSuggestions.map((audio, i) => (
+                                                    <Badge
+                                                        key={i}
+                                                        variant="secondary"
+                                                        className="text-sm py-1 px-3"
+                                                    >
+                                                        {audio}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         ))}
