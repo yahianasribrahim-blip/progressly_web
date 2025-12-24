@@ -698,20 +698,10 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                                 { duration: 5000 }
                                             );
                                         }}
-                                        disabled={isAnalyzing || !uploadedFile}
                                         className="gap-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700"
                                     >
-                                        {isAnalyzing ? (
-                                            <>
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                Analyzing...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Brain className="h-4 w-4" />
-                                                Analyze
-                                            </>
-                                        )}
+                                        <Clock className="h-4 w-4" />
+                                        Coming Soon
                                     </Button>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
