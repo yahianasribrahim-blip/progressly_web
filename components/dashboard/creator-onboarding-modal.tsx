@@ -515,7 +515,8 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                                         setFormData(prev => ({
                                             ...prev,
                                             isMuslimCreator: !!checked,
-                                            prefersNoMusic: checked ? prev.prefersNoMusic : false,
+                                            // Auto-set no music preference for Muslim creators
+                                            prefersNoMusic: !!checked,
                                         }))
                                     }
                                     className="mt-1"
@@ -530,31 +531,6 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                                     </p>
                                 </div>
                             </Label>
-
-                            {formData.isMuslimCreator && (
-                                <Label
-                                    className={cn(
-                                        "flex items-start gap-4 rounded-lg border p-4 cursor-pointer transition-all ml-6",
-                                        formData.prefersNoMusic
-                                            ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
-                                            : "hover:border-muted-foreground/50"
-                                    )}
-                                >
-                                    <Checkbox
-                                        checked={formData.prefersNoMusic}
-                                        onCheckedChange={(checked) =>
-                                            setFormData(prev => ({ ...prev, prefersNoMusic: !!checked }))
-                                        }
-                                        className="mt-1"
-                                    />
-                                    <div>
-                                        <p className="font-medium">No music in my videos</p>
-                                        <p className="text-sm text-muted-foreground mt-1">
-                                            I prefer nasheeds or no audio as alternatives.
-                                        </p>
-                                    </div>
-                                </Label>
-                            )}
                         </div>
 
                         <div className="rounded-lg bg-gradient-to-r from-violet-500/10 to-purple-500/10 p-4 border border-violet-200 dark:border-violet-800">

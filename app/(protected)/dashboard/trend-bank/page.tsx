@@ -190,21 +190,6 @@ export default function TrendBankPage() {
                                     </ul>
                                 </div>
 
-                                {/* Halal Audio */}
-                                <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                                    <div className="flex items-center gap-2 font-medium text-sm mb-2">
-                                        <Volume2 className="h-4 w-4" />
-                                        Halal Audio Options
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {trend.halalAudio.map((audio, i) => (
-                                            <Badge key={i} variant="secondary" className="text-sm py-1 px-3">
-                                                {audio}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </div>
-
                                 {/* Niches & Date */}
                                 <div className="flex items-center justify-between pt-2">
                                     <div className="flex items-center gap-2">
