@@ -633,12 +633,11 @@ Return a JSON object with this EXACT structure:
     },
     "settingType": "<specific: 'parking lot with Infiniti G37', 'home kitchen', 'bedroom with ring light'>",
     "audioType": "<'talking/voiceover', 'original audio with talking', 'background music only', 'mixed'>",
-    "cameraStyle": "<Analyze camera movement/stability: 'handheld' (shaky, natural hand movement), 'chest_mounted' (POV from chest height, stable but moves with body), 'tripod_static' (completely still, fixed position), 'gimbal_stabilized' (smooth movement, no shake), 'selfie_handheld' (facing creator, arm's length), 'screen_recording' (screen capture, no real camera)>",
     "productionQuality": "<'basic phone filming', 'good lighting and angles', 'professional production'>",
     "lessonsToApply": [
-        "<HALAL SUGGESTIONS ONLY - NEVER suggest: showing more body, showing outfit from different angles, filming from behind, wearing tighter clothes, showing more skin, emphasizing body parts, more dancing/movement. Instead focus on: hooks, captions, lighting, audio quality, editing, storytelling, posting timing, hashtags>",
-        "<Second tip - must be about CONTENT QUALITY not physical appearance>",
-        "<Third tip - be specific and actionable, focused on production not body>"
+        "<First, describe SPECIFICALLY what THIS video does well. Then add: 'In general, [why this technique works for any niche].' For example: 'The video uses tight close-ups to show texture. In general, close-ups make content more immersive and keep viewers watching longer.'>",
+        "<Second specific thing this video does. Then: 'This works because...' with a general principle. Focus on hooks, editing, pacing, audio - NOT appearance>",
+        "<Third specific thing. Then the general takeaway that applies to ANY niche>"
     ],
     "mistakesToAvoid": [
         "<What could be done better? Focus on editing, pacing, audio, hooks, captions - NOT on showing more body or outfit>",
@@ -646,13 +645,13 @@ Return a JSON object with this EXACT structure:
     ],
     "hookAnalysis": {
         "hookType": "<type: 'text overlay', 'verbal hook', 'visual hook', 'curiosity hook'>",
-        "effectiveness": "<why it works or doesn't work>",
+        "effectiveness": "<First describe exactly how THIS video's hook works. Then END with: 'The general principle: [1 sentence explaining why this type of hook works for ANY content].' Example: 'The video opens with a close-up of sizzling food which triggers curiosity. The general principle: starting with an intriguing visual or sound immediately captures attention before viewers scroll away.'>",
         "score": <1-10>
     },
     "replicabilityRequirements": [
-        "<FOR EDITS: focus on editing skills needed (e.g., 'Speed ramping skills', 'Color grading', 'Finding HD footage of the athletes'). FOR ORIGINAL CONTENT: focus on props/equipment needed (e.g., 'a modified car', 'ring light')>",
-        "<requirement 2 - make sure this matches the video type: editing skills for edits, physical items for original content>",
-        "<requirement 3>"
+        "<IMPORTANT: List GENERAL/ABSTRACT requirements that apply to ANY niche, not specific items from THIS video. For example, if video shows cooking: DON'T say 'tomatoes, pasta, cheese'. DO say 'Props/ingredients relevant to your specific niche' or 'Items you can demonstrate or transform in your niche'>",
+        "<Another GENERAL requirement. Example: Instead of 'a kitchen', say 'A clean, well-lit space relevant to your content'. Instead of 'BMW 740d', say 'A product/item in your niche with an interesting feature to showcase'>",
+        "<Third general requirement - focus on the TYPE of thing needed, not the specific item. E.g., 'Good close-up camera capability', 'Clear audio recording', 'Something that makes satisfying sounds in your niche'>"
     ],
     "whyItFlopped": "<ONLY fill this if the video has low views/engagement. Explain honestly: What went wrong? Algorithm issues? Hook failure? Wrong timing? Content problems? If video performed well, set to null>"
 }`;

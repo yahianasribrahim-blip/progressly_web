@@ -77,7 +77,12 @@ export async function POST(request: Request) {
         }
 
         const creatorContext = hasCreatorSetup ? `
-CREATOR'S NICHE/FOCUS: ${userNiche}
+⚠️⚠️⚠️ CRITICAL - THE CREATOR'S NICHE IS: ${userNiche} ⚠️⚠️⚠️
+THE ENTIRE VIDEO IDEA MUST BE ABOUT ${userNiche.toUpperCase()} - NOT the inspiration video's topic!
+
+If inspiration is about cooking but creator does ${userNiche} → idea must be about ${userNiche}
+If inspiration is about gaming but creator does ${userNiche} → idea must be about ${userNiche}
+NEVER generate an idea about cooking, food, or any topic that isn't ${userNiche}!
 
 CREATOR'S RESOURCES (CRITICAL - Generate ideas they can ACTUALLY make):
 - Team Size: ${teamSize === 1 ? "Solo creator (alone)" : `${teamSize} people`}
@@ -91,7 +96,8 @@ CREATOR'S RESOURCES (CRITICAL - Generate ideas they can ACTUALLY make):
 
 IMPORTANT: Tailor the video idea to fit their ${userNiche} content style while adapting the inspiration format.
 ` : `
-CREATOR'S NICHE/FOCUS: ${userNiche}
+⚠️⚠️⚠️ CRITICAL - THE CREATOR'S NICHE IS: ${userNiche} ⚠️⚠️⚠️
+THE ENTIRE VIDEO IDEA MUST BE ABOUT ${userNiche.toUpperCase()} - NOT the inspiration video's topic!
 
 CREATOR'S RESOURCES (Assume basic setup):
 - Solo creator

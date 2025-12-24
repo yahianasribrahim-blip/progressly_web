@@ -813,10 +813,6 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                         <div className="flex items-center gap-2 p-2 bg-background rounded-lg border">
                                             <span className="text-sm truncate">{videoAnalysis.audioType}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 p-2 bg-background rounded-lg border">
-                                            <Video className="h-4 w-4 text-purple-500 shrink-0" />
-                                            <span className="text-sm truncate">{videoAnalysis.cameraStyle}</span>
-                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
