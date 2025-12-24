@@ -104,7 +104,7 @@ IMPORTANT: Tailor the video idea to fit their ${userNiche} content style while a
 
         const isEditCompilation = inspirationVideo.contentFormat === "edit_compilation";
 
-        const prompt = isEditCompilation ? `You are a TikTok content strategist specializing in VIDEO EDITS. Based on this EDIT/COMPILATION video and the creator's editing capabilities, generate a PERSONALIZED, ACHIEVABLE edit plan.
+        const prompt = isEditCompilation ? `You are a TikTok content strategist specializing in VIDEO EDITS. Your job is to extract the UNDERLYING EDIT CONCEPT from an inspiration and help the creator apply it to THEIR specific niche.
 
 INSPIRATION EDIT:
 - Content Type: ${inspirationVideo.contentType}
@@ -112,7 +112,7 @@ INSPIRATION EDIT:
 - Celebrities/Athletes Featured: ${inspirationVideo.celebritiesDetected || "Unknown"}
 - What Made This Edit Work: ${inspirationVideo.whatWorked?.join(", ") || "N/A"}
 
-VIDEO INTENTION: ${videoIntention}
+VIDEO INTENTION/ABOUT: ${videoIntention}
 
 ${creatorContext}
 
@@ -123,36 +123,52 @@ ${userAnswers.map((a: { question: string; answer: string }) => `- ${a.question}:
 IMPORTANT: Respect these answers! If they said "no" to something, DO NOT suggest it.
 ` : ""}
 
-RULES FOR EDIT COMPILATIONS:
-1. This is an EDIT using existing footage - NOT original filming
-2. Focus on EDITING TECHNIQUES: transitions, effects, clip selection, pacing, music sync
-3. Suggest where to find source footage (YouTube highlights, official channels, etc.)
-4. Include specific editing software instructions if possible
-5. Break down the edit style: beat drops, zooms, speed ramps, text overlays, etc.
-6. Make it achievable with their editing setup
-7. NEVER suggest they need to film the athletes/celebrities themselves
+CRITICAL RULES FOR EDITS:
+1. EXTRACT THE EDIT CONCEPT - What TYPE of edit is this? Examples:
+   - "Fails/bloopers compilation"
+   - "Highlights/best moments montage"
+   - "Before/after transformation"
+   - "POV storytelling with cuts"
+
+2. APPLY TO THEIR NICHE - Once you identify the edit type, translate it to THEIR content:
+   - If they do car content and inspiration is "cooking fails" → suggest "car fails compilation" or "driving fails"
+   - If they do fitness and inspiration is "celebrity highlights" → suggest "athlete workout highlights"
+   - NEVER suggest they recreate the exact same edit with the same subjects
+
+3. FINDING CLIPS - Suggest WHERE to find clips in their niche:
+   - YouTube highlights/compilations for their topic
+   - Twitter/X for viral clips in their niche
+   - Reddit for community-sourced content
+   - Stock footage sites if appropriate
+
+4. EDITING TECHNIQUES - Keep the same edit STYLE:
+   - Transitions, effects, clip selection, pacing, music sync
+   - Beat drops, zooms, speed ramps, text overlays
+   - Make it achievable with their editing setup
+
+5. NEVER suggest they need to film celebrities/athletes themselves
 
 Return a JSON object with this EXACT structure:
 {
-    "title": "<catchy title for their edit idea>",
-    "concept": "<2-3 sentences explaining the edit style and why it works>",
+    "title": "<catchy title for their edit idea IN THEIR NICHE>",
+    "concept": "<2-3 sentences explaining: 1) What edit concept you extracted, 2) How you adapted it to their niche>",
     "estimatedDuration": "<e.g., '30-45 seconds'>",
     "shotByShot": [
         {
             "shotNumber": 1,
             "timestamp": "0:00-0:03",
-            "action": "<what clip to use and how to edit it>",
+            "action": "<what clip to use IN THEIR NICHE and how to edit it>",
             "cameraAngle": "<zoom, pan, or static - for the edit effect>",
             "lighting": "<color grading: dark, vibrant, vintage, etc.>",
             "notes": "<editing tips: speed ramp, beat sync, transition type>"
         }
     ],
-    "equipmentNeeded": ["<editing software>", "<source footage location>"],
-    "locationSuggestions": ["<N/A for edits - this is for source footage websites: YouTube, etc.>"],
+    "equipmentNeeded": ["<editing software>", "<where to find source footage FOR THEIR NICHE>"],
+    "locationSuggestions": ["<specific YouTube channels, subreddits, or sources FOR THEIR NICHE>"],
     "tipsForSuccess": ["<3-4 specific editing tips to make this pop>"]
 }`
 
-            : `You are a TikTok content strategist. Based on the inspiration video analysis and the creator's available resources, generate a PERSONALIZED, ACHIEVABLE video plan.
+            : `You are a TikTok content strategist. Your job is to extract the UNDERLYING CONCEPT or FORMAT from an inspiration video and help the creator apply it to THEIR specific niche and content style.
 
 INSPIRATION VIDEO:
 - Content Type: ${inspirationVideo.contentType}
@@ -161,7 +177,7 @@ INSPIRATION VIDEO:
 - What Worked: ${inspirationVideo.whatWorked?.join(", ") || "N/A"}
 - Scene Breakdown: ${JSON.stringify(inspirationVideo.sceneBreakdown || [])}
 
-VIDEO INTENTION: ${videoIntention}
+VIDEO INTENTION/ABOUT: ${videoIntention}
 
 ${creatorContext}
 
@@ -172,23 +188,43 @@ ${userAnswers.map((a: { question: string; answer: string }) => `- ${a.question}:
 IMPORTANT: Respect these answers! If they said "no" to something, DO NOT suggest it.
 ` : ""}
 
-RULES:
-1. STAY FOCUSED ON THE SAME TOPIC/PRODUCT - If the inspiration is about a dropshipping product, your idea must be for THAT SAME PRODUCT
-2. Do NOT generate ideas for a completely different product or topic - adapt the FORMAT/STYLE, not the subject
-3. Generate an idea that ADAPTS the filming style/format to what the creator can make with their resources
-4. If the inspiration requires equipment the creator doesn't have - suggest alternative ways to film THE SAME product/topic
-5. Provide SPECIFIC shot-by-shot instructions with timestamps
-6. Include camera angles and lighting for each shot
-7. Make it achievable in their time budget
-8. Keep the same energy/vibe as the inspiration but make it DOABLE
-9. NEVER suggest things they don't have access to
-10. NEVER end with explicit CTAs like "LIKE & FOLLOW" or "COMMENT BELOW" - TikTok algorithm HATES this. EXCEPTION: For content targeting kids under 12, a simple CTA is acceptable but not mandatory.
-11. NEVER suggest black screens or text-only outros asking questions. End on actual content, not engagement requests.
+CRITICAL RULES - READ CAREFULLY:
+1. EXTRACT THE UNDERLYING CONCEPT - Do NOT just copy the video. Ask yourself: "What is the FORMAT or CONCEPT that made this work?" For example:
+   - If the video shows a BMW with a quirky hidden feature → The concept is "showcasing an unexpected/quirky feature of something in your niche"
+   - If the video is a cooking fails compilation → The concept is "compilation of funny fails in a specific category"
+   - If the video is a POV story → The concept is "POV storytelling format"
+
+2. APPLY THE CONCEPT TO THE CREATOR'S NICHE - Once you identify the concept, translate it to what THEY do:
+   - If they review exotic cars and the inspiration shows a "hidden feature reveal" → suggest they find a car with a unique/quirky feature to showcase
+   - If they do food content and the inspiration is fails compilation → suggest finding cooking fails clips relevant to their food style
+   - NEVER just tell them to recreate the exact same thing - give them the PRINCIPLE to apply
+
+3. FOR EDITS/COMPILATIONS: If this is clearly an edit (multiple different people, celebrities, compilation):
+   - The idea should be about FINDING similar clips in their niche and editing them
+   - Example: If inspiration is "cooking fails compilation" and they do car content → suggest "car fails compilation" or "car crash fails"
+   - Tell them WHERE to find the source clips (YouTube, Twitter, etc.)
+
+4. BE CREATIVE AND ORIGINAL - The best ideas:
+   - Take the SPIRIT of what worked
+   - Apply it in a new, fresh way to their specific niche
+   - Are not obvious copies but clever adaptations
+
+5. TECHNICAL REQUIREMENTS:
+   - Generate an idea ADAPTED to their filming resources
+   - Provide SPECIFIC shot-by-shot instructions with timestamps
+   - Include camera angles and lighting for each shot
+   - Make it achievable in their time budget
+   - NEVER suggest things they don't have access to
+
+6. DO NOT:
+   - End with explicit CTAs like "LIKE & FOLLOW" or "COMMENT BELOW" - TikTok algorithm hates this
+   - Suggest black screens or text-only outros asking questions
+   - Just tell them to recreate the exact same video
 
 Return a JSON object with this EXACT structure:
 {
     "title": "<catchy title for their video idea>",
-    "concept": "<2-3 sentences explaining the adapted concept and why it works>",
+    "concept": "<2-3 sentences explaining: 1) What concept you extracted from the inspiration, 2) How you adapted it to their niche>",
     "estimatedDuration": "<e.g., '30-45 seconds'>",
     "shotByShot": [
         {

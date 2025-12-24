@@ -48,23 +48,21 @@ export function NewsletterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="flex gap-2">
-        <Input
-          type="email"
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="bg-background"
-          required
-        />
-        <Button type="submit" disabled={loading} size="sm">
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            "Subscribe"
-          )}
-        </Button>
-      </div>
+      <Input
+        type="email"
+        placeholder="Enter your email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="bg-background w-full"
+        required
+      />
+      <Button type="submit" disabled={loading} size="sm" className="w-full">
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          "Subscribe"
+        )}
+      </Button>
       {error && <p className="text-xs text-red-500">{error}</p>}
     </form>
   );

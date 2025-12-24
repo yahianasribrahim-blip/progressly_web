@@ -316,11 +316,11 @@ export function PricingSection({ userId, subscriptionPlan }: PricingSectionProps
                 </div>
             </div>
 
-            {/* Value Propositions - Conversion Section */}
+            {/* Value Propositions - Outcome Focused */}
             <div className="max-w-5xl mx-auto space-y-12 pt-8 border-t">
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold mb-3">Why Creators Choose Progressly</h2>
-                    <p className="text-muted-foreground">Real tools that help you understand what works</p>
+                    <h2 className="text-2xl font-bold mb-3">Stop Guessing. Start Growing.</h2>
+                    <p className="text-muted-foreground">The results you&apos;ll actually see</p>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-8">
@@ -328,82 +328,106 @@ export function PricingSection({ userId, subscriptionPlan }: PricingSectionProps
                         <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
                             <Zap className="h-6 w-6 text-white" />
                         </div>
-                        <h3 className="font-semibold">Save Hours of Research</h3>
+                        <h3 className="font-semibold">Save 5+ Hours Weekly</h3>
                         <p className="text-sm text-muted-foreground">
-                            Stop scrolling endlessly. Get instant insights on what hooks, formats, and styles are
-                            actually performing in your niche right now.
+                            Stop doom-scrolling for inspiration. Get instant breakdowns of what&apos;s working
+                            and actionable ideas you can film today.
                         </p>
                     </div>
                     <div className="text-center space-y-3">
                         <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                             <Sparkles className="h-6 w-6 text-white" />
                         </div>
-                        <h3 className="font-semibold">Learn from What Works</h3>
+                        <h3 className="font-semibold">Never Run Out of Ideas</h3>
                         <p className="text-sm text-muted-foreground">
-                            Break down viral videos to understand exactly why they performed.
-                            Apply those patterns to your own content strategy.
+                            Turn any video into content ideas tailored to YOUR style and setup.
+                            No more staring at a blank screen wondering what to post.
                         </p>
                     </div>
                     <div className="text-center space-y-3">
                         <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                             <Crown className="h-6 w-6 text-white" />
                         </div>
-                        <h3 className="font-semibold">Stay Ahead of Trends</h3>
+                        <h3 className="font-semibold">Post with Confidence</h3>
                         <p className="text-sm text-muted-foreground">
-                            Discover trending formats before they&apos;re oversaturated.
-                            Be the creator who sets trends, not follows them.
+                            Know your hook, script, and thumbnail are optimized BEFORE you post.
+                            Stop guessing and start knowing what works.
                         </p>
                     </div>
                 </div>
 
-                {/* Tools Preview */}
+                {/* Before/After Comparison */}
+                <div className="grid md:grid-cols-2 gap-6">
+                    <Card className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800/50">
+                        <CardContent className="pt-6">
+                            <h3 className="font-semibold mb-3 text-red-700 dark:text-red-400">❌ Without Progressly</h3>
+                            <ul className="space-y-2 text-sm text-muted-foreground">
+                                <li>• Hours scrolling trying to find inspiration</li>
+                                <li>• Copying videos without understanding WHY they work</li>
+                                <li>• Posting and praying it performs</li>
+                                <li>• Running out of ideas after 2 weeks</li>
+                                <li>• Inconsistent posting because you don&apos;t know what to make</li>
+                            </ul>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50">
+                        <CardContent className="pt-6">
+                            <h3 className="font-semibold mb-3 text-emerald-700 dark:text-emerald-400">✓ With Progressly</h3>
+                            <ul className="space-y-2 text-sm text-muted-foreground">
+                                <li>• Instant breakdown of any viral video</li>
+                                <li>• Personalized ideas based on YOUR filming style</li>
+                                <li>• Optimize hooks, scripts, and covers before posting</li>
+                                <li>• Endless ideas from trending formats in your niche</li>
+                                <li>• Clear shot-by-shot plans you can film immediately</li>
+                            </ul>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Problem/Solution Cards */}
                 <div className="grid md:grid-cols-2 gap-6">
                     <Card className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20 border-violet-200 dark:border-violet-800/50">
                         <CardContent className="pt-6">
-                            <h3 className="font-semibold mb-2">📊 Video Breakdown</h3>
+                            <h3 className="font-semibold mb-2">📊 &quot;I found a viral video but don&apos;t know how to make it MY way&quot;</h3>
                             <p className="text-sm text-muted-foreground">
-                                Analyze any video to extract hooks, formats, hashtags, and AI-powered insights.
-                                Plus get personalized content ideas based on your style.
+                                Paste any video link → Get a breakdown of why it works → Receive a personalized
+                                idea adapted to your equipment, locations, and style.
                             </p>
                         </CardContent>
                     </Card>
                     <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800/50">
                         <CardContent className="pt-6">
-                            <h3 className="font-semibold mb-2">🔥 Trending Formats</h3>
+                            <h3 className="font-semibold mb-2">🔥 &quot;I want to know what&apos;s trending before everyone else&quot;</h3>
                             <p className="text-sm text-muted-foreground">
-                                Discover what&apos;s working across TikTok and Instagram right now.
-                                Filter by niche and save formats to your Trend Bank.
+                                Browse trending formats in your niche → See why they&apos;re working →
+                                Save them to your Trend Bank and execute when ready.
                             </p>
                         </CardContent>
                     </Card>
                     <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border-emerald-200 dark:border-emerald-800/50">
                         <CardContent className="pt-6">
-                            <h3 className="font-semibold mb-2">✍️ Script & Caption Optimizer</h3>
+                            <h3 className="font-semibold mb-2">✍️ &quot;My scripts are good but my hooks aren&apos;t grabbing people&quot;</h3>
                             <p className="text-sm text-muted-foreground">
-                                Get AI feedback on your scripts and captions before posting.
-                                Improve engagement with data-backed suggestions.
+                                Paste your script → Get AI feedback on your hook, pacing, and CTA →
+                                Fix weak spots before you waste time filming.
                             </p>
                         </CardContent>
                     </Card>
                     <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800/50">
                         <CardContent className="pt-6">
-                            <h3 className="font-semibold mb-2">🎨 Cover Optimizer</h3>
+                            <h3 className="font-semibold mb-2">🎨 &quot;I don&apos;t know if my thumbnail will make people click&quot;</h3>
                             <p className="text-sm text-muted-foreground">
-                                Upload your thumbnail or cover and get instant feedback.
-                                Optimize for maximum click-through rate.
+                                Upload your cover → Get instant feedback on contrast, text, and composition →
+                                Maximize your click-through rate before posting.
                             </p>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Social Proof */}
-                <div className="text-center py-6 rounded-xl bg-muted/50">
-                    <p className="text-sm text-muted-foreground mb-2">Trusted by content creators across</p>
-                    <div className="flex justify-center items-center gap-6 text-lg font-medium">
-                        <span>🎬 YouTube</span>
-                        <span>📱 TikTok</span>
-                        <span>📸 Instagram</span>
-                    </div>
+                {/* Bottom CTA */}
+                <div className="text-center py-8 rounded-xl bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-200 dark:border-violet-800">
+                    <h3 className="text-xl font-bold mb-2">Ready to stop guessing?</h3>
+                    <p className="text-muted-foreground mb-4">Join creators who know exactly what to post, when to post, and why it works.</p>
                 </div>
             </div>
 
