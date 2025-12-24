@@ -14,6 +14,7 @@ import {
     Loader2,
     Check,
     Video,
+    Rocket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +60,7 @@ interface FormData {
 }
 
 const STEPS = [
+    { id: "intro", title: "Welcome", icon: Rocket },
     { id: "team", title: "Your Team", icon: Users },
     { id: "content", title: "Your Content", icon: Video },
     { id: "device", title: "Your Device", icon: Smartphone },
@@ -166,7 +168,45 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
 
     const renderStepContent = () => {
         switch (currentStep) {
-            case 0: // Team
+            case 0: // Intro
+                return (
+                    <div className="space-y-6 text-center py-4">
+                        <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                            <Rocket className="h-8 w-8 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold">Let&apos;s Personalize Your Experience</h3>
+                            <p className="text-muted-foreground mt-2">
+                                You&apos;re about to answer a few quick questions that will shape your entire Progressly experience.
+                            </p>
+                        </div>
+
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-left">
+                            <p className="font-semibold text-amber-800 dark:text-amber-200 mb-2">
+                                ⚠️ This is important!
+                            </p>
+                            <p className="text-sm text-amber-700 dark:text-amber-300">
+                                <strong>Answer in as much detail as possible.</strong> The quality of your AI recommendations,
+                                video ideas, and format suggestions depends entirely on how well we understand your content.
+                                Vague answers = generic recommendations. Detailed answers = personalized, actionable insights
+                                that actually apply to YOUR content.
+                            </p>
+                        </div>
+
+                        <div className="space-y-2 text-left bg-muted/50 rounded-lg p-4">
+                            <p className="text-sm font-medium">What we&apos;ll cover:</p>
+                            <ul className="text-sm text-muted-foreground space-y-1">
+                                <li>✓ What kind of content you create</li>
+                                <li>✓ Your filming setup and equipment</li>
+                                <li>✓ Your time commitment and experience</li>
+                                <li>✓ Any preferences or constraints</li>
+                            </ul>
+                            <p className="text-xs text-muted-foreground mt-3">Takes about 2 minutes</p>
+                        </div>
+                    </div>
+                );
+
+            case 1: // Team
                 return (
                     <div className="space-y-6">
                         <div>
@@ -206,7 +246,7 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                     </div>
                 );
 
-            case 1: // Content - Simplified to 3 key questions
+            case 2: // Content - Simplified to 3 key questions
                 return (
                     <div className="space-y-6">
                         <div>
@@ -251,7 +291,7 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                     </div>
                 );
 
-            case 2: // Device
+            case 3: // Device
                 return (
                     <div className="space-y-6">
                         <div>
@@ -284,7 +324,7 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                     </div>
                 );
 
-            case 3: // Equipment & Props
+            case 4: // Equipment & Props
                 return (
                     <div className="space-y-6">
                         <div>
@@ -357,7 +397,7 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                 );
 
 
-            case 4: // Time
+            case 5: // Time
                 return (
                     <div className="space-y-8">
                         <div>
@@ -413,7 +453,7 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                     </div>
                 );
 
-            case 5: // Experience
+            case 6: // Experience
                 return (
                     <div className="space-y-6">
                         <div>
@@ -452,7 +492,7 @@ export function CreatorOnboardingModal({ isOpen, onComplete }: CreatorOnboarding
                     </div>
                 );
 
-            case 6: // Preferences
+            case 7: // Preferences
                 return (
                     <div className="space-y-6">
                         <div>

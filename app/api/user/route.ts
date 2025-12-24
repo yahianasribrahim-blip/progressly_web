@@ -13,19 +13,24 @@ export async function DELETE() {
             );
         }
 
-        // Delete user and all related data (cascades are set in Prisma schema)
-        await prisma.user.delete({
+        // Soft delete - mark account as deactivated instead of permanent delete
+        // Account will be permanently deleted after 7 days by admin or scheduled job
+        await prisma.user.update({
             where: { id: session.user.id },
+            data: {
+                isDeactivated: true,
+                deactivatedAt: new Date(),
+            },
         });
 
         return NextResponse.json({
             success: true,
-            message: "Account deleted successfully",
+            message: "Account scheduled for deletion. You have 7 days to reactivate.",
         });
     } catch (error) {
-        console.error("Error deleting account:", error);
+        console.error("Error deactivating account:", error);
         return NextResponse.json(
-            { error: "Failed to delete account" },
+            { error: "Failed to deactivate account" },
             { status: 500 }
         );
     }

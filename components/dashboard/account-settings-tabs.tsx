@@ -38,6 +38,9 @@ interface CreatorSetup {
     isMuslimCreator: boolean;
     prefersNoMusic: boolean;
     contentNiche: string | null;
+    contentActivity: string | null;
+    filmingStyle: string | null;
+    contentConstraints: string | null;
 }
 
 const TARGET_AUDIENCES = [
@@ -156,24 +159,48 @@ export function AccountSettingsTabs({ user }: AccountSettingsTabsProps) {
                             </div>
                         ) : creatorSetup ? (
                             <>
-                                {/* Content Creation Style - Most Important */}
-                                <div className="space-y-2">
-                                    <Label className="flex items-center gap-2">
+                                {/* Content Details - From Onboarding */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 mb-2">
                                         <Sparkles className="h-4 w-4 text-purple-500" />
-                                        Content Creation Style
-                                    </Label>
+                                        <Label className="text-base font-semibold">Your Content Details</Label>
+                                    </div>
                                     <p className="text-sm text-muted-foreground">
-                                        Describe HOW you create content. This helps us suggest formats that match your filming style.
+                                        These answers shape all your AI recommendations. The more detail you provide, the better your suggestions will be.
                                     </p>
-                                    <Input
-                                        value={creatorSetup.contentNiche || ""}
-                                        onChange={(e) => updateSetup("contentNiche", e.target.value)}
-                                        placeholder="e.g., I film myself doing street racing, I cook halal recipes at home..."
-                                        className="max-w-md"
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        Include both WHAT you do and HOW you film it (tutorials, vlogs, action footage, etc.)
-                                    </p>
+
+                                    {/* What do you film */}
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium">What do you film?</Label>
+                                        <textarea
+                                            className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                            value={creatorSetup.contentActivity || ""}
+                                            onChange={(e) => updateSetup("contentActivity", e.target.value)}
+                                            placeholder="Example: I film myself street racing BMWs on public roads and occasionally at private track days..."
+                                        />
+                                    </div>
+
+                                    {/* How do you film it */}
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium">How do you film it?</Label>
+                                        <textarea
+                                            className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                            value={creatorSetup.filmingStyle || ""}
+                                            onChange={(e) => updateSetup("filmingStyle", e.target.value)}
+                                            placeholder="Example: Most of my content is POV footage from inside the car using a suction mount..."
+                                        />
+                                    </div>
+
+                                    {/* Any restrictions */}
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium">Any restrictions or constraints?</Label>
+                                        <textarea
+                                            className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                            value={creatorSetup.contentConstraints || ""}
+                                            onChange={(e) => updateSetup("contentConstraints", e.target.value)}
+                                            placeholder="Example: I can only film on weekends, I prefer not to show my face..."
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Target Audience */}

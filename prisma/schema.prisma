@@ -78,6 +78,10 @@ model User {
   affiliate     Affiliate?
   referredBy    Referral?   @relation("ReferredUser")
 
+  // Soft delete - account deactivation
+  isDeactivated  Boolean   @default(false)
+  deactivatedAt  DateTime?
+
   @@map(name: "users")
 }
 

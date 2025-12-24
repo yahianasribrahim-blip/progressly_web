@@ -51,6 +51,22 @@ export const {
     },
   },
   callbacks: {
+    async signIn({ user }) {
+      // Block deactivated users from logging in
+      if (user.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { isDeactivated: true },
+        });
+
+        if (dbUser?.isDeactivated) {
+          // Redirect to a page explaining the account is deactivated
+          return false;
+        }
+      }
+      return true;
+    },
+
     async session({ token, session }) {
       if (session.user) {
         if (token.sub) {

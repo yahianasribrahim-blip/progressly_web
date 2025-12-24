@@ -70,8 +70,8 @@ function DeleteAccountModal({
         />
         <h3 className="text-lg font-semibold">Delete Account</h3>
         <p className="text-center text-sm text-muted-foreground">
-          <b>Warning:</b> This will permanently delete your account and your
-          active subscription!
+          Your account will be <b>deactivated for 7 days</b> before permanent deletion.
+          Contact support within that time to reactivate.
         </p>
 
         {/* TODO: Use getUserSubscriptionPlan(session.user.id) to display the user's subscription if he have a paid plan */}
