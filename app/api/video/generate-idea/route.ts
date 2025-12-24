@@ -77,12 +77,18 @@ export async function POST(request: Request) {
         }
 
         const creatorContext = hasCreatorSetup ? `
-⚠️⚠️⚠️ CRITICAL - THE CREATOR'S NICHE IS: ${userNiche} ⚠️⚠️⚠️
-THE ENTIRE VIDEO IDEA MUST BE ABOUT ${userNiche.toUpperCase()} - NOT the inspiration video's topic!
+THE CREATOR'S NICHE IS: ${userNiche}
 
-If inspiration is about cooking but creator does ${userNiche} → idea must be about ${userNiche}
-If inspiration is about gaming but creator does ${userNiche} → idea must be about ${userNiche}
-NEVER generate an idea about cooking, food, or any topic that isn't ${userNiche}!
+YOUR JOB:
+1. STUDY the inspiration video - understand WHY it worked (the format, style, pacing, hook, vibes)
+2. EXTRACT the concept/technique that made it successful
+3. APPLY that same concept/technique to ${userNiche} content
+
+Example: If inspiration is ASMR cooking with close-ups and satisfying sounds:
+- KEEP: Close-up shots, satisfying sounds, no talking, relaxing vibes
+- CHANGE: Instead of cooking → apply to ${userNiche} (e.g., car sounds, textures, details)
+
+The value is in understanding WHY the inspiration worked, then recreating that magic in their niche.
 
 CREATOR'S RESOURCES (CRITICAL - Generate ideas they can ACTUALLY make):
 - Team Size: ${teamSize === 1 ? "Solo creator (alone)" : `${teamSize} people`}
@@ -93,19 +99,21 @@ CREATOR'S RESOURCES (CRITICAL - Generate ideas they can ACTUALLY make):
 - Available Props: ${availableProps.length > 0 ? availableProps.join(", ") : "Basic items"}
 - Filming Locations: ${filmingLocations.join(", ")}
 - Prefers No Music: ${prefersNoMusic ? "Yes" : "No"}
-
-IMPORTANT: Tailor the video idea to fit their ${userNiche} content style while adapting the inspiration format.
 ` : `
-⚠️⚠️⚠️ CRITICAL - THE CREATOR'S NICHE IS: ${userNiche} ⚠️⚠️⚠️
-THE ENTIRE VIDEO IDEA MUST BE ABOUT ${userNiche.toUpperCase()} - NOT the inspiration video's topic!
+THE CREATOR'S NICHE IS: ${userNiche}
+
+YOUR JOB:
+1. STUDY the inspiration video - understand WHY it worked (the format, style, pacing, hook, vibes)
+2. EXTRACT the concept/technique that made it successful
+3. APPLY that same concept/technique to ${userNiche} content
+
+The value is in understanding WHY the inspiration worked, then recreating that magic in their niche.
 
 CREATOR'S RESOURCES (Assume basic setup):
 - Solo creator
 - Smartphone camera
 - 1-2 hours per video
 - Home filming location
-
-IMPORTANT: Tailor the video idea to fit their ${userNiche} content style while adapting the inspiration format.
 `;
 
         const isEditCompilation = inspirationVideo.contentFormat === "edit_compilation";
