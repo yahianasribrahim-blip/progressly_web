@@ -27,8 +27,11 @@ export default function AffiliatePage() {
     // Creator: $12/month, Pro: $29/month
     const price = plan === "creator" ? 12 : 29;
     const commission = price * 0.25;
-    const monthlyEarnings = referrals * commission;
-    const yearlyEarnings = monthlyEarnings * 12;
+    // Monthly earnings after building up for 12 months (referrals * 12 = total users paying)
+    const monthlyEarnings = referrals * 12 * commission;
+    // Cumulative yearly earnings: 12x + 11x + 10x + ... + 1x = 78x total commission months
+    // This represents building up referrals each month over a year
+    const yearlyEarnings = referrals * commission * 78;
 
     return (
         <>
@@ -196,18 +199,25 @@ export default function AffiliatePage() {
                                     </Button>
                                 </div>
                             </div>
+                            <div className="p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200 dark:border-violet-800">
+                                <p className="text-center text-muted-foreground">
+                                    If you signed up <span className="font-bold text-violet-600">{referrals} users</span> every single month for the next year, you would have <span className="font-bold text-violet-600">${yearlyEarnings.toLocaleString()}</span> by the end.
+                                </p>
+                            </div>
                             <div className="pt-6 border-t grid grid-cols-2 gap-6">
                                 <div className="text-center p-4 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
                                     <p className="text-sm text-muted-foreground mb-1">Monthly Earnings</p>
                                     <p className="text-3xl font-bold text-violet-600">
                                         ${monthlyEarnings.toFixed(0)}
                                     </p>
+                                    <p className="text-xs text-muted-foreground mt-1">per month (after 12 months)</p>
                                 </div>
                                 <div className="text-center p-4 bg-gradient-to-r from-violet-100 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 rounded-lg">
-                                    <p className="text-sm text-muted-foreground mb-1">Yearly Earnings</p>
+                                    <p className="text-sm text-muted-foreground mb-1">First Year Total</p>
                                     <p className="text-3xl font-bold text-violet-600">
-                                        ${yearlyEarnings.toFixed(0)}
+                                        ${yearlyEarnings.toLocaleString()}
                                     </p>
+                                    <p className="text-xs text-muted-foreground mt-1">cumulative earnings</p>
                                 </div>
                             </div>
                         </CardContent>
