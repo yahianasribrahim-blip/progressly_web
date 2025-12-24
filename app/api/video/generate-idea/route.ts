@@ -123,30 +123,41 @@ ${userAnswers.map((a: { question: string; answer: string }) => `- ${a.question}:
 IMPORTANT: Respect these answers! If they said "no" to something, DO NOT suggest it.
 ` : ""}
 
-CRITICAL RULES FOR EDITS:
-1. EXTRACT THE EDIT CONCEPT - What TYPE of edit is this? Examples:
-   - "Fails/bloopers compilation"
-   - "Highlights/best moments montage"
-   - "Before/after transformation"
-   - "POV storytelling with cuts"
+CRITICAL RULES FOR EDITS - READ VERY CAREFULLY:
 
-2. APPLY TO THEIR NICHE - Once you identify the edit type, translate it to THEIR content:
-   - If they do car content and inspiration is "cooking fails" → suggest "car fails compilation" or "driving fails"
-   - If they do fitness and inspiration is "celebrity highlights" → suggest "athlete workout highlights"
-   - NEVER suggest they recreate the exact same edit with the same subjects
+**RULE #1: TRANSLATE THE EDIT TYPE TO THEIR NICHE**
+The inspiration shows a compilation or edit in ONE category. You must translate it to THEIR niche.
 
-3. FINDING CLIPS - Suggest WHERE to find clips in their niche:
-   - YouTube highlights/compilations for their topic
-   - Twitter/X for viral clips in their niche
-   - Reddit for community-sourced content
-   - Stock footage sites if appropriate
+WRONG vs RIGHT examples:
+- Creator does CAR CONTENT, inspiration is "cooking fails compilation"
+  ❌ WRONG: "Make a cooking fails compilation" (not their niche!)
+  ✓ RIGHT: "Make a CAR fails/crashes compilation - find clips from r/IdiotsInCars or YouTube"
 
-4. EDITING TECHNIQUES - Keep the same edit STYLE:
-   - Transitions, effects, clip selection, pacing, music sync
-   - Beat drops, zooms, speed ramps, text overlays
-   - Make it achievable with their editing setup
+- Creator does FITNESS CONTENT, inspiration is "celebrity basketball highlights"
+  ❌ WRONG: "Make basketball highlights"
+  ✓ RIGHT: "Make athlete/gym motivation highlights - find clips from fitness YouTube channels"
+
+- Creator does GAMING CONTENT, inspiration is "soccer fails"
+  ❌ WRONG: "Make soccer fails compilation"
+  ✓ RIGHT: "Make GAMING fails compilation - find clips from Twitch fails, YouTube gaming fails"
+
+**RULE #2: ALWAYS CHECK THE CREATOR'S NICHE FIRST**
+Look at "CREATOR'S NICHE/FOCUS" above. The entire idea MUST be about their niche, not the inspiration's topic.
+
+**RULE #3: FIND CLIPS IN THEIR NICHE**
+Suggest WHERE to find clips that match their content:
+- YouTube: "[their niche] fails", "[their niche] highlights"
+- Reddit: subreddits about their topic (r/IdiotsInCars for cars, r/gym for fitness)
+- Twitter/X: viral clips in their niche
+- Stock footage if appropriate
+
+**RULE #4: KEEP THE EDIT STYLE, CHANGE THE SUBJECT**
+- Same editing techniques: transitions, effects, pacing, music sync
+- Same vibe: funny, dramatic, satisfying, motivational
+- DIFFERENT subject: their niche, not the inspiration's topic
 
 5. NEVER suggest they need to film celebrities/athletes themselves
+
 
 Return a JSON object with this EXACT structure:
 {
@@ -188,36 +199,53 @@ ${userAnswers.map((a: { question: string; answer: string }) => `- ${a.question}:
 IMPORTANT: Respect these answers! If they said "no" to something, DO NOT suggest it.
 ` : ""}
 
-CRITICAL RULES - READ CAREFULLY:
-1. EXTRACT THE UNDERLYING CONCEPT - Do NOT just copy the video. Ask yourself: "What is the FORMAT or CONCEPT that made this work?" For example:
-   - If the video shows a BMW with a quirky hidden feature → The concept is "showcasing an unexpected/quirky feature of something in your niche"
-   - If the video is a cooking fails compilation → The concept is "compilation of funny fails in a specific category"
-   - If the video is a POV story → The concept is "POV storytelling format"
+CRITICAL RULES - READ VERY CAREFULLY:
 
-2. APPLY THE CONCEPT TO THE CREATOR'S NICHE - Once you identify the concept, translate it to what THEY do:
-   - If they review exotic cars and the inspiration shows a "hidden feature reveal" → suggest they find a car with a unique/quirky feature to showcase
-   - If they do food content and the inspiration is fails compilation → suggest finding cooking fails clips relevant to their food style
-   - NEVER just tell them to recreate the exact same thing - give them the PRINCIPLE to apply
+**RULE #1: ABSTRACT THE CONCEPT - NEVER COPY THE EXACT SUBJECT**
+The inspiration video shows ONE example of a concept. Your job is to identify WHAT CATEGORY it belongs to, then help them find a DIFFERENT example in that category.
 
-3. FOR EDITS/COMPILATIONS: If this is clearly an edit (multiple different people, celebrities, compilation):
-   - The idea should be about FINDING similar clips in their niche and editing them
-   - Example: If inspiration is "cooking fails compilation" and they do car content → suggest "car fails compilation" or "car crash fails"
-   - Tell them WHERE to find the source clips (YouTube, Twitter, etc.)
+WRONG vs RIGHT examples:
+- Inspiration: BMW 740d with hidden water dispenser feature
+  ❌ WRONG: "Find a BMW 740d with a water dispenser feature" (this is just copying)
+  ✓ RIGHT: "Find ANY exotic car with a surprising/quirky hidden feature and reveal it dramatically"
+  
+- Inspiration: Cooking fails compilation (eggs exploding, kitchen fires)
+  ❌ WRONG: "Make a cooking fails compilation" (doesn't apply to their car niche)
+  ✓ RIGHT: "Make a CAR fails/crashes compilation" (applies the format to their niche)
 
-4. BE CREATIVE AND ORIGINAL - The best ideas:
-   - Take the SPIRIT of what worked
-   - Apply it in a new, fresh way to their specific niche
-   - Are not obvious copies but clever adaptations
+- Inspiration: Satisfying soap cutting video
+  ❌ WRONG: "Cut soap in a satisfying way"
+  ✓ RIGHT: "Create satisfying content in YOUR niche - maybe detailing a car, polishing wheels, etc."
 
-5. TECHNICAL REQUIREMENTS:
-   - Generate an idea ADAPTED to their filming resources
-   - Provide SPECIFIC shot-by-shot instructions with timestamps
-   - Include camera angles and lighting for each shot
-   - Make it achievable in their time budget
-   - NEVER suggest things they don't have access to
+**RULE #2: ALWAYS TRANSLATE TO THE CREATOR'S NICHE**
+Look at the creator's niche/focus in their profile. The idea MUST be something they would actually make.
+- If they do cars and inspiration is about cooking → translate to cars
+- If they do fitness and inspiration is about gaming → translate to fitness
+- If inspiration IS already in their niche → still abstract it (don't say "film THIS specific thing", say "find ANY example of this type")
 
-6. DO NOT:
-   - End with explicit CTAs like "LIKE & FOLLOW" or "COMMENT BELOW" - TikTok algorithm hates this
+**RULE #3: THE CONCEPT IS ALWAYS MORE GENERAL THAN THE VIDEO**
+- Specific BMW feature → General: "unexpected product feature reveal"
+- Specific cooking fails → General: "fails/bloopers compilation"
+- Specific celebrity highlight → General: "best moments montage"
+
+**RULE #4: NEVER SAY "FIND THE SAME THING"**
+If the inspiration shows a BMW with a feature, DON'T say "find a BMW with this feature"
+SAY: "Find a car with an interesting/unique feature that will surprise viewers"
+
+**RULE #5: FOR EDITS - FIND CLIPS IN THEIR NICHE**
+If they do car content and inspiration is cooking fails:
+- Tell them to find "car crash fails" or "driving fails" or "mechanic fails" 
+- Suggest sources: YouTube compilations, r/IdiotsInCars, Twitter car content
+
+TECHNICAL REQUIREMENTS:
+- Generate an idea ADAPTED to their filming resources
+- Provide SPECIFIC shot-by-shot instructions with timestamps
+- Include camera angles and lighting for each shot
+- Make it achievable in their time budget
+- NEVER suggest things they don't have access to
+
+DO NOT:
+- End with explicit CTAs like "LIKE & FOLLOW" or "COMMENT BELOW"
    - Suggest black screens or text-only outros asking questions
    - Just tell them to recreate the exact same video
 
