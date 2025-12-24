@@ -428,6 +428,13 @@ model Affiliate {
   affiliateCode   String   @unique  // e.g., "CREATOR123"
   status          String   @default("pending")  // pending, approved, suspended
   
+  // Application info
+  firstName       String?
+  lastName        String?
+  dateOfBirth     DateTime?
+  hasSocialFollowing Boolean @default(false)
+  socialHandle    String?   // TikTok/Instagram handle
+  
   paypalEmail     String?
   
   // Earnings tracking

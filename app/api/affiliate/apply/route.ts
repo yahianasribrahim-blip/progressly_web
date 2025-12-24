@@ -11,7 +11,15 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { paypalEmail } = body;
+        const { paypalEmail, firstName, lastName, dateOfBirth, hasSocialFollowing, socialHandle } = body;
+
+        // Validate required fields
+        if (!firstName || !lastName || !dateOfBirth) {
+            return NextResponse.json(
+                { error: "First name, last name, and date of birth are required" },
+                { status: 400 }
+            );
+        }
 
         // Check if user already has an affiliate record
         const existing = await getAffiliateByUserId(session.user.id);
@@ -22,7 +30,15 @@ export async function POST(request: Request) {
             );
         }
 
-        const result = await createAffiliateApplication(session.user.id, paypalEmail);
+        const result = await createAffiliateApplication(
+            session.user.id,
+            paypalEmail,
+            firstName,
+            lastName,
+            dateOfBirth ? new Date(dateOfBirth) : undefined,
+            hasSocialFollowing,
+            socialHandle
+        );
 
         if (!result.success) {
             return NextResponse.json({ error: result.error }, { status: 400 });

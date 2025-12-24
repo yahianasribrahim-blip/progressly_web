@@ -48,7 +48,15 @@ export const getAffiliateByCode = async (code: string) => {
 };
 
 // Create affiliate application
-export const createAffiliateApplication = async (userId: string, paypalEmail?: string) => {
+export const createAffiliateApplication = async (
+    userId: string,
+    paypalEmail?: string,
+    firstName?: string,
+    lastName?: string,
+    dateOfBirth?: Date,
+    hasSocialFollowing?: boolean,
+    socialHandle?: string
+) => {
     // Check if user already has an affiliate record
     const existing = await prisma.affiliate.findUnique({
         where: { userId },
@@ -63,6 +71,11 @@ export const createAffiliateApplication = async (userId: string, paypalEmail?: s
             userId,
             affiliateCode: generateAffiliateCode(),
             paypalEmail,
+            firstName,
+            lastName,
+            dateOfBirth,
+            hasSocialFollowing: hasSocialFollowing || false,
+            socialHandle,
             status: "pending",
         },
     });

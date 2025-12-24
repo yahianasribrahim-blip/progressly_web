@@ -69,7 +69,15 @@ export function AffiliateDashboard() {
     const [payouts, setPayouts] = useState<Payout[]>([]);
     const [minimumPayout, setMinimumPayout] = useState(50);
     const [commissionRate, setCommissionRate] = useState(25);
+
+    // Application form fields
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [dateOfBirth, setDateOfBirth] = useState("");
     const [paypalEmail, setPaypalEmail] = useState("");
+    const [hasSocialFollowing, setHasSocialFollowing] = useState(false);
+    const [socialHandle, setSocialHandle] = useState("");
+
 
     useEffect(() => {
         fetchAffiliateData();
@@ -120,7 +128,14 @@ export function AffiliateDashboard() {
             const res = await fetch("/api/affiliate/apply", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ paypalEmail }),
+                body: JSON.stringify({
+                    firstName,
+                    lastName,
+                    dateOfBirth,
+                    paypalEmail,
+                    hasSocialFollowing,
+                    socialHandle: hasSocialFollowing ? socialHandle : null,
+                }),
             });
             const data = await res.json();
 
@@ -201,6 +216,40 @@ export function AffiliateDashboard() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="firstName">First Name *</Label>
+                                <Input
+                                    id="firstName"
+                                    type="text"
+                                    placeholder="John"
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="lastName">Last Name *</Label>
+                                <Input
+                                    id="lastName"
+                                    type="text"
+                                    placeholder="Doe"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="dob">Date of Birth *</Label>
+                            <Input
+                                id="dob"
+                                type="date"
+                                value={dateOfBirth}
+                                onChange={(e) => setDateOfBirth(e.target.value)}
+                                required
+                            />
+                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="paypal">PayPal Email (for payouts)</Label>
                             <Input
@@ -211,10 +260,46 @@ export function AffiliateDashboard() {
                                 onChange={(e) => setPaypalEmail(e.target.value)}
                             />
                         </div>
+
+                        <div className="space-y-4 pt-4 border-t">
+                            <div className="flex items-center space-x-3">
+                                <input
+                                    id="hasSocial"
+                                    type="checkbox"
+                                    checked={hasSocialFollowing}
+                                    onChange={(e) => setHasSocialFollowing(e.target.checked)}
+                                    className="h-4 w-4 rounded border-gray-300"
+                                />
+                                <Label htmlFor="hasSocial" className="cursor-pointer">
+                                    I have a significant following on TikTok or Instagram
+                                </Label>
+                            </div>
+
+                            {hasSocialFollowing && (
+                                <div className="space-y-2 ml-7">
+                                    <Label htmlFor="socialHandle">TikTok/Instagram Handle</Label>
+                                    <Input
+                                        id="socialHandle"
+                                        type="text"
+                                        placeholder="@yourusername"
+                                        value={socialHandle}
+                                        onChange={(e) => setSocialHandle(e.target.value)}
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        This helps us prioritize your application
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
                         {error && (
                             <p className="text-sm text-red-500">{error}</p>
                         )}
-                        <Button onClick={applyForAffiliate} disabled={applying} className="w-full">
+                        <Button
+                            onClick={applyForAffiliate}
+                            disabled={applying || !firstName || !lastName || !dateOfBirth}
+                            className="w-full"
+                        >
                             {applying ? (
                                 <>
                                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -249,6 +334,7 @@ export function AffiliateDashboard() {
             </div>
         );
     }
+
 
     // Pending approval
     if (status === "pending") {
