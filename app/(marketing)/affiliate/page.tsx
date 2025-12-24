@@ -21,12 +21,11 @@ import {
 
 export default function AffiliatePage() {
     const [referrals, setReferrals] = useState(10);
-    const [plan, setPlan] = useState<"monthly" | "yearly">("monthly");
+    const [plan, setPlan] = useState<"creator" | "pro">("creator");
 
-    // Calculate earnings
-    const monthlyPrice = plan === "monthly" ? 12 : 29;
-    const yearlyPrice = plan === "yearly" ? 99 : 249;
-    const price = plan === "monthly" ? monthlyPrice : yearlyPrice;
+    // Calculate earnings based on plan
+    // Creator: $12/month, Pro: $29/month
+    const price = plan === "creator" ? 12 : 29;
     const commission = price * 0.25;
     const monthlyEarnings = referrals * commission;
     const yearlyEarnings = monthlyEarnings * 12;
@@ -50,7 +49,7 @@ export default function AffiliatePage() {
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 mt-4">
                             <Button size="lg" className="h-14 px-8 text-lg" asChild>
-                                <Link href="/login?redirect=/dashboard/affiliate">
+                                <Link href="/dashboard/affiliate">
                                     Become an Affiliate
                                     <ArrowRight className="ml-2 h-5 w-5" />
                                 </Link>
@@ -182,18 +181,18 @@ export default function AffiliatePage() {
                                 <label className="text-sm font-medium">Plan type</label>
                                 <div className="flex gap-4">
                                     <Button
-                                        variant={plan === "monthly" ? "default" : "outline"}
-                                        onClick={() => setPlan("monthly")}
+                                        variant={plan === "creator" ? "default" : "outline"}
+                                        onClick={() => setPlan("creator")}
                                         className="flex-1"
                                     >
-                                        Monthly ($12-29)
+                                        Creator ($12/mo)
                                     </Button>
                                     <Button
-                                        variant={plan === "yearly" ? "default" : "outline"}
-                                        onClick={() => setPlan("yearly")}
+                                        variant={plan === "pro" ? "default" : "outline"}
+                                        onClick={() => setPlan("pro")}
                                         className="flex-1"
                                     >
-                                        Yearly ($99-249)
+                                        Pro ($29/mo)
                                     </Button>
                                 </div>
                             </div>
@@ -324,7 +323,7 @@ export default function AffiliatePage() {
                         Join our affiliate program today and start earning 25% recurring commission on every referral.
                     </p>
                     <Button size="lg" variant="secondary" className="h-14 px-8 text-lg" asChild>
-                        <Link href="/login?redirect=/dashboard/affiliate">
+                        <Link href="/dashboard/affiliate">
                             Apply Now
                             <ArrowRight className="ml-2 h-5 w-5" />
                         </Link>
