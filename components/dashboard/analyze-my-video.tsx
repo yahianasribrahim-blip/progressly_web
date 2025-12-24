@@ -801,6 +801,24 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                     </>
                                 )}
                             </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                                onClick={() => {
+                                    const score = analysis.performanceScore;
+                                    const hookType = videoAnalysis.hookType;
+                                    const text = `Just analyzed a video with Progressly!\n\n📊 Score: ${score}/100\n🎣 Hook: ${hookType}\n\nThis tool breaks down exactly WHY videos go viral. Try it yourself 👇`;
+                                    const url = "https://progressly.so";
+                                    window.open(
+                                        `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+                                        "_blank"
+                                    );
+                                }}
+                            >
+                                <Share2 className="h-4 w-4" />
+                                Share
+                            </Button>
                         </div>
 
                         {/* Video Info */}

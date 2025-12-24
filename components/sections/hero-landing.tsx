@@ -1,10 +1,26 @@
 import Link from "next/link";
+import { prisma } from "@/lib/db";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { Icons } from "@/components/shared/icons";
 
+async function getWeeklyAnalysisCount() {
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+  const count = await prisma.usageTracking.aggregate({
+    _sum: {
+      analysesThisMonth: true,
+    },
+  });
+
+  return count._sum.analysesThisMonth || 0;
+}
+
 export default async function HeroLanding() {
+  const analysisCount = await getWeeklyAnalysisCount();
+
   return (
     <section className="space-y-6 py-12 sm:py-20 lg:py-24">
       <div className="container flex max-w-5xl flex-col items-center gap-5 text-center">
@@ -60,6 +76,20 @@ export default async function HeroLanding() {
             <span>View Pricing</span>
           </Link>
         </div>
+
+        {/* Social Proof */}
+        {analysisCount > 0 && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-4">
+            <div className="flex -space-x-2">
+              <div className="w-6 h-6 rounded-full bg-violet-500 border-2 border-background" />
+              <div className="w-6 h-6 rounded-full bg-purple-500 border-2 border-background" />
+              <div className="w-6 h-6 rounded-full bg-pink-500 border-2 border-background" />
+            </div>
+            <span>
+              <strong className="text-foreground">{analysisCount.toLocaleString()}+</strong> videos analyzed by creators
+            </span>
+          </div>
+        )}
 
       </div>
     </section>
