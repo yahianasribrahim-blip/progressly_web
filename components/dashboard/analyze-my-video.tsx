@@ -151,6 +151,10 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
     const [isSavingIdea, setIsSavingIdea] = useState(false);
     const [isIdeaSaved, setIsIdeaSaved] = useState(false);
 
+    // Platform selection
+    const [platform, setPlatform] = useState<"tiktok" | "instagram">("tiktok");
+    const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
     const formatNumber = (num: number): string => {
         if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
         if (num >= 1000) return (num / 1000).toFixed(1) + "K";
@@ -572,39 +576,149 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                             Video Breakdown
                         </CardTitle>
                         <CardDescription>
-                            Paste any TikTok video URL. Our AI analyzes the content and gives you specific, actionable feedback.
+                            {platform === "tiktok"
+                                ? "Paste any TikTok video URL. Our AI analyzes the content and gives you specific, actionable feedback."
+                                : "Upload an Instagram Reel video file. Our AI analyzes the content and gives you specific, actionable feedback."
+                            }
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="flex gap-2">
-                            <div className="relative flex-1">
-                                <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    placeholder="https://www.tiktok.com/@username/video/..."
-                                    value={videoUrl}
-                                    onChange={(e) => setVideoUrl(e.target.value)}
-                                    className="pl-10"
-                                    disabled={isAnalyzing}
-                                />
-                            </div>
-                            <Button
-                                onClick={handleAnalyze}
-                                disabled={isAnalyzing || !videoUrl.trim()}
-                                className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
-                            >
-                                {isAnalyzing ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Analyzing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Brain className="h-4 w-4" />
-                                        Analyze
-                                    </>
+                        {/* Platform Toggle */}
+                        <div className="flex rounded-lg bg-muted p-1 w-fit">
+                            <button
+                                onClick={() => {
+                                    setPlatform("tiktok");
+                                    setUploadedFile(null);
+                                }}
+                                className={cn(
+                                    "px-4 py-2 rounded-md text-sm font-medium transition-all",
+                                    platform === "tiktok"
+                                        ? "bg-background text-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
                                 )}
-                            </Button>
+                            >
+                                TikTok
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setPlatform("instagram");
+                                    setVideoUrl("");
+                                }}
+                                className={cn(
+                                    "px-4 py-2 rounded-md text-sm font-medium transition-all",
+                                    platform === "instagram"
+                                        ? "bg-background text-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                Instagram
+                            </button>
                         </div>
+
+                        {/* TikTok URL Input */}
+                        {platform === "tiktok" && (
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                    <Input
+                                        placeholder="https://www.tiktok.com/@username/video/..."
+                                        value={videoUrl}
+                                        onChange={(e) => setVideoUrl(e.target.value)}
+                                        className="pl-10"
+                                        disabled={isAnalyzing}
+                                    />
+                                </div>
+                                <Button
+                                    onClick={handleAnalyze}
+                                    disabled={isAnalyzing || !videoUrl.trim()}
+                                    className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+                                >
+                                    {isAnalyzing ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Analyzing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Brain className="h-4 w-4" />
+                                            Analyze
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        )}
+
+                        {/* Instagram Upload Input */}
+                        {platform === "instagram" && (
+                            <div className="space-y-3">
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <input
+                                            type="file"
+                                            accept="video/mp4,video/quicktime,video/webm"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    setUploadedFile(file);
+                                                }
+                                            }}
+                                            className="hidden"
+                                            id="instagram-upload"
+                                            disabled={isAnalyzing}
+                                        />
+                                        <label
+                                            htmlFor="instagram-upload"
+                                            className={cn(
+                                                "flex items-center gap-3 px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
+                                                uploadedFile
+                                                    ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20"
+                                                    : "border-muted-foreground/25 hover:border-muted-foreground/50",
+                                                isAnalyzing && "opacity-50 cursor-not-allowed"
+                                            )}
+                                        >
+                                            <Film className="h-5 w-5 text-muted-foreground" />
+                                            <span className="text-sm">
+                                                {uploadedFile
+                                                    ? uploadedFile.name
+                                                    : "Click to upload Instagram Reel (MP4, MOV, WebM)"
+                                                }
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <Button
+                                        onClick={() => {
+                                            toast.info(
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="font-medium">Instagram Upload Coming Soon!</span>
+                                                    <span className="text-sm text-muted-foreground">
+                                                        This feature requires Vercel Pro for file processing.
+                                                        Use TikTok for now!
+                                                    </span>
+                                                </div>,
+                                                { duration: 5000 }
+                                            );
+                                        }}
+                                        disabled={isAnalyzing || !uploadedFile}
+                                        className="gap-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700"
+                                    >
+                                        {isAnalyzing ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Analyzing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Brain className="h-4 w-4" />
+                                                Analyze
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    💡 Tip: Download your Instagram Reel from the app, then upload it here.
+                                </p>
+                            </div>
+                        )}
 
                         {/* What is this video about field */}
                         <div className="space-y-2">
