@@ -98,7 +98,7 @@ export function PricingCards({ userId, subscriptionPlan }: PricingCardsProps) {
           </ul>
 
           {userId && subscriptionPlan ? (
-            offer.title === "Starter" ? (
+            offer.title === "Free" ? (
               <Link
                 href="/dashboard"
                 className={cn(
@@ -177,9 +177,9 @@ export function PricingCards({ userId, subscriptionPlan }: PricingCardsProps) {
           Email{" "}
           <a
             className="font-medium text-primary hover:underline"
-            href="mailto:support@saas-starter.com"
+            href="mailto:support@progressly.us"
           >
-            support@saas-starter.com
+            support@progressly.us
           </a>{" "}
           for to contact our support team.
           <br />

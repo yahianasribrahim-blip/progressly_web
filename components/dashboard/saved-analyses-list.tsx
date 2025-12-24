@@ -89,7 +89,7 @@ export function SavedAnalysesList({ userId, plan }: SavedAnalysesListProps) {
                         Saving Analyses is a Premium Feature
                     </h3>
                     <p className="text-muted-foreground mb-6 max-w-md">
-                        Upgrade to Starter or Pro plan to save your analyses and access them anytime.
+                        Upgrade to Creator or Pro plan to save your analyses and access them anytime.
                     </p>
                     <Button className="gap-2" asChild>
                         <a href="/pricing">

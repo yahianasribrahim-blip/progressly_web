@@ -11,9 +11,10 @@ interface PlanBadgeProps {
 export function PlanBadge({ plan, expanded = true }: PlanBadgeProps) {
     const planLabels = {
         free: "Free Plan",
-        starter: "Starter Plan",
+        starter: "Creator Plan",
         pro: "Pro Plan",
     };
+
 
     if (!expanded) {
         return (
