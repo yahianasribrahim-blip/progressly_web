@@ -52,6 +52,7 @@ export const adminLinks: SidebarNavItem[] = [
     items: [
       { href: "/admin", icon: "settings", title: "Admin Dashboard" },
       { href: "/admin/affiliates", icon: "users", title: "Affiliates" },
+      { href: "/admin/forms", icon: "fileText", title: "Form Submissions" },
     ],
   },
 ];

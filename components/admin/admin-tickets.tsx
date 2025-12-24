@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Send, Loader2, Trash2, Search } from "lucide-react";
+import { MessageCircle, Send, Loader2, Trash2, Search, XCircle, CheckCircle } from "lucide-react";
 
 interface Ticket {
     id: string;
@@ -28,6 +28,7 @@ export function AdminTickets({ tickets: initialTickets }: AdminTicketsProps) {
     const [replyMessage, setReplyMessage] = useState("");
     const [sending, setSending] = useState(false);
     const [deleting, setDeleting] = useState<string | null>(null);
+    const [closing, setClosing] = useState(false);
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState<"all" | "open" | "closed">("all");
 
@@ -88,6 +89,26 @@ export function AdminTickets({ tickets: initialTickets }: AdminTicketsProps) {
             console.error("Error deleting ticket:", error);
         } finally {
             setDeleting(null);
+        }
+    };
+
+    const closeTicket = async () => {
+        if (!selectedTicket) return;
+
+        setClosing(true);
+        try {
+            const response = await fetch(`/api/admin/tickets/${selectedTicket.id}/close`, {
+                method: "POST",
+            });
+            if (response.ok) {
+                const updatedTicket = { ...selectedTicket, status: "closed" };
+                setSelectedTicket(updatedTicket);
+                setTickets(tickets.map(t => t.id === selectedTicket.id ? updatedTicket : t));
+            }
+        } catch (error) {
+            console.error("Error closing ticket:", error);
+        } finally {
+            setClosing(false);
         }
     };
 
@@ -209,9 +230,27 @@ export function AdminTickets({ tickets: initialTickets }: AdminTicketsProps) {
                                         <p className="font-medium">{selectedTicket.user.name || "User"}</p>
                                         <p className="text-sm text-muted-foreground">{selectedTicket.user.email}</p>
                                     </div>
-                                    <Badge variant={selectedTicket.status === "open" ? "default" : "secondary"}>
-                                        {selectedTicket.status}
-                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant={selectedTicket.status === "open" ? "default" : "secondary"}>
+                                            {selectedTicket.status}
+                                        </Badge>
+                                        {selectedTicket.status === "open" && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={closeTicket}
+                                                disabled={closing}
+                                                className="gap-1"
+                                            >
+                                                {closing ? (
+                                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                                ) : (
+                                                    <CheckCircle className="h-3 w-3" />
+                                                )}
+                                                Close Ticket
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                                 <p className="text-sm mt-3">{selectedTicket.description}</p>
                             </div>
@@ -225,8 +264,8 @@ export function AdminTickets({ tickets: initialTickets }: AdminTicketsProps) {
                                         <div
                                             key={msg.id}
                                             className={`p-3 rounded-lg text-sm max-w-[80%] ${msg.isAdmin
-                                                    ? "bg-purple-100 dark:bg-purple-900/30 ml-auto"
-                                                    : "bg-muted"
+                                                ? "bg-purple-100 dark:bg-purple-900/30 ml-auto"
+                                                : "bg-muted"
                                                 }`}
                                         >
                                             <p>{msg.content}</p>
