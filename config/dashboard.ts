@@ -34,7 +34,6 @@ export const sidebarLinks: SidebarNavItem[] = [
         title: "Billing",
       },
       { href: "/dashboard/settings", icon: "settings", title: "Account" },
-      { href: "/dashboard/affiliate", icon: "sparkles", title: "Affiliate" },
     ],
   },
   {
