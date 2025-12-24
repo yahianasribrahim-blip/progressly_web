@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Check, X, Zap, Sparkles, Crown, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { Icons } from "@/components/shared/icons";
+import { generateUserStripe } from "@/actions/generate-user-stripe";
+import { env } from "@/env.mjs";
 
 interface PricingSectionProps {
     userId?: string;
@@ -24,8 +27,12 @@ const PLANS = [
         yearlyPrice: 0,
         originalYearlyPrice: 0,
         icon: Sparkles,
-        color: "from-gray-500 to-gray-600",
-        cta: "Start Free",
+        color: "from-gray-400 to-gray-600",
+        cta: "Get Started",
+        stripeIds: {
+            monthly: null,
+            yearly: null,
+        },
         features: [
             { text: "3 video analyses/month", included: true },
             { text: "5 optimizations/month", included: true },
@@ -46,6 +53,10 @@ const PLANS = [
         color: "from-blue-500 to-indigo-600",
         cta: "Start Creating",
         popular: true,
+        stripeIds: {
+            monthly: env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_PLAN_ID,
+            yearly: env.NEXT_PUBLIC_STRIPE_PRO_YEARLY_PLAN_ID,
+        },
         features: [
             { text: "20 video analyses/month", included: true },
             { text: "30 optimizations/month", included: true },
@@ -65,6 +76,10 @@ const PLANS = [
         icon: Crown,
         color: "from-violet-500 to-purple-600",
         cta: "Go Pro",
+        stripeIds: {
+            monthly: env.NEXT_PUBLIC_STRIPE_BUSINESS_MONTHLY_PLAN_ID,
+            yearly: env.NEXT_PUBLIC_STRIPE_BUSINESS_YEARLY_PLAN_ID,
+        },
         features: [
             { text: "60 video analyses/month", included: true },
             { text: "Unlimited optimizations", included: true },
@@ -75,6 +90,83 @@ const PLANS = [
         ],
     },
 ];
+
+function PricingButton({
+    plan,
+    isAnnual,
+    userId,
+}: {
+    plan: typeof PLANS[0];
+    isAnnual: boolean;
+    userId?: string;
+}) {
+    const [isPending, startTransition] = useTransition();
+
+    // If no user, link to register
+    if (!userId) {
+        return (
+            <Button
+                className={cn(
+                    "w-full",
+                    plan.popular && "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+                )}
+                variant={plan.popular ? "default" : "outline"}
+                size="lg"
+                asChild
+            >
+                <Link href="/register">{plan.cta}</Link>
+            </Button>
+        );
+    }
+
+    // Free plan - go to dashboard
+    if (plan.id === "free") {
+        return (
+            <Button
+                className="w-full"
+                variant="outline"
+                size="lg"
+                asChild
+            >
+                <Link href="/dashboard">Go to Dashboard</Link>
+            </Button>
+        );
+    }
+
+    // Paid plans - trigger Stripe checkout
+    const stripePriceId = isAnnual ? plan.stripeIds.yearly : plan.stripeIds.monthly;
+
+    const handleCheckout = () => {
+        if (!stripePriceId) return;
+
+        const generateUserStripeSession = generateUserStripe.bind(null, stripePriceId);
+        startTransition(async () => {
+            await generateUserStripeSession();
+        });
+    };
+
+    return (
+        <Button
+            className={cn(
+                "w-full",
+                plan.popular && "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+            )}
+            variant={plan.popular ? "default" : "outline"}
+            size="lg"
+            disabled={isPending}
+            onClick={handleCheckout}
+        >
+            {isPending ? (
+                <>
+                    <Icons.spinner className="mr-2 size-4 animate-spin" />
+                    Loading...
+                </>
+            ) : (
+                plan.cta
+            )}
+        </Button>
+    );
+}
 
 export function PricingSection({ userId, subscriptionPlan }: PricingSectionProps) {
     const [isAnnual, setIsAnnual] = useState(false);
@@ -98,9 +190,8 @@ export function PricingSection({ userId, subscriptionPlan }: PricingSectionProps
                 <Label
                     htmlFor="billing-toggle"
                     className={cn(
-                        "text-sm font-medium cursor-pointer",
-                        !isAnnual && "text-foreground",
-                        isAnnual && "text-muted-foreground"
+                        "text-sm font-medium transition-colors",
+                        !isAnnual ? "text-foreground" : "text-muted-foreground"
                     )}
                 >
                     Monthly
@@ -113,19 +204,20 @@ export function PricingSection({ userId, subscriptionPlan }: PricingSectionProps
                 <Label
                     htmlFor="billing-toggle"
                     className={cn(
-                        "text-sm font-medium cursor-pointer flex items-center gap-2",
-                        isAnnual && "text-foreground",
-                        !isAnnual && "text-muted-foreground"
+                        "text-sm font-medium transition-colors",
+                        isAnnual ? "text-foreground" : "text-muted-foreground"
                     )}
                 >
-                    Annual
-                    <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600">
+                    Yearly
+                </Label>
+                {isAnnual && (
+                    <Badge variant="secondary" className="ml-2 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                         Save {savings}%
                     </Badge>
-                </Label>
+                )}
             </div>
 
-            {/* Pricing Cards */}
+            {/* Plans Grid */}
             <div className="grid gap-8 md:grid-cols-3 max-w-6xl mx-auto">
                 {PLANS.map((plan) => {
                     const Icon = plan.icon;
@@ -201,19 +293,11 @@ export function PricingSection({ userId, subscriptionPlan }: PricingSectionProps
                                 </ul>
 
                                 {/* CTA Button */}
-                                <Button
-                                    className={cn(
-                                        "w-full",
-                                        plan.popular && "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
-                                    )}
-                                    variant={plan.popular ? "default" : "outline"}
-                                    size="lg"
-                                    asChild
-                                >
-                                    <Link href={userId ? "/dashboard/billing" : "/register"}>
-                                        {plan.cta}
-                                    </Link>
-                                </Button>
+                                <PricingButton
+                                    plan={plan}
+                                    isAnnual={isAnnual}
+                                    userId={userId}
+                                />
                             </CardContent>
                         </Card>
                     );
