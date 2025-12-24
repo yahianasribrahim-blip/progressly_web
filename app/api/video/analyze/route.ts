@@ -371,6 +371,10 @@ interface CreatorSetup {
     prefersNoMusic: boolean;
     availableProps: string[];
     filmingLocations: string[];
+    contentActivity: string | null;
+    filmingStyle: string | null;
+    contentNiche: string | null;
+    contentConstraints: string | null;
 }
 
 interface EngagementMetrics {
@@ -567,12 +571,25 @@ async function analyzeVideoWithGemini(
         ? `\n- Creator's Intended Purpose: "${videoIntention}" (IMPORTANT: Suggestions should align with this intent. Do NOT suggest things that contradict the video's purpose. For example, if it's ASMR/Satisfying content, don't suggest adding educational explanations.)`
         : "";
 
+    // Extract user's actual niche for personalized "what you need to replicate"
+    let userNicheDescription = "";
+    if (creatorSetup) {
+        if (creatorSetup.contentNiche && creatorSetup.contentNiche.trim()) {
+            userNicheDescription = creatorSetup.contentNiche;
+        } else if (creatorSetup.contentActivity) {
+            userNicheDescription = creatorSetup.contentActivity;
+        }
+    }
+    const nicheContext = userNicheDescription
+        ? `\n- ANALYZING USER'S CONTENT TYPE: ${userNicheDescription}`
+        : "";
+
     const prompt = `You are a TikTok video analyst. Watch this entire video carefully and provide a detailed analysis.
 
 VIDEO INFO:
 - Caption: "${caption}"
 - Duration: ${duration} seconds
-- Views: ${viewCount.toLocaleString()}${intentionContext}
+- Views: ${viewCount.toLocaleString()}${intentionContext}${nicheContext}
 
 RULES:
 1. Describe EXACTLY what happens in the video - you are WATCHING the actual video
@@ -649,9 +666,9 @@ Return a JSON object with this EXACT structure:
         "score": <1-10>
     },
     "replicabilityRequirements": [
-        "<IMPORTANT: List GENERAL/ABSTRACT requirements that apply to ANY niche, not specific items from THIS video. For example, if video shows cooking: DON'T say 'tomatoes, pasta, cheese'. DO say 'Props/ingredients relevant to your specific niche' or 'Items you can demonstrate or transform in your niche'>",
-        "<Another GENERAL requirement. Example: Instead of 'a kitchen', say 'A clean, well-lit space relevant to your content'. Instead of 'BMW 740d', say 'A product/item in your niche with an interesting feature to showcase'>",
-        "<Third general requirement - focus on the TYPE of thing needed, not the specific item. E.g., 'Good close-up camera capability', 'Clear audio recording', 'Something that makes satisfying sounds in your niche'>"
+        "<IMPORTANT: If 'ANALYZING USER'S CONTENT TYPE' is shown in VIDEO INFO above, tailor these requirements to THEIR content type. Example: If user does 'luxury car content', say 'Access to a luxury car with interesting features' - NOT 'kitchen ingredients'. If their content type is shown, use it!>",
+        "<Second requirement - related to equipment/locations for the USER'S content type (if specified), not the inspiration video's specific subject. If no user content type specified, keep it general>",
+        "<Third requirement - technical/production needs like 'Good close-up camera', 'Clear audio recording' that match the style of video being analyzed>"
     ],
     "whyItFlopped": "<ONLY fill this if the video has low views/engagement. Explain honestly: What went wrong? Algorithm issues? Hook failure? Wrong timing? Content problems? If video performed well, set to null>"
 }`;
