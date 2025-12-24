@@ -25,12 +25,14 @@ function DeleteAccountModal({
 
   async function deleteAccount() {
     setDeleting(true);
-    await fetch(`/api/user`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }).then(async (res) => {
+    try {
+      const res = await fetch(`/api/user`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
       if (res.status === 200) {
         // delay to allow for the route change to complete
         await new Promise((resolve) =>
@@ -43,11 +45,15 @@ function DeleteAccountModal({
         );
       } else {
         setDeleting(false);
-        const error = await res.text();
-        throw error;
+        const data = await res.json().catch(() => ({ error: "Failed to delete account" }));
+        throw new Error(data.error || "Failed to delete account");
       }
-    });
+    } catch (err) {
+      setDeleting(false);
+      throw err instanceof Error ? err.message : "Failed to delete account";
+    }
   }
+
 
   return (
     <Modal

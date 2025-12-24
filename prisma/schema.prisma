@@ -509,3 +509,15 @@ model Payout {
   @@index([affiliateId])
   @@map(name: "payouts")
 }
+
+// ============================================
+// NEWSLETTER
+// ============================================
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  
+  @@map(name: "newsletter_subscribers")
+}

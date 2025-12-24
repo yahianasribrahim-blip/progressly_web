@@ -581,22 +581,22 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                             </Button>
                         </div>
 
-                        {/* Video Intention Field */}
+                        {/* What is this video about field */}
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                                 <Target className="h-4 w-4" />
-                                Video Intention
+                                What is this video about?
                                 <span className="text-red-500">*</span>
                             </label>
                             <Input
-                                placeholder="e.g., ASMR/Satisfying, Educational, Comedy, Storytelling, Product Review, Day in the Life..."
+                                placeholder="e.g., Satisfying soap cutting for relaxation, Comedy skit about gym bros, POV storytelling about relationships..."
                                 value={videoIntention}
                                 onChange={(e) => setVideoIntention(e.target.value)}
                                 disabled={isAnalyzing}
                                 className="text-sm"
                             />
                             <p className="text-xs text-muted-foreground">
-                                Minimum 50 characters. The more specific you are, the better your analysis will be ({videoIntention.length}/50)
+                                Describe the video&apos;s purpose or style. Be specific for better analysis ({videoIntention.length}/50 characters minimum)
                             </p>
                         </div>
                     </CardContent>

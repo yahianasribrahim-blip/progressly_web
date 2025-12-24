@@ -4,6 +4,7 @@ import Link from "next/link";
 import { footerLinks, siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/components/layout/mode-toggle";
+import { NewsletterForm } from "@/components/forms/newsletter-form";
 
 export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
   return (
@@ -28,6 +29,19 @@ export function SiteFooter({ className }: React.HTMLAttributes<HTMLElement>) {
             </ul>
           </div>
         ))}
+
+        {/* Newsletter Section */}
+        <div className="col-span-2 md:col-span-1">
+          <span className="text-sm font-medium text-foreground">
+            Stay Updated
+          </span>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Get the latest tips and updates for content creators.
+          </p>
+          <div className="mt-4">
+            <NewsletterForm />
+          </div>
+        </div>
       </div>
 
       <div className="border-t py-4">

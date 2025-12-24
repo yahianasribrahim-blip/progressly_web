@@ -316,6 +316,98 @@ export function PricingSection({ userId, subscriptionPlan }: PricingSectionProps
                 </div>
             </div>
 
+            {/* Value Propositions - Conversion Section */}
+            <div className="max-w-5xl mx-auto space-y-12 pt-8 border-t">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold mb-3">Why Creators Choose Progressly</h2>
+                    <p className="text-muted-foreground">Real tools that help you understand what works</p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-8">
+                    <div className="text-center space-y-3">
+                        <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                            <Zap className="h-6 w-6 text-white" />
+                        </div>
+                        <h3 className="font-semibold">Save Hours of Research</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Stop scrolling endlessly. Get instant insights on what hooks, formats, and styles are
+                            actually performing in your niche right now.
+                        </p>
+                    </div>
+                    <div className="text-center space-y-3">
+                        <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                            <Sparkles className="h-6 w-6 text-white" />
+                        </div>
+                        <h3 className="font-semibold">Learn from What Works</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Break down viral videos to understand exactly why they performed.
+                            Apply those patterns to your own content strategy.
+                        </p>
+                    </div>
+                    <div className="text-center space-y-3">
+                        <div className="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                            <Crown className="h-6 w-6 text-white" />
+                        </div>
+                        <h3 className="font-semibold">Stay Ahead of Trends</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Discover trending formats before they&apos;re oversaturated.
+                            Be the creator who sets trends, not follows them.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Tools Preview */}
+                <div className="grid md:grid-cols-2 gap-6">
+                    <Card className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20 border-violet-200 dark:border-violet-800/50">
+                        <CardContent className="pt-6">
+                            <h3 className="font-semibold mb-2">📊 Video Breakdown</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Analyze any video to extract hooks, formats, hashtags, and AI-powered insights.
+                                Plus get personalized content ideas based on your style.
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800/50">
+                        <CardContent className="pt-6">
+                            <h3 className="font-semibold mb-2">🔥 Trending Formats</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Discover what&apos;s working across TikTok and Instagram right now.
+                                Filter by niche and save formats to your Trend Bank.
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border-emerald-200 dark:border-emerald-800/50">
+                        <CardContent className="pt-6">
+                            <h3 className="font-semibold mb-2">✍️ Script & Caption Optimizer</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Get AI feedback on your scripts and captions before posting.
+                                Improve engagement with data-backed suggestions.
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800/50">
+                        <CardContent className="pt-6">
+                            <h3 className="font-semibold mb-2">🎨 Cover Optimizer</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Upload your thumbnail or cover and get instant feedback.
+                                Optimize for maximum click-through rate.
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Social Proof */}
+                <div className="text-center py-6 rounded-xl bg-muted/50">
+                    <p className="text-sm text-muted-foreground mb-2">Trusted by content creators across</p>
+                    <div className="flex justify-center items-center gap-6 text-lg font-medium">
+                        <span>🎬 YouTube</span>
+                        <span>📱 TikTok</span>
+                        <span>📸 Instagram</span>
+                    </div>
+                </div>
+            </div>
+
+
             {/* FAQ Section */}
             <div className="max-w-3xl mx-auto space-y-8">
                 <h2 className="text-2xl font-bold text-center">Frequently Asked Questions</h2>

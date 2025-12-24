@@ -37,12 +37,28 @@ export async function POST(request: Request) {
         let filmingLocations: string[] = ["Home"];
         let prefersNoMusic = false;
         let hasCreatorSetup = false;
+        let userNiche = "general content";
 
         try {
             const profile = await prisma.userProfile.findUnique({
                 where: { userId: session.user.id },
                 include: { creatorSetup: true },
             });
+
+            if (profile) {
+                // Get the user's niche/focus area
+                const nicheMap: Record<string, string> = {
+                    HIJAB: "Muslim hijab fashion and lifestyle",
+                    DEEN: "Islamic lifestyle and spirituality",
+                    CULTURAL: "cultural content and traditions",
+                    FOOD: "food and cooking",
+                    GYM: "fitness and gym content",
+                    PETS: "pet content and animals",
+                    STORYTELLING: "storytelling and entertainment",
+                    OTHER: "general content"
+                };
+                userNiche = nicheMap[profile.niche] || "general content";
+            }
 
             if (profile?.creatorSetup) {
                 hasCreatorSetup = true;
@@ -61,6 +77,8 @@ export async function POST(request: Request) {
         }
 
         const creatorContext = hasCreatorSetup ? `
+CREATOR'S NICHE/FOCUS: ${userNiche}
+
 CREATOR'S RESOURCES (CRITICAL - Generate ideas they can ACTUALLY make):
 - Team Size: ${teamSize === 1 ? "Solo creator (alone)" : `${teamSize} people`}
 - Experience Level: ${experienceLevel}
@@ -70,12 +88,18 @@ CREATOR'S RESOURCES (CRITICAL - Generate ideas they can ACTUALLY make):
 - Available Props: ${availableProps.length > 0 ? availableProps.join(", ") : "Basic items"}
 - Filming Locations: ${filmingLocations.join(", ")}
 - Prefers No Music: ${prefersNoMusic ? "Yes" : "No"}
+
+IMPORTANT: Tailor the video idea to fit their ${userNiche} content style while adapting the inspiration format.
 ` : `
+CREATOR'S NICHE/FOCUS: ${userNiche}
+
 CREATOR'S RESOURCES (Assume basic setup):
 - Solo creator
 - Smartphone camera
 - 1-2 hours per video
 - Home filming location
+
+IMPORTANT: Tailor the video idea to fit their ${userNiche} content style while adapting the inspiration format.
 `;
 
         const isEditCompilation = inspirationVideo.contentFormat === "edit_compilation";
