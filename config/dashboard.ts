@@ -34,6 +34,7 @@ export const sidebarLinks: SidebarNavItem[] = [
         title: "Billing",
       },
       { href: "/dashboard/settings", icon: "settings", title: "Account" },
+      { href: "/dashboard/affiliate", icon: "sparkles", title: "Affiliate" },
     ],
   },
   {
@@ -51,6 +52,8 @@ export const adminLinks: SidebarNavItem[] = [
     title: "ADMIN",
     items: [
       { href: "/admin", icon: "settings", title: "Admin Dashboard" },
+      { href: "/admin/affiliates", icon: "users", title: "Affiliates" },
     ],
   },
 ];
+

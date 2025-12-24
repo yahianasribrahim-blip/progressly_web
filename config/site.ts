@@ -21,6 +21,7 @@ export const footerLinks: SidebarNavItem[] = [
     items: [
       { title: "Features", href: "/#features" },
       { title: "Pricing", href: "/#pricing" },
+      { title: "Affiliate Program", href: "/affiliate" },
     ],
   },
   {
@@ -33,3 +34,4 @@ export const footerLinks: SidebarNavItem[] = [
     ],
   },
 ];
+

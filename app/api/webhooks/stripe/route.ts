@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
 import { stripe } from "@/lib/stripe";
+import { recordCommission } from "@/lib/affiliate";
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -45,6 +46,22 @@ export async function POST(req: Request) {
         ),
       },
     });
+
+    // Record affiliate commission for the initial payment
+    if (session?.metadata?.userId && session.amount_total) {
+      try {
+        // Convert from cents to dollars
+        const amountInDollars = session.amount_total / 100;
+        await recordCommission(
+          session.metadata.userId,
+          amountInDollars,
+          session.payment_intent as string || session.id
+        );
+        console.log(`Recorded affiliate commission for user ${session.metadata.userId}: $${amountInDollars * 0.25}`);
+      } catch (error) {
+        console.error("Error recording affiliate commission:", error);
+      }
+    }
   }
 
   if (event.type === "invoice.payment_succeeded") {
@@ -59,7 +76,7 @@ export async function POST(req: Request) {
       );
 
       // Update the price id and set the new period end.
-      await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: {
           stripeSubscriptionId: subscription.id,
         },
@@ -70,8 +87,25 @@ export async function POST(req: Request) {
           ),
         },
       });
+
+      // Record affiliate commission for recurring payments
+      if (updatedUser && session.amount_paid) {
+        try {
+          // Convert from cents to dollars
+          const amountInDollars = session.amount_paid / 100;
+          await recordCommission(
+            updatedUser.id,
+            amountInDollars,
+            session.payment_intent as string || session.id
+          );
+          console.log(`Recorded recurring affiliate commission for user ${updatedUser.id}: $${amountInDollars * 0.25}`);
+        } catch (error) {
+          console.error("Error recording affiliate commission:", error);
+        }
+      }
     }
   }
 
   return new Response(null, { status: 200 });
 }
+

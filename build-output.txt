@@ -1,0 +1,47 @@
+﻿  Γû▓ Next.js 14.2.5
+  - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+Warning: Contentlayer might not work as expected on Windows
+Generated 8 documents in .contentlayer
+node.exe : Failed to 
+compile.
+At line:1 char:1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : 
+NotSpecified: (F    
+ailed to 
+compile.:Str    ing) 
+[], RemoteExcept    
+ion
+    + 
+FullyQualifiedError  
+  Id : 
+NativeCommandErr    
+or
+ 
+
+./app/(marketing)/aff
+iliate/page.tsx
+Module not found: 
+Can't resolve '@/comp
+onents/layout/main-na
+v'
+
+https://nextjs.org/do
+cs/messages/module-no
+t-found
+
+
+> Build failed 
+because of webpack 
+errors

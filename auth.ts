@@ -2,9 +2,11 @@ import authConfig from "@/auth.config";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { UserRole } from "@prisma/client";
 import NextAuth, { type DefaultSession } from "next-auth";
+import { cookies } from "next/headers";
 
 import { prisma } from "@/lib/db";
 import { getUserById } from "@/lib/user";
+import { findOrCreateReferralForSignup } from "@/lib/affiliate";
 
 // More info: https://authjs.dev/getting-started/typescript#module-augmentation
 declare module "next-auth" {
@@ -25,6 +27,28 @@ export const {
   pages: {
     signIn: "/login",
     // error: "/auth/error",
+  },
+  events: {
+    async signIn({ user, isNewUser }) {
+      // Only process referrals for new users
+      if (isNewUser && user.id) {
+        try {
+          const cookieStore = await cookies();
+          const refCode = cookieStore.get("ref")?.value;
+
+          if (refCode) {
+            // Link this user to the affiliate referral
+            await findOrCreateReferralForSignup(refCode, user.id);
+
+            // Clear the referral cookies after processing
+            cookieStore.delete("ref");
+            cookieStore.delete("ref_id");
+          }
+        } catch (error) {
+          console.error("Error processing referral on signup:", error);
+        }
+      }
+    },
   },
   callbacks: {
     async session({ token, session }) {
@@ -66,3 +90,4 @@ export const {
   ...authConfig,
   // debug: process.env.NODE_ENV !== "production"
 });
+

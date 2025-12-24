@@ -73,6 +73,10 @@ model User {
   savedTrends SavedTrend[]
   supportTickets SupportTicket[]
   usageTracking UsageTracking?
+  
+  // Affiliate program
+  affiliate     Affiliate?
+  referredBy    Referral?   @relation("ReferredUser")
 
   @@map(name: "users")
 }
@@ -410,4 +414,91 @@ model TicketMessage {
   
   @@index([ticketId])
   @@map(name: "ticket_messages")
+}
+
+// ============================================
+// AFFILIATE PROGRAM
+// ============================================
+
+model Affiliate {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  affiliateCode   String   @unique  // e.g., "CREATOR123"
+  status          String   @default("pending")  // pending, approved, suspended
+  
+  paypalEmail     String?
+  
+  // Earnings tracking
+  totalEarnings   Float    @default(0)
+  pendingEarnings Float    @default(0)
+  paidEarnings    Float    @default(0)
+  
+  referrals       Referral[]
+  commissions     Commission[]
+  payouts         Payout[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([affiliateCode])
+  @@map(name: "affiliates")
+}
+
+model Referral {
+  id              String   @id @default(cuid())
+  affiliateId     String
+  affiliate       Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  
+  referredUserId  String?  @unique
+  referredUser    User?    @relation("ReferredUser", fields: [referredUserId], references: [id], onDelete: SetNull)
+  
+  status          String   @default("clicked")  // clicked, signed_up, converted
+  
+  commissions     Commission[]
+  
+  clickedAt       DateTime @default(now())
+  signedUpAt      DateTime?
+  convertedAt     DateTime?
+  
+  @@index([affiliateId])
+  @@map(name: "referrals")
+}
+
+model Commission {
+  id              String   @id @default(cuid())
+  affiliateId     String
+  affiliate       Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  
+  referralId      String
+  referral        Referral  @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  
+  amount          Float
+  stripePaymentId String?   // Reference to the Stripe payment
+  
+  status          String   @default("pending")  // pending, approved, paid
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([affiliateId])
+  @@index([referralId])
+  @@map(name: "commissions")
+}
+
+model Payout {
+  id              String   @id @default(cuid())
+  affiliateId     String
+  affiliate       Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  
+  amount          Float
+  status          String   @default("requested")  // requested, processing, completed, rejected
+  paypalEmail     String
+  
+  requestedAt     DateTime @default(now())
+  processedAt     DateTime?
+  notes           String?
+  
+  @@index([affiliateId])
+  @@map(name: "payouts")
 }
