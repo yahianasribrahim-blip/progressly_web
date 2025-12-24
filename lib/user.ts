@@ -399,3 +399,24 @@ export const getUserUsage = async (userId: string) => {
     currentYear: tracking.currentYear,
   };
 };
+
+// Check if user can save content (breakdowns, ideas, formats) - PAID PLANS ONLY
+export const canSaveContent = async (
+  userId: string
+): Promise<{ allowed: boolean; message?: string; planRequired: string }> => {
+  const subscription = await getUserSubscription(userId);
+  const plan = subscription?.plan || "free";
+
+  if (plan === "free") {
+    return {
+      allowed: false,
+      message: "Saving content is a feature for creators on the Creator plan or higher. Please upgrade to unlock saving!",
+      planRequired: "starter",
+    };
+  }
+
+  return {
+    allowed: true,
+    planRequired: "none",
+  };
+};
