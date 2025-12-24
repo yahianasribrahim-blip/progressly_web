@@ -38,6 +38,9 @@ export async function POST(request: Request) {
         let prefersNoMusic = false;
         let hasCreatorSetup = false;
         let userNiche = "general content";
+        let contentActivity = "";
+        let filmingStyle = "";
+        let contentConstraints = "";
 
         try {
             const profile = await prisma.userProfile.findUnique({
@@ -45,8 +48,44 @@ export async function POST(request: Request) {
                 include: { creatorSetup: true },
             });
 
-            if (profile) {
-                // Get the user's niche/focus area
+            if (profile?.creatorSetup) {
+                hasCreatorSetup = true;
+                const setup = profile.creatorSetup;
+                teamSize = setup.teamSize || 1;
+                experienceLevel = setup.experienceLevel || "beginner";
+                primaryDevice = setup.primaryDevice || "Smartphone";
+                hoursPerVideo = setup.hoursPerVideo || 2;
+                videosPerWeek = setup.videosPerWeek || 2;
+                availableProps = setup.availableProps || [];
+                filmingLocations = setup.filmingLocations || [];
+                prefersNoMusic = setup.prefersNoMusic || false;
+
+                // Get the DETAILED content description from onboarding
+                contentActivity = setup.contentActivity || "";
+                filmingStyle = setup.filmingStyle || "";
+                contentConstraints = setup.contentConstraints || "";
+
+                // Use contentNiche (free text) if available, otherwise build from contentActivity
+                if (setup.contentNiche && setup.contentNiche.trim()) {
+                    userNiche = setup.contentNiche;
+                } else if (contentActivity) {
+                    userNiche = contentActivity;
+                } else {
+                    // Fallback to generic niche from profile
+                    const nicheMap: Record<string, string> = {
+                        HIJAB: "Muslim hijab fashion and lifestyle",
+                        DEEN: "Islamic lifestyle and spirituality",
+                        CULTURAL: "cultural content and traditions",
+                        FOOD: "food and cooking",
+                        GYM: "fitness and gym content",
+                        PETS: "pet content and animals",
+                        STORYTELLING: "storytelling and entertainment",
+                        OTHER: "general content"
+                    };
+                    userNiche = nicheMap[profile.niche] || "general content";
+                }
+            } else if (profile) {
+                // No creator setup, use profile niche
                 const nicheMap: Record<string, string> = {
                     HIJAB: "Muslim hijab fashion and lifestyle",
                     DEEN: "Islamic lifestyle and spirituality",
@@ -59,36 +98,30 @@ export async function POST(request: Request) {
                 };
                 userNiche = nicheMap[profile.niche] || "general content";
             }
-
-            if (profile?.creatorSetup) {
-                hasCreatorSetup = true;
-                const setup = profile.creatorSetup;
-                teamSize = setup.teamSize || 1;
-                experienceLevel = setup.experienceLevel || "beginner";
-                primaryDevice = setup.primaryDevice || "Smartphone";
-                hoursPerVideo = setup.hoursPerVideo || 2;
-                videosPerWeek = setup.videosPerWeek || 2;
-                availableProps = setup.availableProps || [];
-                filmingLocations = setup.filmingLocations || ["Home"];
-                prefersNoMusic = setup.prefersNoMusic || false;
-            }
         } catch (e) {
             console.log("Could not fetch creator setup:", e);
         }
 
+        // Build comprehensive niche description
+        const nicheDescription = contentActivity
+            ? `${userNiche}${filmingStyle ? ` (Filming style: ${filmingStyle})` : ""}${contentConstraints ? ` (Constraints: ${contentConstraints})` : ""}`
+            : userNiche;
+
         const creatorContext = hasCreatorSetup ? `
-THE CREATOR'S NICHE IS: ${userNiche}
+THE CREATOR'S CONTENT: ${nicheDescription}
+${contentActivity ? `WHAT THEY CREATE: ${contentActivity}` : ""}
+${filmingStyle ? `HOW THEY FILM: ${filmingStyle}` : ""}
 
 YOUR JOB:
 1. STUDY the inspiration video - understand WHY it worked (the format, style, pacing, hook, vibes)
 2. EXTRACT the concept/technique that made it successful
-3. APPLY that same concept/technique to ${userNiche} content
+3. APPLY that same concept/technique to THEIR content: ${nicheDescription}
 
 Example: If inspiration is ASMR cooking with close-ups and satisfying sounds:
 - KEEP: Close-up shots, satisfying sounds, no talking, relaxing vibes
-- CHANGE: Instead of cooking → apply to ${userNiche} (e.g., car sounds, textures, details)
+- CHANGE: Apply these techniques to their content (${nicheDescription})
 
-The value is in understanding WHY the inspiration worked, then recreating that magic in their niche.
+The value is in understanding WHY the inspiration worked, then recreating that magic for their specific content.
 
 CREATOR'S RESOURCES (CRITICAL - Generate ideas they can ACTUALLY make):
 - Team Size: ${teamSize === 1 ? "Solo creator (alone)" : `${teamSize} people`}
@@ -97,17 +130,17 @@ CREATOR'S RESOURCES (CRITICAL - Generate ideas they can ACTUALLY make):
 - Time per Video: ${hoursPerVideo} hours max
 - Videos per Week: ${videosPerWeek}
 - Available Props: ${availableProps.length > 0 ? availableProps.join(", ") : "Basic items"}
-- Filming Locations: ${filmingLocations.join(", ")}
+- Filming Locations: ${filmingLocations.length > 0 ? filmingLocations.join(", ") : "Various"}
 - Prefers No Music: ${prefersNoMusic ? "Yes" : "No"}
 ` : `
-THE CREATOR'S NICHE IS: ${userNiche}
+THE CREATOR'S CONTENT: ${nicheDescription}
 
 YOUR JOB:
 1. STUDY the inspiration video - understand WHY it worked (the format, style, pacing, hook, vibes)
 2. EXTRACT the concept/technique that made it successful
-3. APPLY that same concept/technique to ${userNiche} content
+3. APPLY that same concept/technique to their content: ${nicheDescription}
 
-The value is in understanding WHY the inspiration worked, then recreating that magic in their niche.
+The value is in understanding WHY the inspiration worked, then recreating that magic for their specific content.
 
 CREATOR'S RESOURCES (Assume basic setup):
 - Solo creator
