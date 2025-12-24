@@ -182,6 +182,19 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
             });
 
             if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                if (errorData.requiresUpgrade) {
+                    toast.error(
+                        <div className="flex flex-col gap-1">
+                            <span>{errorData.error || "Saving is a premium feature"}</span>
+                            <a href="/pricing" className="text-blue-400 underline text-sm">
+                                Upgrade to Creator plan →
+                            </a>
+                        </div>,
+                        { duration: 6000 }
+                    );
+                    return;
+                }
                 throw new Error("Failed to save breakdown");
             }
 
@@ -468,6 +481,18 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
             const data = await response.json();
 
             if (!response.ok) {
+                if (data.requiresUpgrade) {
+                    toast.error(
+                        <div className="flex flex-col gap-1">
+                            <span>{data.error || "Saving is a premium feature"}</span>
+                            <a href="/pricing" className="text-blue-400 underline text-sm">
+                                Upgrade to Creator plan →
+                            </a>
+                        </div>,
+                        { duration: 6000 }
+                    );
+                    return;
+                }
                 throw new Error(data.error || "Failed to save");
             }
 

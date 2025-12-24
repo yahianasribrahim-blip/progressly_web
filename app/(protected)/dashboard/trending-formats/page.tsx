@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Loader2, TrendingUp, Lightbulb, Volume2, Sparkles, Eye, Heart, Share2, Zap, Bookmark, Check } from "lucide-react";
 import { UsageBadge } from "@/components/dashboard/usage-badge";
-
+import { toast } from "sonner";
 
 interface TrendingFormat {
     id: string;
@@ -123,13 +123,29 @@ export default function TrendingFormatsPage() {
                     }),
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    setSavedFormats(prev => new Map(prev).set(format.id, data.data.id));
+                const data = await response.json();
+
+                if (!response.ok) {
+                    if (data.requiresUpgrade) {
+                        toast.error(
+                            <div className="flex flex-col gap-1">
+                                <span>{data.error || "Saving is a premium feature"}</span>
+                                <a href="/pricing" className="text-blue-400 underline text-sm">
+                                    Upgrade to Creator plan →
+                                </a>
+                            </div>,
+                            { duration: 6000 }
+                        );
+                        return;
+                    }
+                    throw new Error(data.error || "Failed to save");
                 }
+
+                setSavedFormats(prev => new Map(prev).set(format.id, data.data.id));
             }
         } catch (err) {
             console.error("Error toggling trend save:", err);
+            toast.error("Failed to save format");
         } finally {
             setSavingId(null);
         }
