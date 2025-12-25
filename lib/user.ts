@@ -67,6 +67,7 @@ export const getUserSubscription = async (userId: string) => {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
+        email: true,
         stripeSubscriptionId: true,
         stripeCurrentPeriodEnd: true,
         stripePriceId: true,
@@ -74,6 +75,23 @@ export const getUserSubscription = async (userId: string) => {
     });
 
     if (!user) return null;
+
+    // Special unlimited access for content creation account
+    const UNLIMITED_ACCESS_EMAILS = [
+      "yahianasribrahim@gmail.com",
+      // Add more emails here if needed
+    ];
+
+    if (user.email && UNLIMITED_ACCESS_EMAILS.includes(user.email)) {
+      return {
+        isPaid: true,
+        plan: "pro" as const,
+        stripeSubscriptionId: "unlimited_content_access",
+        stripeCurrentPeriodEnd: new Date("2099-12-31"),
+        stripePriceId: "unlimited",
+        isUnlimitedAccess: true,
+      };
+    }
 
     const isPaid =
       user.stripePriceId &&
