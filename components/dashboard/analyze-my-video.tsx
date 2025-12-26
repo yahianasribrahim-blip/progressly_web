@@ -578,7 +578,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                         <CardDescription>
                             {platform === "tiktok"
                                 ? "Paste any TikTok video URL. Our AI analyzes the content and gives you specific, actionable feedback."
-                                : "Upload an Instagram Reel video file. Our AI analyzes the content and gives you specific, actionable feedback."
+                                : "Upload your own video before posting. Get AI feedback on your hook, pacing, and improvements."
                             }
                         </CardDescription>
                     </CardHeader>
@@ -597,7 +597,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                         : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
-                                TikTok
+                                TikTok URL
                             </button>
                             <button
                                 onClick={() => {
@@ -611,7 +611,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                         : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
-                                Instagram
+                                Upload Your Own
                             </button>
                         </div>
 
@@ -648,14 +648,14 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                             </div>
                         )}
 
-                        {/* Instagram Upload Input */}
+                        {/* Upload Your Own */}
                         {platform === "instagram" && (
                             <div className="space-y-3">
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
                                         <input
                                             type="file"
-                                            accept="video/mp4,video/quicktime,video/webm"
+                                            accept="video/mp4,video/quicktime,video/webm,.mov"
                                             onChange={(e) => {
                                                 const file = e.target.files?.[0];
                                                 if (file) {
@@ -663,11 +663,11 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                                 }
                                             }}
                                             className="hidden"
-                                            id="instagram-upload"
+                                            id="video-upload"
                                             disabled={isAnalyzing}
                                         />
                                         <label
-                                            htmlFor="instagram-upload"
+                                            htmlFor="video-upload"
                                             className={cn(
                                                 "flex items-center gap-3 px-4 py-3 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
                                                 uploadedFile
@@ -679,33 +679,82 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                             <Film className="h-5 w-5 text-muted-foreground" />
                                             <span className="text-sm">
                                                 {uploadedFile
-                                                    ? uploadedFile.name
-                                                    : "Click to upload Instagram Reel (MP4, MOV, WebM)"
+                                                    ? `${uploadedFile.name} (${Math.round(uploadedFile.size / 1024 / 1024 * 10) / 10}MB)`
+                                                    : "Click to upload video (MP4, MOV, WebM - max 100MB)"
                                                 }
                                             </span>
                                         </label>
                                     </div>
                                     <Button
-                                        onClick={() => {
-                                            toast.info(
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="font-medium">Instagram Upload Coming Soon!</span>
-                                                    <span className="text-sm text-muted-foreground">
-                                                        This feature requires Vercel Pro for file processing.
-                                                        Use TikTok for now!
-                                                    </span>
-                                                </div>,
-                                                { duration: 5000 }
-                                            );
+                                        onClick={async () => {
+                                            if (!uploadedFile) {
+                                                toast.error("Please select a video file first");
+                                                return;
+                                            }
+
+                                            if (!videoIntention.trim()) {
+                                                toast.error("Please describe what this video is about");
+                                                return;
+                                            }
+
+                                            setIsAnalyzing(true);
+                                            setError(null);
+                                            setVideo(null);
+                                            setStats(null);
+                                            setEngagement(null);
+                                            setVideoAnalysis(null);
+                                            setAnalysis(null);
+                                            setIsSaved(false);
+
+                                            try {
+                                                const formData = new FormData();
+                                                formData.append("video", uploadedFile);
+                                                formData.append("description", videoIntention);
+
+                                                const res = await fetch("/api/video/analyze-upload", {
+                                                    method: "POST",
+                                                    body: formData,
+                                                });
+
+                                                const data = await res.json();
+
+                                                if (!res.ok) {
+                                                    throw new Error(data.error || "Failed to analyze video");
+                                                }
+
+                                                setVideo(data.video);
+                                                setStats(data.stats);
+                                                setEngagement(data.engagement);
+                                                setVideoAnalysis(data.videoAnalysis);
+                                                setAnalysis(data.analysis);
+
+                                                toast.success("Video analyzed successfully!");
+                                            } catch (err) {
+                                                console.error("Upload analysis error:", err);
+                                                setError(err instanceof Error ? err.message : "Failed to analyze video");
+                                                toast.error(err instanceof Error ? err.message : "Failed to analyze video");
+                                            } finally {
+                                                setIsAnalyzing(false);
+                                            }
                                         }}
-                                        className="gap-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700"
+                                        disabled={isAnalyzing || !uploadedFile}
+                                        className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
                                     >
-                                        <Clock className="h-4 w-4" />
-                                        Coming Soon
+                                        {isAnalyzing ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Analyzing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Brain className="h-4 w-4" />
+                                                Analyze
+                                            </>
+                                        )}
                                     </Button>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    💡 Tip: Download your Instagram Reel from the app, then upload it here.
+                                    💡 Analyze your own content before posting! Get feedback on your hook, pacing, and improvements.
                                 </p>
                             </div>
                         )}
@@ -807,7 +856,7 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
                                 className="gap-2"
                                 onClick={() => {
                                     const score = analysis.performanceScore;
-                                    const hookType = videoAnalysis.hookType;
+                                    const hookType = videoAnalysis?.hookAnalysis?.hookType || "Unknown";
                                     const text = `Just analyzed a video with Progressly!\n\n📊 Score: ${score}/100\n🎣 Hook: ${hookType}\n\nThis tool breaks down exactly WHY videos go viral. Try it yourself 👇`;
                                     const url = "https://progressly.so";
                                     window.open(
