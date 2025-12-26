@@ -12,6 +12,7 @@ export const sidebarLinks: SidebarNavItem[] = [
     title: "TOOLS",
     items: [
       { href: "/dashboard/analyze-video", icon: "video", title: "Video Breakdown" },
+      { href: "/dashboard/review-my-video", icon: "upload", title: "Review My Video" },
       { href: "/dashboard/script-optimizer", icon: "fileText", title: "Script Optimizer" },
       { href: "/dashboard/caption-optimizer", icon: "messageSquare", title: "Caption Optimizer" },
       { href: "/dashboard/cover-grader", icon: "image", title: "Cover Optimizer" },

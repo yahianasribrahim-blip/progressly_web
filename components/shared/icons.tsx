@@ -53,6 +53,7 @@ import {
   Youtube,
   ExternalLink,
   Video,
+  Upload,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -191,4 +192,5 @@ export const Icons = {
   image: Image,
   folder: Folder,
   mail: Mail,
+  upload: Upload,
 };
