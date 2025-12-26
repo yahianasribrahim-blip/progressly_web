@@ -95,6 +95,7 @@ model UsageTracking {
   formatSearchesThisMonth Int      @default(0)
   optimizationsThisMonth  Int      @default(0)
   analysesThisMonth       Int      @default(0)
+  videoReviewsThisMonth   Int      @default(0)
   
   // Month tracking for resets
   currentMonth            Int      @default(1)

@@ -438,3 +438,51 @@ export const canSaveContent = async (
     planRequired: "none",
   };
 };
+
+// Check if user can use a video review (Review My Video feature)
+export const canUseReview = async (
+  userId: string
+): Promise<{ allowed: boolean; remaining: number; message?: string }> => {
+  const tracking = await getOrCreateUsageTracking(userId);
+  const subscription = await getUserSubscription(userId);
+  const plan = subscription?.plan || "free";
+
+  // Get limit for the plan
+  const limits: Record<string, number> = {
+    free: 5,
+    starter: 25,
+    pro: 50,
+  };
+  const limit = limits[plan] || 5;
+  const used = (tracking as { videoReviewsThisMonth?: number }).videoReviewsThisMonth || 0;
+  const remaining = limit - used;
+
+  return {
+    allowed: remaining > 0,
+    remaining,
+    message: remaining <= 0 ? "Monthly video review limit reached. Upgrade for more!" : undefined,
+  };
+};
+
+// Record a video review usage
+export const recordReviewUsage = async (userId: string): Promise<void> => {
+  await getOrCreateUsageTracking(userId);
+  await prisma.usageTracking.update({
+    where: { userId },
+    data: {
+      videoReviewsThisMonth: { increment: 1 },
+    },
+  });
+};
+
+// Get max upload clips for user's plan
+export const getMaxUploadClips = async (userId: string): Promise<number> => {
+  const subscription = await getUserSubscription(userId);
+  const plan = subscription?.plan || "free";
+
+  // Only Pro gets multi-clip upload
+  if (plan === "pro") {
+    return 4;
+  }
+  return 1;
+};

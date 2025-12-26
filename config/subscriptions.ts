@@ -7,6 +7,7 @@ export const pricingData: SubscriptionPlan[] = [
     description: "Try out the core features",
     benefits: [
       "3 video analyses/month",
+      "5 video reviews/month",
       "5 optimizations/month (cover, script, caption)",
       "2 format refreshes/month",
       "10 saved items (Content Bank + Trend Bank)",
@@ -29,6 +30,7 @@ export const pricingData: SubscriptionPlan[] = [
     description: "For growing content creators",
     benefits: [
       "20 video analyses/month",
+      "25 video reviews/month",
       "30 optimizations/month (cover, script, caption)",
       "10 format refreshes/month",
       "Unlimited saved items",
@@ -50,6 +52,8 @@ export const pricingData: SubscriptionPlan[] = [
     description: "For serious content creators",
     benefits: [
       "60 video analyses/month",
+      "50 video reviews/month",
+      "Multi-clip upload (for longer videos)",
       "Unlimited optimizations",
       "30 format refreshes/month",
       "Unlimited saved items",
@@ -80,7 +84,21 @@ export const comparePlans: PlansRow[] = [
     free: "3/month",
     creator: "20/month",
     pro: "60/month",
-    tooltip: "AI breakdown of your video content",
+    tooltip: "AI breakdown of TikTok videos",
+  },
+  {
+    feature: "Review My Video",
+    free: "5/month",
+    creator: "25/month",
+    pro: "50/month",
+    tooltip: "Upload your own videos for AI feedback before posting",
+  },
+  {
+    feature: "Multi-Clip Upload",
+    free: false,
+    creator: false,
+    pro: true,
+    tooltip: "Upload up to 4 clips for longer videos",
   },
   {
     feature: "Cover Optimizer",
@@ -148,20 +166,26 @@ export const comparePlans: PlansRow[] = [
 export const planLimits = {
   free: {
     videoAnalyses: 3,
+    videoReviews: 5,
     optimizations: 5, // Combined: cover + script + caption
     formatRefreshes: 2,
     savedItems: 10, // Content Bank + Trend Bank combined
+    maxUploadClips: 1, // Single file only
   },
   creator: {
     videoAnalyses: 20,
+    videoReviews: 25,
     optimizations: 30,
     formatRefreshes: 10,
     savedItems: -1, // -1 = unlimited
+    maxUploadClips: 1, // Single file only
   },
   pro: {
     videoAnalyses: 60,
+    videoReviews: 50,
     optimizations: -1, // unlimited
     formatRefreshes: 30,
     savedItems: -1,
+    maxUploadClips: 4, // Up to 4 clips for longer videos
   },
 };

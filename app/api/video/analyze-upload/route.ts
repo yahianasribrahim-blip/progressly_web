@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { canUseAnalysis, recordAnalysisUsage } from "@/lib/user";
+import { canUseReview, recordReviewUsage } from "@/lib/user";
 import { GoogleGenerativeAI, Part, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { prisma } from "@/lib/db";
 
@@ -23,11 +23,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Check usage limits
-        const usageCheck = await canUseAnalysis(session.user.id);
+        // Check usage limits for video reviews
+        const usageCheck = await canUseReview(session.user.id);
         if (!usageCheck.allowed) {
             return NextResponse.json({
-                error: usageCheck.message || "Analysis limit reached. Upgrade for more!",
+                error: usageCheck.message || "Video review limit reached. Upgrade for more!",
                 limitReached: true,
                 remaining: usageCheck.remaining,
             }, { status: 429 });
@@ -89,8 +89,8 @@ export async function POST(request: Request) {
             creatorSetup
         );
 
-        // Record usage
-        await recordAnalysisUsage(session.user.id);
+        // Record usage for video reviews
+        await recordReviewUsage(session.user.id);
 
         return NextResponse.json({
             success: true,
