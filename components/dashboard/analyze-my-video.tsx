@@ -325,12 +325,55 @@ export function AnalyzeMyVideo({ className }: AnalyzeMyVideoProps) {
         // Strip punctuation from words before checking (handle guy's -> guy)
         const cleanWord = (w: string) => w.replace(/[''`]/g, '').replace(/s$/, ''); // Remove apostrophes and trailing s
 
-        // Check how many words are recognizable English
-        const wordsToCheck = words.filter(w => w.length > 2); // Skip very short words
+        // Common celebrity/famous person names (lowercase for case-insensitive matching)
+        const celebrityNames = new Set([
+            // Athletes
+            "ronaldo", "cristiano", "messi", "lionel", "neymar", "lebron", "james", "kobe", "jordan", "michael",
+            "serena", "williams", "federer", "nadal", "djokovic", "brady", "mahomes", "curry", "durant",
+            // Entertainers & Influencers
+            "kardashian", "kim", "kylie", "kendall", "khloe", "kourtney", "jenner", "kanye", "west", "ye",
+            "drake", "rihanna", "beyonce", "taylor", "swift", "ariana", "grande", "selena", "gomez", "bieber", "justin",
+            "shakira", "jlo", "lopez", "doja", "cardi", "nicki", "minaj", "travis", "scott", "post", "malone",
+            "pewdiepie", "mrbeast", "logan", "paul", "jake", "emma", "chamberlain", "charli", "damelio", "addison", "rae",
+            // Media personalities
+            "oprah", "winfrey", "ellen", "degeneres", "jimmy", "fallon", "kimmel", "colbert", "conan", "obrien",
+            "piers", "morgan", "tucker", "carlson", "hannity", "rogan", "joe",
+            // Controversial figures
+            "andrew", "tate", "tristan", "trump", "donald", "elon", "musk", "zuckerberg", "bezos", "gates",
+            // Actors
+            "dwayne", "rock", "johnson", "dicaprio", "leonardo", "brad", "pitt", "angelina", "jolie", "cruise", "tom",
+            "smith", "will", "jada", "chris", "hemsworth", "pratt", "downey", "robert", "scarlett", "johansson",
+            "zendaya", "timothee", "chalamet", "margot", "robbie", "keanu", "reeves", "vin", "diesel", "gal", "gadot",
+            "perry", "katy", "lady", "gaga", "miley", "cyrus", "demi", "lovato", "halsey", "billie", "eilish",
+            "ed", "sheeran", "adele", "weeknd", "bruno", "mars",
+            // YouTubers/Streamers
+            "ninja", "shroud", "pokimane", "valkyrae", "dream", "tommyinnit", "markiplier", "jacksepticeye",
+            "sssniperwolf", "david", "dobrik", "liza", "koshy", "jenna", "marbles", "jeffree", "star", "james", "charles",
+        ]);
+
+        // Check if a word is likely a name (capitalized or known celebrity)
+        const isLikelyName = (word: string, originalWord: string) => {
+            // If original word starts with capital letter (in middle/end of sentence), likely a name
+            if (originalWord.length > 0 && originalWord[0] === originalWord[0].toUpperCase() && originalWord[0] !== originalWord[0].toLowerCase()) {
+                return true;
+            }
+            // Check against known celebrity names
+            if (celebrityNames.has(word.toLowerCase()) || celebrityNames.has(cleanWord(word.toLowerCase()))) {
+                return true;
+            }
+            return false;
+        };
+
+        // Get original words with casing preserved for name detection
+        const originalWords = videoIntention.toLowerCase().split(/\s+/);
+        const originalWordsWithCase = videoIntention.split(/\s+/);
+
+        // Check how many words are recognizable English (skip likely names)
+        const wordsToCheck = words.filter((w, i) => w.length > 2 && !isLikelyName(w, originalWordsWithCase[i] || "")); // Skip very short words and names
         const recognizedWords = wordsToCheck.filter(w =>
             commonWords.has(w) || commonWords.has(cleanWord(w))
         );
-        const recognitionRate = wordsToCheck.length > 0 ? recognizedWords.length / wordsToCheck.length : 0;
+        const recognitionRate = wordsToCheck.length > 0 ? recognizedWords.length / wordsToCheck.length : 1; // Default to 1 if only names
 
         // If less than 25% of words are recognized, likely gibberish
         if (wordsToCheck.length >= 5 && recognitionRate < 0.25) {
