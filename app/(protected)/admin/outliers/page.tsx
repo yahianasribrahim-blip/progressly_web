@@ -5,8 +5,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Loader2, Search, ExternalLink, TrendingUp, Users, Eye } from "lucide-react";
+import { Loader2, ExternalLink, TrendingUp, Users, Eye, Sparkles } from "lucide-react";
 
 interface OutlierVideo {
     id: string;
@@ -22,16 +21,6 @@ interface OutlierVideo {
     url: string;
 }
 
-const PRESET_HASHTAGS = [
-    "contentcreator",
-    "tiktokgrowth",
-    "viralvideo",
-    "saas",
-    "startup",
-    "aitools",
-    "socialmediamarketing",
-];
-
 function formatNumber(num: number): string {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
@@ -41,23 +30,18 @@ function formatNumber(num: number): string {
 export default function OutlierFinderPage() {
     const [loading, setLoading] = useState(false);
     const [outliers, setOutliers] = useState<OutlierVideo[]>([]);
-    const [customHashtag, setCustomHashtag] = useState("");
-    const [searchedHashtags, setSearchedHashtags] = useState<string[]>([]);
+    const [searchedAccounts, setSearchedAccounts] = useState<string[]>([]);
     const [totalScanned, setTotalScanned] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [debugLog, setDebugLog] = useState<string[]>([]);
 
-    const searchOutliers = async (hashtag?: string) => {
+    const findViralIdeas = async () => {
         setLoading(true);
         setError(null);
         setDebugLog([]);
 
         try {
-            const url = hashtag
-                ? `/api/admin/outliers?hashtag=${encodeURIComponent(hashtag)}`
-                : `/api/admin/outliers`;
-
-            const response = await fetch(url);
+            const response = await fetch("/api/admin/outliers");
             const data = await response.json();
 
             // Capture debug log regardless of success/error
@@ -70,7 +54,7 @@ export default function OutlierFinderPage() {
             }
 
             setOutliers(data.outliers || []);
-            setSearchedHashtags(data.hashtags || []);
+            setSearchedAccounts(data.accounts || []);
             setTotalScanned(data.totalVideosScanned || 0);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Unknown error");
@@ -79,79 +63,46 @@ export default function OutlierFinderPage() {
         }
     };
 
-    const handleCustomSearch = () => {
-        if (customHashtag.trim()) {
-            searchOutliers(customHashtag.trim().replace("#", ""));
-        }
-    };
-
     return (
         <div className="p-6 space-y-6">
             <div>
-                <h1 className="text-2xl font-bold">🔥 Outlier Finder</h1>
+                <h1 className="text-2xl font-bold">🔥 What Video Should Progressly Make Next?</h1>
                 <p className="text-muted-foreground">
-                    Find viral video ideas for Progressly (views ≥ 5x creator's followers)
+                    Find viral video ideas from successful SaaS companies like Duolingo, Canva, Notion
                 </p>
             </div>
 
-            {/* Search Controls */}
+            {/* Single Action Button */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Search Hashtags</CardTitle>
+                    <CardTitle>Find Viral Video Ideas</CardTitle>
                     <CardDescription>
-                        Click a preset or enter a custom hashtag
+                        Searches top SaaS TikTok accounts and finds their outlier videos (views &gt; 3x followers)
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    {/* Preset hashtags */}
-                    <div className="flex flex-wrap gap-2">
-                        {PRESET_HASHTAGS.map((tag) => (
-                            <Button
-                                key={tag}
-                                variant="outline"
-                                size="sm"
-                                onClick={() => searchOutliers(tag)}
-                                disabled={loading}
-                            >
-                                #{tag}
-                            </Button>
-                        ))}
-                    </div>
-
-                    {/* Custom hashtag input */}
-                    <div className="flex gap-2">
-                        <Input
-                            placeholder="Enter custom hashtag..."
-                            value={customHashtag}
-                            onChange={(e) => setCustomHashtag(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handleCustomSearch()}
-                            disabled={loading}
-                        />
-                        <Button onClick={handleCustomSearch} disabled={loading}>
-                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                        </Button>
-                    </div>
-
-                    {/* Default search button */}
+                <CardContent>
                     <Button
-                        onClick={() => searchOutliers()}
+                        onClick={findViralIdeas}
                         disabled={loading}
-                        className="w-full"
+                        className="w-full h-12 text-lg"
+                        size="lg"
                     >
                         {loading ? (
                             <>
-                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                Scanning videos...
+                                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                                Scanning SaaS TikTok accounts...
                             </>
                         ) : (
                             <>
-                                <TrendingUp className="h-4 w-4 mr-2" />
-                                Search All Default Hashtags
+                                <Sparkles className="h-5 w-5 mr-2" />
+                                Find Viral Ideas for Progressly
                             </>
                         )}
                     </Button>
                 </CardContent>
             </Card>
+
+
 
             {/* Error */}
             {error && (
@@ -170,7 +121,7 @@ export default function OutlierFinderPage() {
                             📊 Found {outliers.length} Outliers
                         </CardTitle>
                         <CardDescription>
-                            Searched: {searchedHashtags.map(t => `#${t}`).join(", ")} •
+                            Searched: {searchedAccounts.map(a => `@${a}`).join(", ")} •
                             Scanned {totalScanned} videos
                         </CardDescription>
                     </CardHeader>
@@ -243,10 +194,10 @@ export default function OutlierFinderPage() {
             )}
 
             {/* No results */}
-            {!loading && outliers.length === 0 && searchedHashtags.length > 0 && (
+            {!loading && outliers.length === 0 && searchedAccounts.length > 0 && (
                 <Card>
                     <CardContent className="pt-6 text-center text-muted-foreground">
-                        No outliers found. Try different hashtags or lower the ratio threshold.
+                        No outlier videos found with views &gt; 3x follower count. Check the debug log for details.
                     </CardContent>
                 </Card>
             )}

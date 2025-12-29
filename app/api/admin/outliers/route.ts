@@ -8,23 +8,38 @@ import { prisma } from "@/lib/db";
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
 const SCRAPER_API_HOST = "tiktok-scraper2.p.rapidapi.com";
 
-// Hashtags to search for Progressly content ideas
-const PROGRESSLY_HASHTAGS = [
-    "contentcreator",
-    "tiktokgrowth",
-    "tiktokstrategy",
-    "viralvideo",
-    "howtogoviral",
-    "socialmediamarketing",
-    "marketingtips",
-    "saas",
-    "startup",
-    "aitools",
-    "techstartup",
-    "creatoreconomy",
-    "growthhacking",
-    "tiktoktrends",
+// SaaS/Software companies with TikTok accounts to analyze for replicable content
+// These are companies similar to Progressly that have successful TikTok presence
+const SAAS_ACCOUNTS = [
+    // Major SaaS companies with great TikTok content
+    "duolingo",           // Language learning app - famous for viral TikTok
+    "canva",              // Design tool
+    "notion",             // Productivity tool
+    "figma",              // Design tool
+    "lfrfrancis",         // Loom's TikTok
+    "shopify",            // E-commerce platform
+    "hubspot",            // CRM/Marketing
+    "mailchimp",          // Email marketing
+    "calendly",           // Scheduling tool
+    "grammarly",          // Writing tool
+    "capcut",             // Video editing
+    "clickup",            // Project management
+    "monday.com",         // Work management
+    "airtable",           // Database/spreadsheet
+    "typeform",           // Forms/surveys
+    "zapier",             // Automation
+    "webflow",            // Website builder
+    "framer",             // Website builder
+    "stripe",             // Payments
+    "intercom",           // Customer messaging
+    // Smaller SaaS/creator tools
+    "beehiiv",            // Newsletter platform
+    "convertkit",         // Creator email
+    "podia",              // Course platform
+    "gumroad",            // Digital products
+    "lemonadeinc",        // Insurance
 ];
+
 
 // Content to filter out
 const FILTER_KEYWORDS = [
@@ -169,6 +184,74 @@ async function fetchHashtagVideos(hashtag: string, count: number = 30): Promise<
     }
 }
 
+// Fetch videos from a specific user account (for SaaS company research)
+async function fetchUserVideos(username: string, count: number = 30, log?: (msg: string) => void): Promise<any[]> {
+    try {
+        // First get user info to get sec_uid
+        const userInfoUrl = `https://${SCRAPER_API_HOST}/user/info?user_name=${encodeURIComponent(username)}`;
+
+        const userResponse = await fetch(userInfoUrl, {
+            method: "GET",
+            headers: {
+                "x-rapidapi-host": SCRAPER_API_HOST,
+                "x-rapidapi-key": RAPIDAPI_KEY,
+            },
+        });
+
+        if (!userResponse.ok) {
+            log?.(`Failed to fetch user info for @${username}: ${userResponse.status}`);
+            return [];
+        }
+
+        const userData = await userResponse.json();
+        const secUid = userData.data?.user?.secUid
+            || userData.data?.secUid
+            || userData.userInfo?.user?.secUid
+            || "";
+
+        const followerCount = userData.data?.user?.stats?.followerCount
+            || userData.data?.stats?.followerCount
+            || userData.userInfo?.stats?.followerCount
+            || 0;
+
+        if (!secUid) {
+            log?.(`No sec_uid found for @${username}`);
+            return [];
+        }
+
+        log?.(`@${username}: sec_uid found, ${followerCount} followers`);
+
+        // Use sec_uid to get user's videos
+        const videosUrl = `https://${SCRAPER_API_HOST}/user/posts?sec_uid=${encodeURIComponent(secUid)}&count=${count}`;
+
+        const videosResponse = await fetch(videosUrl, {
+            method: "GET",
+            headers: {
+                "x-rapidapi-host": SCRAPER_API_HOST,
+                "x-rapidapi-key": RAPIDAPI_KEY,
+            },
+        });
+
+        if (!videosResponse.ok) {
+            log?.(`Failed to fetch videos for @${username}: ${videosResponse.status}`);
+            return [];
+        }
+
+        const videosData = await videosResponse.json();
+        const videos = videosData.data?.videos || videosData.itemList || videosData.data || [];
+
+        // Attach follower count to each video for ratio calculation
+        return videos.map((v: any) => ({
+            ...v,
+            _accountFollowers: followerCount,
+            _accountName: username,
+        }));
+    } catch (error) {
+        log?.(`Error fetching videos for @${username}: ${error instanceof Error ? error.message : String(error)}`);
+        return [];
+    }
+}
+
 // Check if content is appropriate
 function isContentAppropriate(description: string): boolean {
     if (!description) return true;
@@ -184,7 +267,7 @@ export async function GET(request: Request) {
     };
 
     try {
-        log("Starting outlier finder...");
+        log("Starting outlier finder for SaaS accounts...");
         log(`RAPIDAPI_KEY exists: ${!!RAPIDAPI_KEY}, length: ${RAPIDAPI_KEY?.length || 0}`);
 
         // Auth check - admin only
@@ -209,26 +292,26 @@ export async function GET(request: Request) {
 
         // Get query params
         const { searchParams } = new URL(request.url);
-        const hashtag = searchParams.get("hashtag") || "";
-        const minRatio = parseInt(searchParams.get("minRatio") || "5");
+        const account = searchParams.get("account") || "";
+        const minRatio = parseInt(searchParams.get("minRatio") || "3"); // Lower threshold for SaaS
 
-        // Determine which hashtags to search
-        const hashtagsToSearch = hashtag
-            ? [hashtag]
-            : PROGRESSLY_HASHTAGS.slice(0, 5); // Default: first 5 hashtags
+        // Determine which SaaS accounts to search
+        const accountsToSearch = account
+            ? [account]
+            : SAAS_ACCOUNTS.slice(0, 8); // Default: first 8 accounts
 
-        log(`Searching hashtags: ${hashtagsToSearch.join(", ")}`);
+        log(`Searching SaaS accounts: ${accountsToSearch.join(", ")}`);
 
-        // Collect all videos
+        // Collect all videos from SaaS accounts
         const allVideos: any[] = [];
-        for (const tag of hashtagsToSearch) {
-            log(`Fetching videos for #${tag}...`);
+        for (const acct of accountsToSearch) {
+            log(`Fetching videos for @${acct}...`);
             try {
-                const videos = await fetchHashtagVideos(tag, 20);
-                log(`#${tag}: got ${videos.length} videos`);
+                const videos = await fetchUserVideos(acct, 20, log);
+                log(`@${acct}: got ${videos.length} videos`);
                 allVideos.push(...videos);
             } catch (e) {
-                log(`#${tag} ERROR: ${e instanceof Error ? e.message : String(e)}`);
+                log(`@${acct} ERROR: ${e instanceof Error ? e.message : String(e)}`);
             }
 
             // Rate limit protection
@@ -256,45 +339,15 @@ export async function GET(request: Request) {
 
         log(`After content filter: ${filteredVideos.length}`);
 
-        // Log first video's full author data to see what's available
-        if (filteredVideos.length > 0) {
-            const firstVideo = filteredVideos[0];
-            log(`FIRST VIDEO AUTHOR DATA (full): ${JSON.stringify(firstVideo.author)}`);
-            log(`FIRST VIDEO AUTHOR STATS: ${JSON.stringify(firstVideo.authorStats || firstVideo.author?.stats)}`);
-        }
-
-        // Get creator follower counts and calculate outlier ratio
+        // Calculate outlier ratios using the attached _accountFollowers
         const outliers: OutlierVideo[] = [];
-        const creatorCache = new Map<string, number>();
 
-        for (const video of filteredVideos.slice(0, 30)) { // Limit to 30 to avoid rate limits
-            const username = video.author?.uniqueId || video.author?.unique_id || "";
-            const secUid = video.author?.secUid || video.author?.sec_uid || "";
+        for (const video of filteredVideos) {
+            const username = video._accountName || video.author?.uniqueId || "";
             const views = video.stats?.playCount || video.play_count || 0;
+            const followers = video._accountFollowers || 0;
 
-            if (!username || views < 10000) continue; // Skip low-view videos
-
-            // First check if follower count is already in video data
-            let followers = video.authorStats?.followerCount
-                || video.author?.stats?.followerCount
-                || video.author?.followerCount
-                || 0;
-
-            // If not in video data, try API (with caching)
-            if (followers === 0) {
-                followers = creatorCache.get(username) || 0;
-                if (followers === 0) {
-                    log(`Fetching followers for @${username} (secUid: ${secUid ? secUid.substring(0, 20) + "..." : "none"})...`);
-                    followers = await getCreatorFollowers(username, secUid, log);
-                    log(`@${username}: ${followers} followers`);
-                    creatorCache.set(username, followers);
-                    await new Promise(resolve => setTimeout(resolve, 300)); // Rate limit
-                }
-            } else {
-                log(`@${username}: ${followers} followers (from video data)`);
-            }
-
-            if (followers === 0) continue; // Skip if couldn't get followers
+            if (!username || views < 10000 || followers === 0) continue;
 
             const ratio = views / followers;
 
@@ -324,7 +377,7 @@ export async function GET(request: Request) {
         return NextResponse.json({
             success: true,
             outliers: outliers.slice(0, 20),
-            hashtags: hashtagsToSearch,
+            accounts: accountsToSearch,
             totalVideosScanned: filteredVideos.length,
             debug: debugLog,
         });
@@ -338,3 +391,4 @@ export async function GET(request: Request) {
         }, { status: 500 });
     }
 }
+
