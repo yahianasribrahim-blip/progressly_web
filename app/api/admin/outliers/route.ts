@@ -45,9 +45,11 @@ interface OutlierVideo {
     thumbnail: string;
     url: string;
 }
+// Track if we've logged the first response (for debugging)
+let hasLoggedFirstUserResponse = false;
 
 // Fetch user follower count
-async function getCreatorFollowers(username: string): Promise<number> {
+async function getCreatorFollowers(username: string, log?: (msg: string) => void): Promise<number> {
     try {
         const url = `https://${SCRAPER_API_HOST}/user/info?unique_id=${encodeURIComponent(username)}`;
 
@@ -60,16 +62,26 @@ async function getCreatorFollowers(username: string): Promise<number> {
         });
 
         if (!response.ok) {
-            console.error(`Failed to fetch user info for ${username}: ${response.status}`);
+            const errorText = await response.text().catch(() => "");
+            log?.(`User API error for ${username}: ${response.status} - ${errorText.substring(0, 200)}`);
             return 0;
         }
 
         const data = await response.json();
+
+        // Log the first full response to see the structure
+        if (!hasLoggedFirstUserResponse && log) {
+            log(`FIRST USER RESPONSE STRUCTURE: ${JSON.stringify(data).substring(0, 500)}`);
+            hasLoggedFirstUserResponse = true;
+        }
+
         // Try different response structures
         const followers = data.data?.user?.stats?.followerCount
             || data.data?.stats?.followerCount
             || data.userInfo?.stats?.followerCount
+            || data.userInfo?.user?.stats?.followerCount
             || data.stats?.followerCount
+            || data.user?.stats?.followerCount
             || 0;
 
         return followers;
@@ -231,7 +243,7 @@ export async function GET(request: Request) {
             let followers = creatorCache.get(username);
             if (followers === undefined) {
                 log(`Fetching followers for @${username}...`);
-                followers = await getCreatorFollowers(username);
+                followers = await getCreatorFollowers(username, log);
                 log(`@${username}: ${followers} followers`);
                 creatorCache.set(username, followers);
                 await new Promise(resolve => setTimeout(resolve, 300)); // Rate limit
