@@ -253,35 +253,27 @@ async function extractFormatsWithVision(videos: any[], niche: string): Promise<T
 
     const variationSeed = Math.random().toString(36).substring(7);
 
-    const prompt = `You are analyzing ${base64Images.length} TikTok video THUMBNAILS to extract REAL content formats.
+    const prompt = `You are analyzing ${base64Images.length} viral TikTok video thumbnails.
 
-I want you to look at EXACTLY what each video thumbnail shows and tell me what FORMAT/STRUCTURE they use.
+YOUR GOAL: Turn each video into a UNIVERSAL FILL-IN-THE-BLANK TEMPLATE that ANYONE can use in ANY niche.
 
 Context for each video:
 ${videoContext}
 
 User's niche: "${nicheName}"
 
-FOR EACH THUMBNAIL, analyze:
-1. VISUAL HOOK: What's happening in the first frame that grabs attention?
-   - Camera angle (talking head, POV, wide shot, etc.)
-   - Is there text overlay? What does it say?
-   - Is there a person? What are they doing?
-   - Any props, effects, or visual gimmicks?
+IMPORTANT: A template is NOT a description. A template is a FORMULA with blanks to fill in.
 
-2. FORMAT STRUCTURE: What type of video is this?
-   - Tutorial (showing how to do something)
-   - Reaction (reacting to something)
-   - Storytime (talking to camera)
-   - Slideshow (images appearing while talking)
-   - POV (first person perspective)
-   - Montage (multiple clips edited together)
-   - Before/After (transformation)
-   - Other (describe it)
+EXAMPLE OF WHAT I WANT:
+- BAD (description): "A person sitting at a desk naming fabric types while images pop up"
+- GOOD (template): "Sit in frame. Say '[CATEGORY]: [ITEM 1]' and cut to image of [ITEM 1]. Repeat for 5-7 items in your niche."
 
-3. UNIQUE MECHANISM: What makes this format work? What's the creative element?
+For each thumbnail, create a TEMPLATE by asking:
+1. What is the STRUCTURE? (How is it filmed? What sequence of shots?)
+2. What are the BLANKS? (What would someone replace with their own content?)
+3. What is the HOOK mechanism? (Why does someone keep watching?)
 
-Based on your REAL observations, extract EXACTLY 3 distinct formats that are ACTUALLY in these videos.
+Return EXACTLY 3 fill-in-the-blank templates from these videos.
 
 (seed: ${variationSeed})
 
@@ -289,25 +281,29 @@ Return ONLY valid JSON array with EXACTLY 3 objects:
 [
     {
         "id": "f1",
-        "formatName": "<Describe what you ACTUALLY see - e.g., 'Slideshow While Naming Things' or 'Setup Camera Visual Hook'>",
-        "formatDescription": "<2-3 sentences describing what the video ACTUALLY does based on the thumbnail>",
-        "whyItWorks": "<Why this specific format works based on what you observed>",
+        "formatName": "<Short name for the template>",
+        "formatDescription": "<The fill-in-the-blank template with [BRACKETS] for what to replace. Be SPECIFIC about shots, timing, and structure.>",
+        "whyItWorks": "<The psychological hook - why this format keeps people watching>",
         "howToApply": [
-            "<How someone in '${nicheName}' niche could use this EXACT format>",
-            "<Another application>",
-            "<Third application>"
+            "<Example of filling in the blanks for '${nicheName}' niche>",
+            "<Another example with different content>",
+            "<Third example>"
         ],
         "halalAudioSuggestions": ["Voiceover", "Natural sounds"],
         "engagementPotential": "High",
         "avgStats": {
-            "views": "<ACTUAL view range from the videos - use the real data provided>",
-            "likes": "<estimate based on typical 10% of views>",
-            "shares": "<estimate based on typical 1% of views>"
+            "views": "<View range from actual videos above>",
+            "likes": "<10% of views>",
+            "shares": "<1% of views>"
         }
     }
 ]
 
-CRITICAL: Describe what you ACTUALLY SEE in the thumbnails. Do NOT make up generic formats like "GRWM" or "Day 1 vs Day 365" unless you literally see that in the images.`;
+CRITICAL: 
+- Every formatDescription MUST be a reusable template with [BRACKETS] for blanks
+- Do NOT just describe what you see - create a FORMULA others can copy
+- Think: "If I gave this template to 100 creators, they should all make similar videos with their own content"`;
+
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
