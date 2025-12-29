@@ -48,47 +48,71 @@ interface OutlierVideo {
 // Track if we've logged the first response (for debugging)
 let hasLoggedFirstUserResponse = false;
 
-// Fetch user follower count
+// Fetch user follower count - try multiple endpoint formats
 async function getCreatorFollowers(username: string, log?: (msg: string) => void): Promise<number> {
-    try {
-        const url = `https://${SCRAPER_API_HOST}/user/info?unique_id=${encodeURIComponent(username)}`;
+    // List of endpoint formats to try
+    const endpoints = [
+        `/user/info?unique_id=${encodeURIComponent(username)}`,
+        `/user/info?username=${encodeURIComponent(username)}`,
+        `/user/info?user_id=${encodeURIComponent(username)}`,
+    ];
 
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "x-rapidapi-host": SCRAPER_API_HOST,
-                "x-rapidapi-key": RAPIDAPI_KEY,
-            },
-        });
+    for (const endpoint of endpoints) {
+        try {
+            const url = `https://${SCRAPER_API_HOST}${endpoint}`;
 
-        if (!response.ok) {
-            const errorText = await response.text().catch(() => "");
-            log?.(`User API error for ${username}: ${response.status} - ${errorText.substring(0, 200)}`);
-            return 0;
+            const response = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "x-rapidapi-host": SCRAPER_API_HOST,
+                    "x-rapidapi-key": RAPIDAPI_KEY,
+                },
+            });
+
+            if (!response.ok) {
+                continue; // Try next endpoint
+            }
+
+            const data = await response.json();
+
+            // Skip if empty response
+            if (!data || Object.keys(data).length === 0) {
+                continue; // Try next endpoint
+            }
+
+            // Log the first full response to see the structure
+            if (!hasLoggedFirstUserResponse && log) {
+                log(`USER API SUCCESS at ${endpoint}`);
+                log(`RESPONSE STRUCTURE: ${JSON.stringify(data).substring(0, 800)}`);
+                hasLoggedFirstUserResponse = true;
+            }
+
+            // Try different response structures
+            const followers = data.data?.user?.stats?.followerCount
+                || data.data?.stats?.followerCount
+                || data.userInfo?.stats?.followerCount
+                || data.userInfo?.user?.stats?.followerCount
+                || data.stats?.followerCount
+                || data.user?.stats?.followerCount
+                || data.followerCount
+                || data.data?.followerCount
+                || 0;
+
+            if (followers > 0) {
+                return followers;
+            }
+        } catch (error) {
+            continue; // Try next endpoint
         }
-
-        const data = await response.json();
-
-        // Log the first full response to see the structure
-        if (!hasLoggedFirstUserResponse && log) {
-            log(`FIRST USER RESPONSE STRUCTURE: ${JSON.stringify(data).substring(0, 500)}`);
-            hasLoggedFirstUserResponse = true;
-        }
-
-        // Try different response structures
-        const followers = data.data?.user?.stats?.followerCount
-            || data.data?.stats?.followerCount
-            || data.userInfo?.stats?.followerCount
-            || data.userInfo?.user?.stats?.followerCount
-            || data.stats?.followerCount
-            || data.user?.stats?.followerCount
-            || 0;
-
-        return followers;
-    } catch (error) {
-        console.error(`Error fetching followers for ${username}:`, error);
-        return 0;
     }
+
+    // If all endpoints fail, log it
+    if (!hasLoggedFirstUserResponse && log) {
+        log(`ALL ENDPOINTS FAILED for @${username}`);
+        hasLoggedFirstUserResponse = true;
+    }
+
+    return 0;
 }
 
 // Fetch videos by hashtag
