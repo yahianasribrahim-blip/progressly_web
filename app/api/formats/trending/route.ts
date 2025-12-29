@@ -13,12 +13,56 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
 const TIKTOK_API_HOST = "tiktok-scraper2.p.rapidapi.com";
 
-// Generic trending hashtags to find globally popular formats
-const TRENDING_HASHTAGS = [
-    "fyp", "viral", "trending", "foryoupage",
-    "transformation", "storytime", "grwm",
-    "tutorial", "dayinmylife"
-];
+// NICHE-SPECIFIC HASHTAGS - Returns content relevant to user's niche, not random viral videos
+const NICHE_HASHTAGS: Record<string, string[]> = {
+    // Business/Money niches
+    "affiliate": ["affiliatemarketing", "makemoneyonline", "passiveincome", "sidehustle", "onlinebusiness"],
+    "saas": ["saas", "software", "startup", "entrepreneur", "techstartup"],
+    "business": ["smallbusiness", "entrepreneur", "businesstips", "sidehustle", "makemoneyonline"],
+    "finance": ["personalfinance", "investing", "moneytips", "financialfreedom", "budgeting"],
+
+    // Content creator niches
+    "content": ["contentcreator", "creatortips", "socialmediatips", "growthtips", "tiktoktips"],
+    "influencer": ["influencer", "ugc", "ugccreator", "branddeals", "sponsorship"],
+
+    // Lifestyle niches
+    "fitness": ["fitness", "workout", "gym", "fitnessmotivation", "homeworkout"],
+    "food": ["foodtiktok", "recipe", "cooking", "foodie", "easyrecipe"],
+    "fashion": ["fashion", "ootd", "style", "outfitideas", "fashiontiktok"],
+    "beauty": ["beauty", "makeup", "skincare", "beautytips", "makeuptutorial"],
+
+    // Muslim creator niches
+    "hijab": ["hijab", "hijabstyle", "modestfashion", "hijabfashion", "hijabtutorial"],
+    "deen": ["islam", "muslim", "islamicreminders", "deen", "islamiccontent"],
+    "halal": ["halal", "halalfood", "muslimlife", "ramadan", "islamiclifestyle"],
+
+    // General fallback - still niche-related, not random viral
+    "default": ["tutorial", "howto", "tips", "learnontiktok", "lifehacks"],
+};
+
+// Get hashtags for a niche (normalize input)
+function getHashtagsForNiche(niche: string): string[] {
+    const nicheKey = niche.toLowerCase().trim();
+
+    // Check for direct match
+    if (NICHE_HASHTAGS[nicheKey]) {
+        return NICHE_HASHTAGS[nicheKey];
+    }
+
+    // Check for partial match
+    for (const [key, hashtags] of Object.entries(NICHE_HASHTAGS)) {
+        if (nicheKey.includes(key) || key.includes(nicheKey)) {
+            return hashtags;
+        }
+    }
+
+    // Add niche itself as hashtag + default
+    return [nicheKey.replace(/\s+/g, ''), ...NICHE_HASHTAGS.default];
+}
+
+// View count limits for MID-VIRAL content (not mega-viral celebrities)
+const MIN_VIEWS = 50000;      // At least 50K views
+const MAX_VIEWS = 10000000;   // No more than 10M views (avoid mega-viral)
 
 interface SourceVideo {
     id: string;
@@ -115,14 +159,18 @@ async function getHashtagVideos(hashtagId: string, count: number = 30): Promise<
     }
 }
 
-// Fetch trending videos from generic hashtags using tiktok-scraper2 API
-async function fetchGlobalTrendingVideos(count: number = 20): Promise<{ videos: any[], debugInfo: any }> {
-    console.log("Fetching global trending videos using tiktok-scraper2...");
+// Fetch trending videos for a SPECIFIC NICHE using tiktok-scraper2 API
+async function fetchNicheTrendingVideos(niche: string, count: number = 20): Promise<{ videos: any[], debugInfo: any }> {
+    const nicheHashtags = getHashtagsForNiche(niche);
+    console.log(`Fetching niche-specific videos for "${niche}" using hashtags: ${nicheHashtags.join(', ')}`);
 
     const debugInfo: any = {
+        niche,
+        hashtags: nicheHashtags,
         apiResponses: [],
         errors: [],
         hashtagsProcessed: [],
+        viewFiltering: { min: MIN_VIEWS, max: MAX_VIEWS, filtered: 0 },
     };
 
     if (!RAPIDAPI_KEY) {
@@ -135,10 +183,10 @@ async function fetchGlobalTrendingVideos(count: number = 20): Promise<{ videos: 
     const seenIds = new Set<string>();
 
     // Shuffle hashtags to get different results each refresh
-    const shuffledHashtags = [...TRENDING_HASHTAGS].sort(() => Math.random() - 0.5);
+    const shuffledHashtags = [...nicheHashtags].sort(() => Math.random() - 0.5);
 
-    // Try hashtags one by one (limit to 3 to save API calls)
-    for (const hashtag of shuffledHashtags.slice(0, 3)) {
+    // Try hashtags one by one (limit to 4 for niche relevance)
+    for (const hashtag of shuffledHashtags.slice(0, 4)) {
         if (allVideos.length >= count) break;
 
         try {
@@ -153,7 +201,7 @@ async function fetchGlobalTrendingVideos(count: number = 20): Promise<{ videos: 
             debugInfo.hashtagsProcessed.push({ hashtag, hashtagId });
 
             // Step 2: Get videos for this hashtag
-            const videos = await getHashtagVideos(hashtagId, 15);
+            const videos = await getHashtagVideos(hashtagId, 20); // Fetch more to filter
 
             debugInfo.apiResponses.push({
                 hashtag,
@@ -161,16 +209,25 @@ async function fetchGlobalTrendingVideos(count: number = 20): Promise<{ videos: 
                 videosFound: videos.length,
             });
 
-            // Process videos
+            // Process videos WITH VIEW FILTERING
             for (const v of videos) {
                 const videoId = v.id || v.video_id;
                 if (!videoId || seenIds.has(videoId)) continue;
+
+                const viewCount = v.stats?.playCount || v.play_count || v.views || 0;
+
+                // FILTER: Only mid-viral content (50K-10M views)
+                if (viewCount < MIN_VIEWS || viewCount > MAX_VIEWS) {
+                    debugInfo.viewFiltering.filtered++;
+                    continue;
+                }
+
                 seenIds.add(videoId);
 
                 allVideos.push({
                     id: videoId,
                     description: v.desc || v.description || "",
-                    views: v.stats?.playCount || v.play_count || v.views || 0,
+                    views: viewCount,
                     likes: v.stats?.diggCount || v.like_count || v.likes || 0,
                     shares: v.stats?.shareCount || v.share_count || v.shares || 0,
                     duration: v.video?.duration || v.duration || 0,
@@ -179,14 +236,14 @@ async function fetchGlobalTrendingVideos(count: number = 20): Promise<{ videos: 
                 });
             }
 
-            console.log(`#${hashtag}: added ${allVideos.length} total videos`);
+            console.log(`#${hashtag}: added ${allVideos.length} total mid-viral videos`);
         } catch (error) {
             console.error(`Error processing #${hashtag}:`, error);
             debugInfo.errors.push(`#${hashtag}: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 
-    console.log(`Fetched ${allVideos.length} global trending videos`);
+    console.log(`Fetched ${allVideos.length} niche-relevant mid-viral videos for "${niche}"`);
     return { videos: allVideos, debugInfo };
 }
 
@@ -263,56 +320,61 @@ async function extractFormatsWithVision(videos: any[], niche: string): Promise<T
 
     const variationSeed = Math.random().toString(36).substring(7);
 
-    const prompt = `You are analyzing ${base64Images.length} viral TikTok video thumbnails.
+    const prompt = `You are analyzing ${base64Images.length} TikTok video thumbnails from the "${nicheName}" niche.
 
-YOUR GOAL: Turn each video into a UNIVERSAL FILL-IN-THE-BLANK TEMPLATE that ANYONE can use in ANY niche.
+YOUR GOAL: Extract REAL formats from these videos and turn them into fill-in-the-blank templates.
 
-Context for each video:
+Video context (hashtag, views):
 ${videoContext}
 
-User's niche: "${nicheName}"
+CRITICAL RULES FOR HONESTY:
+1. Only analyze videos where you can CLEARLY see the format from the thumbnail
+2. SKIP any video that is just a random meme, baby video, AI-generated art, or has nothing to do with "${nicheName}"  
+3. If a video is just a single person talking to camera, say "Talking Head" - don't invent complex structures that aren't there
+4. If you can't tell the format from the thumbnail, SKIP IT and move to the next video
+5. Your templates must match what you ACTUALLY SEE, not what you imagine might be in the video
 
-IMPORTANT: A template is NOT a description. A template is a FORMULA with blanks to fill in.
+WHAT TO LOOK FOR IN EACH THUMBNAIL:
+- Is there text overlay? What does it say?
+- Is it a talking head, screen recording, split screen, or montage?
+- Is there a clear "before/after" or transition visible?
+- Is there any visual hook (setup, prop, unusual framing)?
 
-EXAMPLE OF WHAT I WANT:
-- BAD (description): "A person sitting at a desk naming fabric types while images pop up"
-- GOOD (template): "Sit in frame. Say '[CATEGORY]: [ITEM 1]' and cut to image of [ITEM 1]. Repeat for 5-7 items in your niche."
+TEMPLATE FORMAT - Fill in the blanks with [BRACKETS]:
+- "Sit at desk. Say '[YOUR HOOK]'. Show [IMAGE OF CONCEPT 1], then [IMAGE OF CONCEPT 2]. Voiceover explains each."
+- "Screen record [YOUR APP/TOOL]. Text overlay: 'How to [BENEFIT]'. Walk through 3 steps."
+- Note: These are EXAMPLES - extract what you ACTUALLY see in the thumbnails
 
-For each thumbnail, create a TEMPLATE by asking:
-1. What is the STRUCTURE? (How is it filmed? What sequence of shots?)
-2. What are the BLANKS? (What would someone replace with their own content?)
-3. What is the HOOK mechanism? (Why does someone keep watching?)
-
-Return EXACTLY 3 fill-in-the-blank templates from these videos.
-
+Return EXACTLY 3 templates from videos that are RELEVANT to "${nicheName}". 
 (seed: ${variationSeed})
 
 Return ONLY valid JSON array with EXACTLY 3 objects:
 [
     {
         "id": "f1",
-        "formatName": "<Short name for the template>",
-        "formatDescription": "<The fill-in-the-blank template with [BRACKETS] for what to replace. Be SPECIFIC about shots, timing, and structure.>",
-        "whyItWorks": "<The psychological hook - why this format keeps people watching>",
+        "formatName": "<Short name based on what you ACTUALLY see>",
+        "formatDescription": "<Fill-in-the-blank template with [BRACKETS]. Describe the actual video structure you observed.>",
+        "whyItWorks": "<Why this format works - based on the actual video structure>",
         "howToApply": [
-            "<Example of filling in the blanks for '${nicheName}' niche>",
-            "<Another example with different content>",
+            "<Specific example for '${nicheName}' niche>",
+            "<Another example>",
             "<Third example>"
         ],
         "halalAudioSuggestions": ["Voiceover", "Natural sounds"],
         "engagementPotential": "High",
         "avgStats": {
-            "views": "<View range from actual videos above>",
+            "views": "<Use ACTUAL view counts from the videos above>",
             "likes": "<10% of views>",
             "shares": "<1% of views>"
         }
     }
 ]
 
-CRITICAL: 
-- Every formatDescription MUST be a reusable template with [BRACKETS] for blanks
-- Do NOT just describe what you see - create a FORMULA others can copy
-- Think: "If I gave this template to 100 creators, they should all make similar videos with their own content"`;
+CRITICAL:
+- DO NOT make up formats like "quick cuts" unless you literally SEE quick cuts evidence in thumbnails
+- If a video is a single static talking head, the template is just "Record yourself talking about [TOPIC]" - don't overcomplicate
+- Base everything on what you ACTUALLY SEE, not what you imagine`;
+
 
 
     try {
@@ -581,9 +643,9 @@ export async function GET(request: Request) {
     let apiDebugInfo: any = {};
 
     try {
-        // Step 1: Fetch trending videos from generic hashtags
-        console.log("Step 1: Fetching trending videos...");
-        const fetchResult = await fetchGlobalTrendingVideos(20);
+        // Step 1: Fetch trending videos FOR THIS NICHE (not generic viral)
+        console.log(`Step 1: Fetching niche-specific videos for "${niche}"...`);
+        const fetchResult = await fetchNicheTrendingVideos(niche, 20);
         trendingVideos = fetchResult.videos;
         apiDebugInfo = fetchResult.debugInfo;
 
