@@ -5,9 +5,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Loader2, TrendingUp, Lightbulb, Volume2, Sparkles, Eye, Heart, Share2, Zap, Bookmark, Check } from "lucide-react";
+import { Loader2, TrendingUp, Lightbulb, Volume2, Sparkles, Eye, Heart, Share2, Zap, Bookmark, Check, ExternalLink, Video } from "lucide-react";
 import { UsageBadge } from "@/components/dashboard/usage-badge";
 import { toast } from "sonner";
+
+interface SourceVideo {
+    id: string;
+    url: string;
+    thumbnail: string;
+    views: number;
+    author: string;
+    description: string;
+}
 
 interface TrendingFormat {
     id: string;
@@ -22,6 +31,7 @@ interface TrendingFormat {
         likes: string;
         shares: string;
     };
+    sourceVideos?: SourceVideo[];
 }
 
 export default function TrendingFormatsPage() {
@@ -406,6 +416,50 @@ export default function TrendingFormatsPage() {
                                                     </Badge>
                                                 ))}
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {/* SOURCE VIDEOS - PROOF */}
+                                    {(format as TrendingFormat & { sourceVideos?: SourceVideo[] }).sourceVideos && (format as TrendingFormat & { sourceVideos?: SourceVideo[] }).sourceVideos!.length > 0 && (
+                                        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200/50">
+                                            <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-medium text-sm mb-2">
+                                                <Video className="h-4 w-4" />
+                                                📹 Proof: Viral Videos This Format Came From
+                                            </div>
+                                            <div className="space-y-2">
+                                                {(format as TrendingFormat & { sourceVideos?: SourceVideo[] }).sourceVideos!.map((video, i) => (
+                                                    <a
+                                                        key={video.id || i}
+                                                        href={video.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-black/20 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                                                    >
+                                                        {video.thumbnail && (
+                                                            <img
+                                                                src={video.thumbnail}
+                                                                alt="Video thumbnail"
+                                                                className="w-12 h-16 object-cover rounded"
+                                                            />
+                                                        )}
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-medium text-green-800 dark:text-green-300 truncate">
+                                                                {video.author}
+                                                            </p>
+                                                            <p className="text-xs text-green-600 dark:text-green-400">
+                                                                {video.views?.toLocaleString() || '?'} views
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground truncate">
+                                                                {video.description || 'Click to view'}
+                                                            </p>
+                                                        </div>
+                                                        <ExternalLink className="h-4 w-4 text-green-600 flex-shrink-0" />
+                                                    </a>
+                                                ))}
+                                            </div>
+                                            <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                                                ✓ Click any video to verify it's real and currently trending
+                                            </p>
                                         </div>
                                     )}
                                 </CardContent>

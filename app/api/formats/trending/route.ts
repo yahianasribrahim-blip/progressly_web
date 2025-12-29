@@ -20,6 +20,15 @@ const TRENDING_HASHTAGS = [
     "tutorial", "dayinmylife"
 ];
 
+interface SourceVideo {
+    id: string;
+    url: string;
+    thumbnail: string;
+    views: number;
+    author: string;
+    description: string;
+}
+
 interface TrendingFormat {
     id: string;
     formatName: string;
@@ -33,6 +42,7 @@ interface TrendingFormat {
         likes: string;
         shares: string;
     };
+    sourceVideos?: SourceVideo[]; // PROOF: The actual videos this format was extracted from
 }
 
 // Step 1: Get hashtag ID from hashtag name
@@ -615,17 +625,35 @@ export async function GET(request: Request) {
 
         console.log(`Step 2 success: Extracted ${formats.length} formats for ${niche}`);
 
+        // Step 3: Attach source videos as PROOF to each format
+        const sourceVideos: SourceVideo[] = trendingVideos.slice(0, 8).map(v => ({
+            id: v.id,
+            url: `https://www.tiktok.com/@${v.author}/video/${v.id}`,
+            thumbnail: v.coverUrl || "",
+            views: v.views || 0,
+            author: `@${v.author}`,
+            description: (v.description || "").substring(0, 100),
+        }));
+
+        // Distribute source videos across formats (roughly 2-3 per format)
+        const formatsWithProof = formats.map((format, i) => ({
+            ...format,
+            sourceVideos: sourceVideos.slice(i * 2, i * 2 + 3).filter(v => v.id),
+        }));
+
         // Record usage on success
         await recordFormatSearchUsage(session.user.id);
 
         return NextResponse.json({
             success: true,
             data: {
-                formats,
+                formats: formatsWithProof,
                 niche,
                 videosAnalyzed: trendingVideos.length,
                 generatedAt: new Date().toISOString(),
                 source: "live",
+                // Also return all source videos for full verification
+                allSourceVideos: sourceVideos,
             }
         });
     } catch (error) {

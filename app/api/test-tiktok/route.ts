@@ -7,7 +7,7 @@ const WOOP_API_HOST = "tiktok-most-trending-and-viral-content.p.rapidapi.com";
 export async function GET() {
     const keyPrefix = RAPIDAPI_KEY.substring(0, 12);
 
-    let testResult = null;
+    let testResult: { url?: string; status?: number; isRateLimited?: boolean; videoCount?: any; responsePreview?: string; error?: string } | null = null;
     try {
         // CORRECT endpoint from tiktok-api.ts line 276
         const params = new URLSearchParams({
