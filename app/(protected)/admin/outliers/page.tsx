@@ -45,10 +45,12 @@ export default function OutlierFinderPage() {
     const [searchedHashtags, setSearchedHashtags] = useState<string[]>([]);
     const [totalScanned, setTotalScanned] = useState(0);
     const [error, setError] = useState<string | null>(null);
+    const [debugLog, setDebugLog] = useState<string[]>([]);
 
     const searchOutliers = async (hashtag?: string) => {
         setLoading(true);
         setError(null);
+        setDebugLog([]);
 
         try {
             const url = hashtag
@@ -57,6 +59,11 @@ export default function OutlierFinderPage() {
 
             const response = await fetch(url);
             const data = await response.json();
+
+            // Capture debug log regardless of success/error
+            if (data.debug) {
+                setDebugLog(data.debug);
+            }
 
             if (!response.ok) {
                 throw new Error(data.error || "Failed to fetch outliers");
@@ -240,6 +247,22 @@ export default function OutlierFinderPage() {
                 <Card>
                     <CardContent className="pt-6 text-center text-muted-foreground">
                         No outliers found. Try different hashtags or lower the ratio threshold.
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Debug Log */}
+            {debugLog.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>🔧 Debug Log</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="bg-muted p-4 rounded text-xs font-mono max-h-96 overflow-y-auto">
+                            {debugLog.map((line, i) => (
+                                <div key={i} className="py-0.5">{line}</div>
+                            ))}
+                        </div>
                     </CardContent>
                 </Card>
             )}
