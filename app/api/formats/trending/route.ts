@@ -720,8 +720,9 @@ export async function GET(request: Request) {
 
         console.log(`Step 2 success: Extracted ${formats.length} formats for ${niche}`);
 
-        // Step 3: Attach source videos as PROOF to each format
-        const sourceVideos: SourceVideo[] = trendingVideos.slice(0, 8).map(v => ({
+        // Step 3: Validate and distribute source videos (NO DUPLICATES)
+        // Build source video list
+        const allSourceVideos: SourceVideo[] = trendingVideos.slice(0, 12).map(v => ({
             id: v.id,
             url: `https://www.tiktok.com/@${v.author}/video/${v.id}`,
             thumbnail: v.coverUrl || "",
@@ -730,11 +731,18 @@ export async function GET(request: Request) {
             description: (v.description || "").substring(0, 100),
         }));
 
-        // Distribute source videos across formats (roughly 2-3 per format)
-        const formatsWithProof = formats.map((format, i) => ({
-            ...format,
-            sourceVideos: sourceVideos.slice(i * 2, i * 2 + 3).filter(v => v.id),
-        }));
+        // NON-OVERLAPPING distribution: each format gets UNIQUE videos
+        // Format 0: videos 0,1 | Format 1: videos 2,3 | Format 2: videos 4,5
+        const formatsWithProof = formats.map((format, i) => {
+            const startIdx = i * 2;  // Non-overlapping: 0,2,4
+            const endIdx = startIdx + 2;  // Max 2 videos per format
+            const uniqueVideos = allSourceVideos.slice(startIdx, endIdx).filter(v => v.id);
+
+            return {
+                ...format,
+                sourceVideos: uniqueVideos,
+            };
+        });
 
         // Record usage on success
         await recordFormatSearchUsage(session.user.id);
@@ -748,7 +756,7 @@ export async function GET(request: Request) {
                 generatedAt: new Date().toISOString(),
                 source: "live",
                 // Also return all source videos for full verification
-                allSourceVideos: sourceVideos,
+                allSourceVideos: allSourceVideos,
             }
         });
     } catch (error) {
