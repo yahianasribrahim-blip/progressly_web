@@ -160,9 +160,14 @@ async function getHashtagVideos(hashtagId: string, count: number = 30): Promise<
 }
 
 // Fetch trending videos for a SPECIFIC NICHE using tiktok-scraper2 API
+// WITH recency filter and retry/pivot logic
 async function fetchNicheTrendingVideos(niche: string, count: number = 20): Promise<{ videos: any[], debugInfo: any }> {
     const nicheHashtags = getHashtagsForNiche(niche);
     console.log(`Fetching niche-specific videos for "${niche}" using hashtags: ${nicheHashtags.join(', ')}`);
+
+    // MAX AGE: Only videos from last 45 days (trending = RECENT)
+    const MAX_AGE_DAYS = 45;
+    const cutoffDate = Date.now() - (MAX_AGE_DAYS * 24 * 60 * 60 * 1000);
 
     const debugInfo: any = {
         niche,
@@ -171,6 +176,7 @@ async function fetchNicheTrendingVideos(niche: string, count: number = 20): Prom
         errors: [],
         hashtagsProcessed: [],
         viewFiltering: { min: MIN_VIEWS, max: MAX_VIEWS, filtered: 0 },
+        recencyFiltering: { maxAgeDays: MAX_AGE_DAYS, filtered: 0 },
     };
 
     if (!RAPIDAPI_KEY) {
@@ -185,65 +191,89 @@ async function fetchNicheTrendingVideos(niche: string, count: number = 20): Prom
     // Shuffle hashtags to get different results each refresh
     const shuffledHashtags = [...nicheHashtags].sort(() => Math.random() - 0.5);
 
-    // Try hashtags one by one (limit to 4 for niche relevance)
-    for (const hashtag of shuffledHashtags.slice(0, 4)) {
-        if (allVideos.length >= count) break;
+    // RETRY LOGIC: Try up to ALL hashtags until we get enough videos
+    // Start with 4, but if not enough, try all of them
+    let hashtagsToTry = 4;
 
-        try {
-            // Step 1: Get hashtag ID
-            const hashtagId = await getHashtagId(hashtag);
+    for (let attempt = 0; attempt < 2; attempt++) {
+        const hashtagsThisAttempt = shuffledHashtags.slice(0, hashtagsToTry);
 
-            if (!hashtagId) {
-                debugInfo.errors.push(`#${hashtag}: Could not get hashtag ID`);
-                continue;
-            }
+        for (const hashtag of hashtagsThisAttempt) {
+            if (allVideos.length >= count) break;
 
-            debugInfo.hashtagsProcessed.push({ hashtag, hashtagId });
+            try {
+                // Step 1: Get hashtag ID
+                const hashtagId = await getHashtagId(hashtag);
 
-            // Step 2: Get videos for this hashtag
-            const videos = await getHashtagVideos(hashtagId, 20); // Fetch more to filter
-
-            debugInfo.apiResponses.push({
-                hashtag,
-                hashtagId,
-                videosFound: videos.length,
-            });
-
-            // Process videos WITH VIEW FILTERING
-            for (const v of videos) {
-                const videoId = v.id || v.video_id;
-                if (!videoId || seenIds.has(videoId)) continue;
-
-                const viewCount = v.stats?.playCount || v.play_count || v.views || 0;
-
-                // FILTER: Only mid-viral content (50K-10M views)
-                if (viewCount < MIN_VIEWS || viewCount > MAX_VIEWS) {
-                    debugInfo.viewFiltering.filtered++;
+                if (!hashtagId) {
+                    debugInfo.errors.push(`#${hashtag}: Could not get hashtag ID`);
                     continue;
                 }
 
-                seenIds.add(videoId);
+                debugInfo.hashtagsProcessed.push({ hashtag, hashtagId });
 
-                allVideos.push({
-                    id: videoId,
-                    description: v.desc || v.description || "",
-                    views: viewCount,
-                    likes: v.stats?.diggCount || v.like_count || v.likes || 0,
-                    shares: v.stats?.shareCount || v.share_count || v.shares || 0,
-                    duration: v.video?.duration || v.duration || 0,
-                    coverUrl: v.video?.cover || v.cover || "",
-                    author: v.author?.uniqueId || v.author?.nickname || "creator",
+                // Step 2: Get videos for this hashtag
+                const videos = await getHashtagVideos(hashtagId, 30); // Fetch more to filter
+
+                debugInfo.apiResponses.push({
+                    hashtag,
+                    hashtagId,
+                    videosFound: videos.length,
                 });
-            }
 
-            console.log(`#${hashtag}: added ${allVideos.length} total mid-viral videos`);
-        } catch (error) {
-            console.error(`Error processing #${hashtag}:`, error);
-            debugInfo.errors.push(`#${hashtag}: ${error instanceof Error ? error.message : "Unknown error"}`);
+                // Process videos WITH VIEW + RECENCY FILTERING
+                for (const v of videos) {
+                    const videoId = v.id || v.video_id;
+                    if (!videoId || seenIds.has(videoId)) continue;
+
+                    const viewCount = v.stats?.playCount || v.play_count || v.views || 0;
+
+                    // FILTER 1: Only mid-viral content (50K-10M views)
+                    if (viewCount < MIN_VIEWS || viewCount > MAX_VIEWS) {
+                        debugInfo.viewFiltering.filtered++;
+                        continue;
+                    }
+
+                    // FILTER 2: Only RECENT videos (last 45 days)
+                    const createTime = v.createTime || v.create_time || 0;
+                    const videoTimestamp = createTime * 1000; // Convert to milliseconds
+                    if (videoTimestamp > 0 && videoTimestamp < cutoffDate) {
+                        debugInfo.recencyFiltering.filtered++;
+                        continue;
+                    }
+
+                    seenIds.add(videoId);
+
+                    allVideos.push({
+                        id: videoId,
+                        description: v.desc || v.description || "",
+                        views: viewCount,
+                        likes: v.stats?.diggCount || v.like_count || v.likes || 0,
+                        shares: v.stats?.shareCount || v.share_count || v.shares || 0,
+                        duration: v.video?.duration || v.duration || 0,
+                        coverUrl: v.video?.cover || v.cover || "",
+                        author: v.author?.uniqueId || v.author?.nickname || "creator",
+                        createTime: createTime,
+                    });
+                }
+
+                console.log(`#${hashtag}: ${allVideos.length} total mid-viral recent videos`);
+            } catch (error) {
+                console.error(`Error processing #${hashtag}:`, error);
+                debugInfo.errors.push(`#${hashtag}: ${error instanceof Error ? error.message : "Unknown error"}`);
+            }
         }
+
+        // PIVOT LOGIC: If not enough videos, try more hashtags
+        if (allVideos.length >= count || hashtagsToTry >= shuffledHashtags.length) {
+            break;
+        }
+
+        console.log(`Only ${allVideos.length} videos found, pivoting to try more hashtags...`);
+        hashtagsToTry = shuffledHashtags.length; // Try all of them
     }
 
-    console.log(`Fetched ${allVideos.length} niche-relevant mid-viral videos for "${niche}"`);
+    console.log(`Fetched ${allVideos.length} niche-relevant mid-viral recent videos for "${niche}"`);
     return { videos: allVideos, debugInfo };
 }
 
@@ -328,22 +358,25 @@ Video context (hashtag, views):
 ${videoContext}
 
 CRITICAL RULES FOR HONESTY:
-1. Only analyze videos where you can CLEARLY see the format from the thumbnail
-2. SKIP any video that is just a random meme, baby video, AI-generated art, or has nothing to do with "${nicheName}"  
-3. If a video is just a single person talking to camera, say "Talking Head" - don't invent complex structures that aren't there
-4. If you can't tell the format from the thumbnail, SKIP IT and move to the next video
-5. Your templates must match what you ACTUALLY SEE, not what you imagine might be in the video
+1. LOOK AT EACH THUMBNAIL CAREFULLY - describe ONLY what you literally see
+2. If ALL videos show a person talking to camera with NO edits/cuts/overlays → the format IS "Talking Head" 
+3. If you see a screen recording → the format involves screen recording
+4. If you see text overlay → describe the text overlay format
+5. DO NOT invent "screen recording" or "quick cuts" if the videos are just people talking to camera
+6. The format you describe MUST match what the MAJORITY of source videos show
+
+CHECK BEFORE EACH FORMAT: "Would someone watching these videos see the format I'm describing?"
 
 WHAT TO LOOK FOR IN EACH THUMBNAIL:
-- Is there text overlay? What does it say?
-- Is it a talking head, screen recording, split screen, or montage?
-- Is there a clear "before/after" or transition visible?
-- Is there any visual hook (setup, prop, unusual framing)?
+- Is there text overlay? Quote it exactly.
+- Is it talking head (person facing camera, single shot)?
+- Is it screen recording (showing phone/computer screen)?
+- Is it split screen, POV, or has visible cuts/transitions?
 
-TEMPLATE FORMAT - Fill in the blanks with [BRACKETS]:
-- "Sit at desk. Say '[YOUR HOOK]'. Show [IMAGE OF CONCEPT 1], then [IMAGE OF CONCEPT 2]. Voiceover explains each."
-- "Screen record [YOUR APP/TOOL]. Text overlay: 'How to [BENEFIT]'. Walk through 3 steps."
-- Note: These are EXAMPLES - extract what you ACTUALLY see in the thumbnails
+HONESTY TEST:
+- If 3 videos are just girls talking to camera → format = "Talking Head: speak directly to camera about [TOPIC]"
+- If 2 videos have text overlay → describe the text overlay style
+- DO NOT suggest "screen record" if no videos show screen recording
 
 Return EXACTLY 3 templates from videos that are RELEVANT to "${nicheName}". 
 (seed: ${variationSeed})
