@@ -3,8 +3,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { auth } from "@/auth";
 import { canUseFormatSearch, recordFormatSearchUsage } from "@/lib/user";
 
-// Initialize Gemini
+// Initialize Gemini (fallback)
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
+
+// OpenAI for Vision-based analysis
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 
 // API Configuration - Using tiktok-scraper2 API
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
@@ -192,9 +195,168 @@ const NICHE_NAMES: Record<string, string> = {
     other: "General Content",
 };
 
-// Use Gemini to extract FORMAT from multiple videos with niche-specific suggestions
+// Download and base64 encode image for Vision API
+async function downloadImageAsBase64(url: string): Promise<string | null> {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const buffer = await response.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+        const contentType = response.headers.get('content-type') || 'image/jpeg';
+        return `data:${contentType};base64,${base64}`;
+    } catch {
+        return null;
+    }
+}
+
+// Use GPT-4o Vision to analyze ACTUAL video thumbnails and extract real formats
+async function extractFormatsWithVision(videos: any[], niche: string): Promise<TrendingFormat[]> {
+    console.log(`Extracting formats from ${videos.length} videos for niche: ${niche} using VISION...`);
+
+    const nicheName = NICHE_NAMES[niche] || niche;
+
+    if (videos.length === 0) {
+        return getDefaultFormats(niche);
+    }
+
+    // Download thumbnails (up to 8 videos)
+    const videosWithThumbnails = videos.filter(v => v.coverUrl && v.coverUrl.startsWith('http')).slice(0, 8);
+    if (videosWithThumbnails.length === 0) {
+        console.log("No valid thumbnails found, falling back to text-only");
+        return extractFormatsWithGemini(videos, niche);
+    }
+
+    console.log(`Downloading ${videosWithThumbnails.length} thumbnails...`);
+    const base64Images: string[] = [];
+    for (const v of videosWithThumbnails) {
+        const base64 = await downloadImageAsBase64(v.coverUrl);
+        if (base64) base64Images.push(base64);
+    }
+
+    if (base64Images.length === 0 || !OPENAI_API_KEY) {
+        console.log("No thumbnails downloaded or no OpenAI key, falling back to Gemini");
+        return extractFormatsWithGemini(videos, niche);
+    }
+
+    console.log(`Sending ${base64Images.length} images to GPT-4o Vision...`);
+
+    // Build image content for vision API
+    const imageContent = base64Images.map(url => ({
+        type: "image_url" as const,
+        image_url: { url, detail: "low" as const }
+    }));
+
+    // Also include text descriptions for context
+    const videoContext = videosWithThumbnails.map((v, i) =>
+        `Video ${i + 1}: "${v.description?.substring(0, 100) || 'No description'}" - ${v.views?.toLocaleString() || '?'} views`
+    ).join("\n");
+
+    const variationSeed = Math.random().toString(36).substring(7);
+
+    const prompt = `You are analyzing ${base64Images.length} TikTok video THUMBNAILS to extract REAL content formats.
+
+I want you to look at EXACTLY what each video thumbnail shows and tell me what FORMAT/STRUCTURE they use.
+
+Context for each video:
+${videoContext}
+
+User's niche: "${nicheName}"
+
+FOR EACH THUMBNAIL, analyze:
+1. VISUAL HOOK: What's happening in the first frame that grabs attention?
+   - Camera angle (talking head, POV, wide shot, etc.)
+   - Is there text overlay? What does it say?
+   - Is there a person? What are they doing?
+   - Any props, effects, or visual gimmicks?
+
+2. FORMAT STRUCTURE: What type of video is this?
+   - Tutorial (showing how to do something)
+   - Reaction (reacting to something)
+   - Storytime (talking to camera)
+   - Slideshow (images appearing while talking)
+   - POV (first person perspective)
+   - Montage (multiple clips edited together)
+   - Before/After (transformation)
+   - Other (describe it)
+
+3. UNIQUE MECHANISM: What makes this format work? What's the creative element?
+
+Based on your REAL observations, extract EXACTLY 3 distinct formats that are ACTUALLY in these videos.
+
+(seed: ${variationSeed})
+
+Return ONLY valid JSON array with EXACTLY 3 objects:
+[
+    {
+        "id": "f1",
+        "formatName": "<Describe what you ACTUALLY see - e.g., 'Slideshow While Naming Things' or 'Setup Camera Visual Hook'>",
+        "formatDescription": "<2-3 sentences describing what the video ACTUALLY does based on the thumbnail>",
+        "whyItWorks": "<Why this specific format works based on what you observed>",
+        "howToApply": [
+            "<How someone in '${nicheName}' niche could use this EXACT format>",
+            "<Another application>",
+            "<Third application>"
+        ],
+        "halalAudioSuggestions": ["Voiceover", "Natural sounds"],
+        "engagementPotential": "High",
+        "avgStats": {
+            "views": "<ACTUAL view range from the videos - use the real data provided>",
+            "likes": "<estimate based on typical 10% of views>",
+            "shares": "<estimate based on typical 1% of views>"
+        }
+    }
+]
+
+CRITICAL: Describe what you ACTUALLY SEE in the thumbnails. Do NOT make up generic formats like "GRWM" or "Day 1 vs Day 365" unless you literally see that in the images.`;
+
+    try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${OPENAI_API_KEY}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                model: "gpt-4o-mini",
+                messages: [{
+                    role: "user",
+                    content: [
+                        { type: "text", text: prompt },
+                        ...imageContent
+                    ]
+                }],
+                max_tokens: 1500,
+                temperature: 0.3,
+            }),
+        });
+
+        if (!response.ok) {
+            console.error("GPT-4o Vision error:", response.status);
+            return extractFormatsWithGemini(videos, niche);
+        }
+
+        const result = await response.json();
+        const text = result.choices?.[0]?.message?.content || "";
+        console.log("GPT-4o Vision response:", text.substring(0, 300));
+
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) {
+            console.error("No JSON found in Vision response");
+            return extractFormatsWithGemini(videos, niche);
+        }
+
+        const formats: TrendingFormat[] = JSON.parse(jsonMatch[0]);
+        console.log(`Vision extracted ${formats.length} REAL formats`);
+        return formats;
+    } catch (error) {
+        console.error("Vision extraction error:", error);
+        return extractFormatsWithGemini(videos, niche);
+    }
+}
+
+// Fallback: Use Gemini with text-only (less reliable)
 async function extractFormatsWithGemini(videos: any[], niche: string): Promise<TrendingFormat[]> {
-    console.log(`Extracting formats from ${videos.length} videos for niche: ${niche}...`);
+    console.log(`Fallback: Extracting formats from ${videos.length} videos using Gemini (text-only)...`);
 
     const nicheName = NICHE_NAMES[niche] || niche;
 
@@ -206,104 +368,23 @@ async function extractFormatsWithGemini(videos: any[], niche: string): Promise<T
         .map((v, i) => `Video ${i + 1}: "${v.description}" (${v.views} views, ${v.duration}s)`)
         .join("\n");
 
-    // Add a random seed to encourage different results each time
-    const variationSeed = Math.random().toString(36).substring(7);
-
-    // The niche now includes their content creation style (e.g., "I film myself doing street racing" vs "I talk about racing history")
-    const prompt = `You are a content strategist helping a Muslim content creator.
-
-THEIR CONTENT STYLE: "${nicheName}"
-VARIATION: Generate FRESH ideas (seed: ${variationSeed}) - DO NOT repeat common suggestions like "Day 1 vs Day 365" or "GRWM". Be creative and unique.
-
-This describes HOW they create content - whether they film themselves doing activities, create tutorials, do reviews, talk to camera, etc. Your suggestions MUST match their filming style.
-
-Analyze these ${videos.length} trending TikTok videos:
+    const prompt = `Analyze these TikTok video descriptions and extract formats for "${nicheName}":
 ${videoDescriptions}
 
-Extract EXACTLY 3 distinct FORMATS from these videos that match their content creation style.
-
-A format is the STRUCTURE and APPROACH (not specific content). Focus on formats that match HOW they film:
-- If they film themselves DOING something, suggest action-based formats
-- If they create tutorials, suggest teaching formats
-- If they do reviews/commentary, suggest talking formats
-- If they vlog, suggest day-in-life formats
-
-CRITICAL RULES:
-1. NEVER mention music or songs - suggest halal audio only (voiceover, nasheed, ambient sounds)
-2. All suggestions must match their specific content creation STYLE
-3. Focus on formats that work WITHOUT showing haram content
-4. Be EXTREMELY specific and actionable - give exact video concepts they can film TODAY
-5. YOU MUST RETURN EXACTLY 3 FORMATS - no more, no less
-
-Return ONLY a valid JSON array with EXACTLY 3 objects (no markdown, no extra text):
-[
-    {
-        "id": "f1",
-        "formatName": "<Short catchy name like 'Day 1 vs Day 365 Progression'>",
-        "formatDescription": "<2-3 sentences explaining the format structure>",
-        "whyItWorks": "<Psychology behind why this format drives engagement>",
-        "howToApply": [
-            "<EXACT video concept matching their style - what to film, what to say, how to edit>",
-            "<Another specific concept with hook and content structure>",
-            "<Third specific idea they can film immediately>"
-        ],
-        "halalAudioSuggestions": [
-            "<Specific halal audio idea - voiceover topic, nasheed style, or sound type>",
-            "<Another halal audio option>"
-        ],
-        "engagementPotential": "High",
-        "avgStats": {
-            "views": "<estimated view range like '500K-2M'>",
-            "likes": "<estimated like range>",
-            "shares": "<estimated share range>"
-        }
-    },
-    { "id": "f2", ... },
-    { "id": "f3", ... }
-]
-
-The "howToApply" suggestions must be FILM-READY concepts that match exactly how they create content.`;
+Return ONLY JSON array with 3 format objects. Be specific to what you see in descriptions.`;
 
     try {
-        const modelsToTry = ["gemini-2.0-flash", "gemini-1.5-flash"];
-        let result;
-
-        for (const modelName of modelsToTry) {
-            try {
-                console.log(`Trying Gemini model: ${modelName}...`);
-                const model = genAI.getGenerativeModel({ model: modelName });
-                result = await model.generateContent(prompt);
-                console.log(`Success with model: ${modelName}`);
-                break;
-            } catch (modelError: unknown) {
-                const error = modelError as Error;
-                console.log(`Model ${modelName} failed:`, error.message?.substring(0, 100));
-            }
-        }
-
-        if (!result) {
-            console.error("All Gemini models failed");
-            return getDefaultFormats(niche);
-        }
-
-        const response = await result.response;
-        const text = response.text();
-
-        // Extract JSON from response
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
         const jsonMatch = text.match(/\[[\s\S]*\]/);
-        if (!jsonMatch) {
-            console.error("No JSON array found in Gemini response");
-            return getDefaultFormats(niche);
+        if (jsonMatch) {
+            return JSON.parse(jsonMatch[0]);
         }
-
-        const formats: TrendingFormat[] = JSON.parse(jsonMatch[0]);
-        console.log(`Extracted ${formats.length} formats from Gemini`);
-
-        return formats;
-    } catch (error) {
-        console.error("Error extracting formats with Gemini:", error);
-        return getDefaultFormats(niche);
+    } catch (e) {
+        console.error("Gemini fallback failed:", e);
     }
+    return getDefaultFormats(niche);
 }
 
 // Niche-specific application examples
@@ -521,7 +602,7 @@ export async function GET(request: Request) {
         // Step 2: Extract formats using Gemini with niche context
         console.log(`Step 2: Extracting formats for "${niche}" with Gemini...`);
 
-        const formats = await extractFormatsWithGemini(trendingVideos, niche);
+        const formats = await extractFormatsWithVision(trendingVideos, niche);
 
         if (formats.length === 0) {
             errors.push("Gemini failed to extract formats from videos");

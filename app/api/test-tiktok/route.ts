@@ -1,4 +1,4 @@
-// Check TikTok API with CORRECT endpoint
+// Test TikTok API with CORRECT endpoint
 import { NextResponse } from "next/server";
 
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || "";
