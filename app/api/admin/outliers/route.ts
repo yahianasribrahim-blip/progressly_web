@@ -50,18 +50,15 @@ let hasLoggedFirstUserResponse = false;
 
 // Fetch user follower count - try multiple endpoint formats
 async function getCreatorFollowers(username: string, secUid: string, log?: (msg: string) => void): Promise<number> {
-    // List of endpoint formats to try - prioritize sec_uid if available
-    const endpoints: string[] = [];
+    // List of endpoint formats to try - user_name is the correct parameter
+    const endpoints: string[] = [
+        `/user/info?user_name=${encodeURIComponent(username)}`,  // Correct format!
+    ];
 
-    // If we have sec_uid, try that first (most reliable)
+    // Also try sec_uid if available
     if (secUid) {
         endpoints.push(`/user/info?sec_uid=${encodeURIComponent(secUid)}`);
-        endpoints.push(`/user/info?secUid=${encodeURIComponent(secUid)}`);
     }
-
-    // Fallback to username-based endpoints
-    endpoints.push(`/user/info?unique_id=${encodeURIComponent(username)}`);
-    endpoints.push(`/user/info?username=${encodeURIComponent(username)}`);
 
     for (const endpoint of endpoints) {
         try {
@@ -259,10 +256,11 @@ export async function GET(request: Request) {
 
         log(`After content filter: ${filteredVideos.length}`);
 
-        // Log first video's author data to see what's available
+        // Log first video's full author data to see what's available
         if (filteredVideos.length > 0) {
-            const firstAuthor = filteredVideos[0].author;
-            log(`FIRST VIDEO AUTHOR DATA: ${JSON.stringify(firstAuthor).substring(0, 500)}`);
+            const firstVideo = filteredVideos[0];
+            log(`FIRST VIDEO AUTHOR DATA (full): ${JSON.stringify(firstVideo.author)}`);
+            log(`FIRST VIDEO AUTHOR STATS: ${JSON.stringify(firstVideo.authorStats || firstVideo.author?.stats)}`);
         }
 
         // Get creator follower counts and calculate outlier ratio
@@ -276,14 +274,24 @@ export async function GET(request: Request) {
 
             if (!username || views < 10000) continue; // Skip low-view videos
 
-            // Get follower count (use cache)
-            let followers = creatorCache.get(username);
-            if (followers === undefined) {
-                log(`Fetching followers for @${username} (secUid: ${secUid ? secUid.substring(0, 20) + "..." : "none"})...`);
-                followers = await getCreatorFollowers(username, secUid, log);
-                log(`@${username}: ${followers} followers`);
-                creatorCache.set(username, followers);
-                await new Promise(resolve => setTimeout(resolve, 300)); // Rate limit
+            // First check if follower count is already in video data
+            let followers = video.authorStats?.followerCount
+                || video.author?.stats?.followerCount
+                || video.author?.followerCount
+                || 0;
+
+            // If not in video data, try API (with caching)
+            if (followers === 0) {
+                followers = creatorCache.get(username) || 0;
+                if (followers === 0) {
+                    log(`Fetching followers for @${username} (secUid: ${secUid ? secUid.substring(0, 20) + "..." : "none"})...`);
+                    followers = await getCreatorFollowers(username, secUid, log);
+                    log(`@${username}: ${followers} followers`);
+                    creatorCache.set(username, followers);
+                    await new Promise(resolve => setTimeout(resolve, 300)); // Rate limit
+                }
+            } else {
+                log(`@${username}: ${followers} followers (from video data)`);
             }
 
             if (followers === 0) continue; // Skip if couldn't get followers
