@@ -49,13 +49,19 @@ interface OutlierVideo {
 let hasLoggedFirstUserResponse = false;
 
 // Fetch user follower count - try multiple endpoint formats
-async function getCreatorFollowers(username: string, log?: (msg: string) => void): Promise<number> {
-    // List of endpoint formats to try
-    const endpoints = [
-        `/user/info?unique_id=${encodeURIComponent(username)}`,
-        `/user/info?username=${encodeURIComponent(username)}`,
-        `/user/info?user_id=${encodeURIComponent(username)}`,
-    ];
+async function getCreatorFollowers(username: string, secUid: string, log?: (msg: string) => void): Promise<number> {
+    // List of endpoint formats to try - prioritize sec_uid if available
+    const endpoints: string[] = [];
+
+    // If we have sec_uid, try that first (most reliable)
+    if (secUid) {
+        endpoints.push(`/user/info?sec_uid=${encodeURIComponent(secUid)}`);
+        endpoints.push(`/user/info?secUid=${encodeURIComponent(secUid)}`);
+    }
+
+    // Fallback to username-based endpoints
+    endpoints.push(`/user/info?unique_id=${encodeURIComponent(username)}`);
+    endpoints.push(`/user/info?username=${encodeURIComponent(username)}`);
 
     for (const endpoint of endpoints) {
         try {
@@ -253,12 +259,19 @@ export async function GET(request: Request) {
 
         log(`After content filter: ${filteredVideos.length}`);
 
+        // Log first video's author data to see what's available
+        if (filteredVideos.length > 0) {
+            const firstAuthor = filteredVideos[0].author;
+            log(`FIRST VIDEO AUTHOR DATA: ${JSON.stringify(firstAuthor).substring(0, 500)}`);
+        }
+
         // Get creator follower counts and calculate outlier ratio
         const outliers: OutlierVideo[] = [];
         const creatorCache = new Map<string, number>();
 
         for (const video of filteredVideos.slice(0, 30)) { // Limit to 30 to avoid rate limits
             const username = video.author?.uniqueId || video.author?.unique_id || "";
+            const secUid = video.author?.secUid || video.author?.sec_uid || "";
             const views = video.stats?.playCount || video.play_count || 0;
 
             if (!username || views < 10000) continue; // Skip low-view videos
@@ -266,8 +279,8 @@ export async function GET(request: Request) {
             // Get follower count (use cache)
             let followers = creatorCache.get(username);
             if (followers === undefined) {
-                log(`Fetching followers for @${username}...`);
-                followers = await getCreatorFollowers(username, log);
+                log(`Fetching followers for @${username} (secUid: ${secUid ? secUid.substring(0, 20) + "..." : "none"})...`);
+                followers = await getCreatorFollowers(username, secUid, log);
                 log(`@${username}: ${followers} followers`);
                 creatorCache.set(username, followers);
                 await new Promise(resolve => setTimeout(resolve, 300)); // Rate limit
