@@ -138,21 +138,34 @@ function isContentAppropriate(description: string): boolean {
 }
 
 export async function GET(request: Request) {
+    const debugLog: string[] = [];
+    const log = (msg: string) => {
+        console.log(msg);
+        debugLog.push(`[${new Date().toISOString()}] ${msg}`);
+    };
+
     try {
+        log("Starting outlier finder...");
+        log(`RAPIDAPI_KEY exists: ${!!RAPIDAPI_KEY}, length: ${RAPIDAPI_KEY?.length || 0}`);
+
         // Auth check - admin only
         const session = await auth();
+        log(`Session user ID: ${session?.user?.id || "none"}`);
+
         if (!session?.user?.id) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return NextResponse.json({ error: "Unauthorized", debug: debugLog }, { status: 401 });
         }
 
         // Check if user is admin
         const user = await prisma.user.findUnique({
             where: { id: session.user.id },
-            select: { isAdmin: true },
+            select: { role: true },
         });
 
-        if (!user?.isAdmin) {
-            return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+        log(`User role: ${user?.role}`);
+
+        if (user?.role !== "ADMIN") {
+            return NextResponse.json({ error: "Admin access required", debug: debugLog }, { status: 403 });
         }
 
         // Get query params
@@ -165,20 +178,25 @@ export async function GET(request: Request) {
             ? [hashtag]
             : PROGRESSLY_HASHTAGS.slice(0, 5); // Default: first 5 hashtags
 
-        console.log("Searching hashtags:", hashtagsToSearch);
+        log(`Searching hashtags: ${hashtagsToSearch.join(", ")}`);
 
         // Collect all videos
         const allVideos: any[] = [];
         for (const tag of hashtagsToSearch) {
-            console.log(`Fetching videos for #${tag}...`);
-            const videos = await fetchHashtagVideos(tag, 20);
-            allVideos.push(...videos);
+            log(`Fetching videos for #${tag}...`);
+            try {
+                const videos = await fetchHashtagVideos(tag, 20);
+                log(`#${tag}: got ${videos.length} videos`);
+                allVideos.push(...videos);
+            } catch (e) {
+                log(`#${tag} ERROR: ${e instanceof Error ? e.message : String(e)}`);
+            }
 
             // Rate limit protection
             await new Promise(resolve => setTimeout(resolve, 500));
         }
 
-        console.log(`Total videos fetched: ${allVideos.length}`);
+        log(`Total videos fetched: ${allVideos.length}`);
 
         // Deduplicate by video ID
         const seenIds = new Set<string>();
@@ -189,7 +207,7 @@ export async function GET(request: Request) {
             return true;
         });
 
-        console.log(`Unique videos: ${uniqueVideos.length}`);
+        log(`Unique videos: ${uniqueVideos.length}`);
 
         // Filter inappropriate content
         const filteredVideos = uniqueVideos.filter(v => {
@@ -197,7 +215,7 @@ export async function GET(request: Request) {
             return isContentAppropriate(desc);
         });
 
-        console.log(`After content filter: ${filteredVideos.length}`);
+        log(`After content filter: ${filteredVideos.length}`);
 
         // Get creator follower counts and calculate outlier ratio
         const outliers: OutlierVideo[] = [];
@@ -212,7 +230,9 @@ export async function GET(request: Request) {
             // Get follower count (use cache)
             let followers = creatorCache.get(username);
             if (followers === undefined) {
+                log(`Fetching followers for @${username}...`);
                 followers = await getCreatorFollowers(username);
+                log(`@${username}: ${followers} followers`);
                 creatorCache.set(username, followers);
                 await new Promise(resolve => setTimeout(resolve, 300)); // Rate limit
             }
@@ -222,6 +242,7 @@ export async function GET(request: Request) {
             const ratio = views / followers;
 
             if (ratio >= minRatio) {
+                log(`OUTLIER: @${username} - ${views} views / ${followers} followers = ${ratio.toFixed(1)}x`);
                 outliers.push({
                     id: video.id || video.video_id || "",
                     description: (video.desc || video.description || "").substring(0, 200),
@@ -241,20 +262,22 @@ export async function GET(request: Request) {
         // Sort by outlier ratio (highest first)
         outliers.sort((a, b) => b.outlierRatio - a.outlierRatio);
 
-        console.log(`Found ${outliers.length} outliers with ratio >= ${minRatio}x`);
+        log(`Found ${outliers.length} outliers with ratio >= ${minRatio}x`);
 
         return NextResponse.json({
             success: true,
             outliers: outliers.slice(0, 20),
             hashtags: hashtagsToSearch,
             totalVideosScanned: filteredVideos.length,
+            debug: debugLog,
         });
 
     } catch (error) {
         console.error("Outlier finder error:", error);
         return NextResponse.json({
             error: "Failed to find outliers",
-            details: error instanceof Error ? error.message : "Unknown error"
+            details: error instanceof Error ? error.message : "Unknown error",
+            debug: debugLog,
         }, { status: 500 });
     }
 }
