@@ -506,7 +506,8 @@ function groupByFormat(classifiedVideos: VideoWithFormat[]): Map<string, VideoWi
 async function generateTemplateForGroup(
     formatType: string,
     groupVideos: VideoWithFormat[],
-    niche: string
+    niche: string,
+    userPreferences: UserPreferences = { showsFace: true, constraints: "" }
 ): Promise<TrendingFormat | null> {
     const nicheName = NICHE_NAMES[niche] || niche;
 
@@ -526,12 +527,23 @@ async function generateTemplateForGroup(
     const avgLikes = Math.round(avgViews * 0.1);
     const avgShares = Math.round(avgViews * 0.01);
 
+    // Add user preference context to prompt if they have constraints
+    const userContext = !userPreferences.showsFace
+        ? `\n\nIMPORTANT USER PREFERENCE: The user DOES NOT want to show their face on camera.
+Adapt your template to work WITHOUT showing face. Suggest alternatives like:
+- Screen recordings with voiceover
+- Text-based content with AI voiceover
+- Hand/product demonstrations only
+- B-roll with narration
+Even if the original videos show faces, provide a faceless alternative approach.\n`
+        : "";
+
     const templatePrompt = `These ${representatives.length} videos are ALL the same format type: "${formatType}"
 
 ${videoContext}
 
 Niche: ${nicheName}
-
+${userContext}
 Create a SINGLE template that describes how to recreate this format.
 
 RULES:
@@ -611,8 +623,19 @@ Return ONLY this JSON:
 }
 
 // MAIN FUNCTION: New Algorithm - Classify → Group → Generate
-async function extractFormatsWithVision(videos: any[], niche: string): Promise<TrendingFormat[]> {
+// Now accepts userPreferences to filter formats based on user's constraints
+interface UserPreferences {
+    showsFace: boolean;
+    constraints: string;
+}
+
+async function extractFormatsWithVision(
+    videos: any[],
+    niche: string,
+    userPreferences: UserPreferences = { showsFace: true, constraints: "" }
+): Promise<TrendingFormat[]> {
     console.log(`NEW ALGORITHM: Extracting formats from ${videos.length} videos for niche: ${niche}`);
+    console.log(`User preferences: showsFace=${userPreferences.showsFace}`);
 
     if (videos.length === 0) {
         return getDefaultFormats(niche);
@@ -636,9 +659,23 @@ async function extractFormatsWithVision(videos: any[], niche: string): Promise<T
     console.log("Step 2: Grouping by format type...");
     const groups = groupByFormat(classifiedVideos);
 
-    // Sort groups by size (largest first) and take top 3
-    const sortedGroups = Array.from(groups.entries())
-        .filter(([type, _]) => type !== "other") // Skip "other" category
+    // Format types that require showing face
+    const faceRequiredFormats = ["talking_head", "talking_head_text", "reaction"];
+
+    // Filter groups based on user's face preference
+    let sortedGroups = Array.from(groups.entries())
+        .filter(([type, _]) => type !== "other"); // Skip "other" category
+
+    // If user prefers NO face, filter out face-required formats
+    if (!userPreferences.showsFace) {
+        console.log("User prefers NO face - filtering out face-required formats...");
+        const beforeCount = sortedGroups.length;
+        sortedGroups = sortedGroups.filter(([type, _]) => !faceRequiredFormats.includes(type));
+        console.log(`Filtered from ${beforeCount} to ${sortedGroups.length} format types (removed face formats)`);
+    }
+
+    // Sort by size (largest first) and take top 3
+    sortedGroups = sortedGroups
         .sort(([, a], [, b]) => b.length - a.length)
         .slice(0, 3);
 
@@ -648,7 +685,7 @@ async function extractFormatsWithVision(videos: any[], niche: string): Promise<T
 
     for (const [formatType, groupVideos] of sortedGroups) {
         console.log(`Generating template for "${formatType}" (${groupVideos.length} videos)...`);
-        const template = await generateTemplateForGroup(formatType, groupVideos, niche);
+        const template = await generateTemplateForGroup(formatType, groupVideos, niche, userPreferences);
         if (template) {
             formats.push(template);
         }
@@ -658,7 +695,7 @@ async function extractFormatsWithVision(videos: any[], niche: string): Promise<T
     if (formats.length < 3 && groups.has("other")) {
         const otherGroup = groups.get("other")!;
         if (otherGroup.length > 0) {
-            const template = await generateTemplateForGroup("other", otherGroup, niche);
+            const template = await generateTemplateForGroup("other", otherGroup, niche, userPreferences);
             if (template) formats.push(template);
         }
     }
@@ -888,6 +925,34 @@ export async function GET(request: Request) {
     const niche = searchParams.get("niche") || "general content";
     console.log(`Niche requested: ${niche}`);
 
+    // Fetch user's creator preferences (like "no face", equipment, etc.)
+    let userPreferences: { showsFace: boolean; constraints: string } = { showsFace: true, constraints: "" };
+    try {
+        const userProfile = await prisma.userProfile.findUnique({
+            where: { userId: session.user.id },
+            include: { creatorSetup: true },
+        });
+
+        if (userProfile?.creatorSetup) {
+            const constraints = (userProfile.creatorSetup.contentConstraints || "").toLowerCase();
+            const filmingStyle = (userProfile.creatorSetup.filmingStyle || "").toLowerCase();
+
+            // Detect "no face" preference from constraints or filming style
+            const noFaceKeywords = ["no face", "don't show face", "without face", "faceless", "anonymous", "voiceover only", "screen record"];
+            const prefersNoFace = noFaceKeywords.some(keyword =>
+                constraints.includes(keyword) || filmingStyle.includes(keyword)
+            );
+
+            userPreferences = {
+                showsFace: !prefersNoFace,
+                constraints: userProfile.creatorSetup.contentConstraints || "",
+            };
+            console.log(`User preferences: showsFace=${userPreferences.showsFace}, constraints="${userPreferences.constraints}"`);
+        }
+    } catch (error) {
+        console.error("Error fetching user preferences:", error);
+    }
+
     const errors: string[] = [];
     let trendingVideos: any[] = [];
     let apiDebugInfo: any = {};
@@ -917,10 +982,10 @@ export async function GET(request: Request) {
 
         console.log(`Step 1 success: Got ${trendingVideos.length} videos`);
 
-        // Step 2: Extract formats using Gemini with niche context
-        console.log(`Step 2: Extracting formats for "${niche}" with Gemini...`);
+        // Step 2: Extract formats using Vision with niche context and user preferences
+        console.log(`Step 2: Extracting formats for "${niche}" (showsFace: ${userPreferences.showsFace})...`);
 
-        const formats = await extractFormatsWithVision(trendingVideos, niche);
+        const formats = await extractFormatsWithVision(trendingVideos, niche, userPreferences);
 
         if (formats.length === 0) {
             errors.push("Gemini failed to extract formats from videos");
