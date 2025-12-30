@@ -24,8 +24,8 @@ export default function AffiliatePage() {
     const [plan, setPlan] = useState<"creator" | "pro">("creator");
 
     // Calculate earnings based on plan
-    // Creator: $12/month, Pro: $29/month
-    const price = plan === "creator" ? 12 : 29;
+    // Creator: $15/month, Pro: $35/month
+    const price = plan === "creator" ? 15 : 35;
     const commission = price * 0.25;
     // Monthly earnings after building up for 12 months (referrals * 12 = total users paying)
     const monthlyEarnings = referrals * 12 * commission;
@@ -188,14 +188,14 @@ export default function AffiliatePage() {
                                         onClick={() => setPlan("creator")}
                                         className="flex-1"
                                     >
-                                        Creator ($12/mo)
+                                        Creator ($15/mo)
                                     </Button>
                                     <Button
                                         variant={plan === "pro" ? "default" : "outline"}
                                         onClick={() => setPlan("pro")}
                                         className="flex-1"
                                     >
-                                        Pro ($29/mo)
+                                        Pro ($35/mo)
                                     </Button>
                                 </div>
                             </div>
