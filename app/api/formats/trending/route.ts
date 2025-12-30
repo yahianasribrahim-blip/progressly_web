@@ -73,8 +73,34 @@ interface SourceVideo {
     description: string;
 }
 
-// Validate if a TikTok video URL is available (not deleted/private/region-locked)
-async function validateTikTokUrl(url: string): Promise<boolean> {
+// CONTENT SAFETY: Block inappropriate/exploitative content
+const BLOCKED_KEYWORDS = [
+    "lonely strangers", "talk to strangers", "talk to men", "sugar daddy", "sugar baby",
+    "onlyfans", "adult content", "18+", "nsfw", "escorts", "hookup",
+    "pedophile", "minor", "underage", "child", "kids earn money"
+];
+
+// Check if content contains blocked keywords
+function isContentSafe(text: string): boolean {
+    const lowerText = text.toLowerCase();
+    return !BLOCKED_KEYWORDS.some(keyword => lowerText.includes(keyword));
+}
+
+// Check if text appears to be English (basic heuristic)
+function isLikelyEnglish(text: string): boolean {
+    if (!text || text.length < 10) return true; // Too short to tell, allow
+
+    // Common English words
+    const englishWords = ["the", "and", "for", "you", "this", "how", "make", "money", "get", "with", "your"];
+    const lowerText = text.toLowerCase();
+    const matchCount = englishWords.filter(word => lowerText.includes(word)).length;
+
+    // If at least 2 common English words, likely English
+    return matchCount >= 2;
+}
+
+// Validate if a TikTok video URL is available AND appropriate
+async function validateTikTokUrl(url: string): Promise<{ valid: boolean; title?: string }> {
     try {
         // Use TikTok's oEmbed endpoint which is more reliable than HEAD request
         const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
@@ -86,23 +112,44 @@ async function validateTikTokUrl(url: string): Promise<boolean> {
         // If oEmbed returns success, video exists
         if (response.ok) {
             const data = await response.json();
-            return data && data.title; // Video is available if it has a title
+            if (data && data.title) {
+                return { valid: true, title: data.title };
+            }
         }
-        return false;
+        return { valid: false };
     } catch {
-        return false; // Assume unavailable if request fails
+        return { valid: false }; // Assume unavailable if request fails
     }
 }
 
-// Validate multiple URLs in parallel (with concurrency limit)
+// Validate multiple URLs in parallel with content safety and language checks
 async function validateVideos(videos: SourceVideo[]): Promise<SourceVideo[]> {
     console.log(`Validating ${videos.length} video URLs...`);
 
     // Validate all in parallel
     const validationResults = await Promise.all(
         videos.map(async (video) => {
-            const isValid = await validateTikTokUrl(video.url);
-            return { video, isValid };
+            const result = await validateTikTokUrl(video.url);
+
+            // Check validity
+            if (!result.valid) {
+                return { video, isValid: false, reason: "unavailable" };
+            }
+
+            // Check English (using oEmbed title)
+            const title = result.title || video.description;
+            if (!isLikelyEnglish(title)) {
+                console.log(`Filtered non-English video: "${title?.substring(0, 50)}..."`);
+                return { video, isValid: false, reason: "non-english" };
+            }
+
+            // Check content safety
+            if (!isContentSafe(title) || !isContentSafe(video.description)) {
+                console.log(`Filtered unsafe content: "${title?.substring(0, 50)}..."`);
+                return { video, isValid: false, reason: "unsafe" };
+            }
+
+            return { video, isValid: true };
         })
     );
 
@@ -110,7 +157,15 @@ async function validateVideos(videos: SourceVideo[]): Promise<SourceVideo[]> {
         .filter(r => r.isValid)
         .map(r => r.video);
 
-    console.log(`${validVideos.length}/${videos.length} videos validated as available`);
+    const filterStats = {
+        total: videos.length,
+        valid: validVideos.length,
+        unavailable: validationResults.filter(r => r.reason === "unavailable").length,
+        nonEnglish: validationResults.filter(r => r.reason === "non-english").length,
+        unsafe: validationResults.filter(r => r.reason === "unsafe").length,
+    };
+
+    console.log(`Validation: ${validVideos.length}/${videos.length} passed`, filterStats);
     return validVideos;
 }
 
@@ -393,7 +448,7 @@ async function extractFormatsWithVision(videos: any[], niche: string): Promise<T
 
     const prompt = `You are analyzing ${base64Images.length} TikTok video thumbnails from the "${nicheName}" niche.
 
-YOUR GOAL: Extract REAL formats from these videos and turn them into fill-in-the-blank templates.
+YOUR GOAL: Extract REAL formats from these videos and turn them into step-by-step instructions.
 
 Video context (hashtag, views):
 ${videoContext}
@@ -402,21 +457,20 @@ CRITICAL RULES FOR HONESTY:
 1. LOOK AT EACH THUMBNAIL CAREFULLY - describe ONLY what you literally see
 2. If ALL videos show a person talking to camera with NO edits/cuts/overlays → the format IS "Talking Head" 
 3. If you see a screen recording → the format involves screen recording
-4. If you see text overlay → describe the text overlay format
+4. If you see text overlay → describe it naturally
 5. DO NOT invent "screen recording" or "quick cuts" if the videos are just people talking to camera
 6. The format you describe MUST match what the MAJORITY of source videos show
 
-CHECK BEFORE EACH FORMAT: "Would someone watching these videos see the format I'm describing?"
-
-WHAT TO LOOK FOR IN EACH THUMBNAIL:
-- Is there text overlay? Quote it exactly.
-- Is it talking head (person facing camera, single shot)?
-- Is it screen recording (showing phone/computer screen)?
-- Is it split screen, POV, or has visible cuts/transitions?
+TEMPLATE WRITING RULES:
+- Write templates as NATURAL instructions, not literal "[PLACEHOLDER]" text
+- GOOD: "Record yourself talking to camera. Add text overlay that summarizes your key point."
+- BAD: "Record yourself talking about [TOPIC] while overlay text says [TEXT OVERLAY]"
+- The reader should understand EXACTLY what to do without confusion
+- Use phrases like "Add text overlay with your hook" NOT "[ADD TEXT OVERLAY]"
 
 HONESTY TEST:
-- If 3 videos are just girls talking to camera → format = "Talking Head: speak directly to camera about [TOPIC]"
-- If 2 videos have text overlay → describe the text overlay style
+- If 3 videos are just people talking to camera → format = simple talking head
+- If 2 videos have text overlay → describe the text overlay style naturally
 - DO NOT suggest "screen record" if no videos show screen recording
 
 Return EXACTLY 3 templates from videos that are RELEVANT to "${nicheName}". 
@@ -427,7 +481,7 @@ Return ONLY valid JSON array with EXACTLY 3 objects:
     {
         "id": "f1",
         "formatName": "<Short name based on what you ACTUALLY see>",
-        "formatDescription": "<Fill-in-the-blank template with [BRACKETS]. Describe the actual video structure you observed.>",
+        "formatDescription": "<Step-by-step instructions written naturally. No literal brackets. Tell the reader exactly what to do.>",
         "whyItWorks": "<Why this format works - based on the actual video structure>",
         "howToApply": [
             "<Specific example for '${nicheName}' niche>",
