@@ -402,108 +402,155 @@ async function downloadImageAsBase64(url: string): Promise<string | null> {
     }
 }
 
-// Use GPT-4o Vision to analyze ACTUAL video thumbnails and extract real formats
-async function extractFormatsWithVision(videos: any[], niche: string): Promise<TrendingFormat[]> {
-    console.log(`Extracting formats from ${videos.length} videos for niche: ${niche} using VISION...`);
+// ============================================
+// NEW ALGORITHM: Classify Each Video → Group → Generate Templates
+// ============================================
+
+interface VideoWithFormat {
+    video: any;
+    formatType: string;
+    thumbnail: string;
+}
+
+// STEP 1: Classify each video's format individually
+async function classifyVideos(videos: any[], niche: string): Promise<VideoWithFormat[]> {
+    console.log(`Classifying ${videos.length} videos individually...`);
 
     const nicheName = NICHE_NAMES[niche] || niche;
+    const results: VideoWithFormat[] = [];
 
-    if (videos.length === 0) {
-        return getDefaultFormats(niche);
-    }
+    // Download thumbnails first
+    const videosWithThumbnails = videos.filter(v => v.coverUrl && v.coverUrl.startsWith('http')).slice(0, 10);
 
-    // Download thumbnails (up to 8 videos)
-    const videosWithThumbnails = videos.filter(v => v.coverUrl && v.coverUrl.startsWith('http')).slice(0, 8);
-    if (videosWithThumbnails.length === 0) {
-        console.log("No valid thumbnails found, falling back to text-only");
-        return extractFormatsWithGemini(videos, niche);
-    }
+    for (const video of videosWithThumbnails) {
+        const base64 = await downloadImageAsBase64(video.coverUrl);
+        if (!base64) continue;
 
-    console.log(`Downloading ${videosWithThumbnails.length} thumbnails...`);
-    const base64Images: string[] = [];
-    for (const v of videosWithThumbnails) {
-        const base64 = await downloadImageAsBase64(v.coverUrl);
-        if (base64) base64Images.push(base64);
-    }
+        const classifyPrompt = `Look at this TikTok video thumbnail and classify its FORMAT TYPE.
 
-    if (base64Images.length === 0 || !OPENAI_API_KEY) {
-        console.log("No thumbnails downloaded or no OpenAI key, falling back to Gemini");
-        return extractFormatsWithGemini(videos, niche);
-    }
+Video Description: "${video.description?.substring(0, 100) || 'No description'}"
+Views: ${video.views?.toLocaleString() || '?'}
+Niche: ${nicheName}
 
-    console.log(`Sending ${base64Images.length} images to GPT-4o Vision...`);
+CLASSIFY INTO ONE OF THESE FORMAT TYPES:
+- "talking_head" = Person talking directly to camera, no special edits
+- "talking_head_text" = Person talking to camera WITH text overlay visible
+- "screen_record" = Shows phone/computer screen recording
+- "montage" = Multiple clips cut together
+- "pov" = POV/first-person style
+- "reaction" = Reaction to something on screen
+- "tutorial_demo" = Demonstrating a product or process
+- "other" = Doesn't fit above categories
 
-    // Build image content for vision API
-    const imageContent = base64Images.map(url => ({
-        type: "image_url" as const,
-        image_url: { url, detail: "low" as const }
-    }));
+Return ONLY a JSON object:
+{"formatType": "<one of the types above>", "note": "<brief 5-word description of what you see>"}`;
 
-    // Also include text descriptions for context
-    const videoContext = videosWithThumbnails.map((v, i) =>
-        `Video ${i + 1}: "${v.description?.substring(0, 100) || 'No description'}" - ${v.views?.toLocaleString() || '?'} views`
-    ).join("\n");
+        try {
+            const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${OPENAI_API_KEY}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    model: "gpt-4o-mini",
+                    messages: [{
+                        role: "user",
+                        content: [
+                            { type: "text", text: classifyPrompt },
+                            { type: "image_url", image_url: { url: base64, detail: "low" } }
+                        ]
+                    }],
+                    max_tokens: 100,
+                    temperature: 0.1,
+                }),
+            });
 
-    const variationSeed = Math.random().toString(36).substring(7);
-
-    const prompt = `You are analyzing ${base64Images.length} TikTok video thumbnails from the "${nicheName}" niche.
-
-YOUR GOAL: Extract REAL formats from these videos and turn them into step-by-step instructions.
-
-Video context (hashtag, views):
-${videoContext}
-
-CRITICAL RULES FOR HONESTY:
-1. LOOK AT EACH THUMBNAIL CAREFULLY - describe ONLY what you literally see
-2. If ALL videos show a person talking to camera with NO edits/cuts/overlays → the format IS "Talking Head" 
-3. If you see a screen recording → the format involves screen recording
-4. If you see text overlay → describe it naturally
-5. DO NOT invent "screen recording" or "quick cuts" if the videos are just people talking to camera
-6. The format you describe MUST match what the MAJORITY of source videos show
-
-TEMPLATE WRITING RULES:
-- Write templates as NATURAL instructions, not literal "[PLACEHOLDER]" text
-- GOOD: "Record yourself talking to camera. Add text overlay that summarizes your key point."
-- BAD: "Record yourself talking about [TOPIC] while overlay text says [TEXT OVERLAY]"
-- The reader should understand EXACTLY what to do without confusion
-- Use phrases like "Add text overlay with your hook" NOT "[ADD TEXT OVERLAY]"
-
-HONESTY TEST:
-- If 3 videos are just people talking to camera → format = simple talking head
-- If 2 videos have text overlay → describe the text overlay style naturally
-- DO NOT suggest "screen record" if no videos show screen recording
-
-Return EXACTLY 3 templates from videos that are RELEVANT to "${nicheName}". 
-(seed: ${variationSeed})
-
-Return ONLY valid JSON array with EXACTLY 3 objects:
-[
-    {
-        "id": "f1",
-        "formatName": "<Short name based on what you ACTUALLY see>",
-        "formatDescription": "<Step-by-step instructions written naturally. No literal brackets. Tell the reader exactly what to do.>",
-        "whyItWorks": "<Why this format works - based on the actual video structure>",
-        "howToApply": [
-            "<Specific example for '${nicheName}' niche>",
-            "<Another example>",
-            "<Third example>"
-        ],
-        "halalAudioSuggestions": ["Voiceover", "Natural sounds"],
-        "engagementPotential": "High",
-        "avgStats": {
-            "views": "<Use ACTUAL view counts from the videos above>",
-            "likes": "<10% of views>",
-            "shares": "<1% of views>"
+            if (response.ok) {
+                const result = await response.json();
+                const text = result.choices?.[0]?.message?.content || "";
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    const classification = JSON.parse(jsonMatch[0]);
+                    results.push({
+                        video,
+                        formatType: classification.formatType || "other",
+                        thumbnail: base64,
+                    });
+                    console.log(`Video ${results.length}: ${classification.formatType} - ${classification.note}`);
+                }
+            }
+        } catch (error) {
+            console.error("Error classifying video:", error);
         }
     }
-]
 
-CRITICAL:
-- DO NOT make up formats like "quick cuts" unless you literally SEE quick cuts evidence in thumbnails
-- If a video is a single static talking head, the template is just "Record yourself talking about [TOPIC]" - don't overcomplicate
-- Base everything on what you ACTUALLY SEE, not what you imagine`;
+    return results;
+}
 
+// STEP 2: Group videos by format type
+function groupByFormat(classifiedVideos: VideoWithFormat[]): Map<string, VideoWithFormat[]> {
+    const groups = new Map<string, VideoWithFormat[]>();
 
+    for (const cv of classifiedVideos) {
+        const existing = groups.get(cv.formatType) || [];
+        existing.push(cv);
+        groups.set(cv.formatType, existing);
+    }
+
+    console.log("Format groups:", Array.from(groups.entries()).map(([k, v]) => `${k}: ${v.length} videos`));
+    return groups;
+}
+
+// STEP 3: Generate template for each format group
+async function generateTemplateForGroup(
+    formatType: string,
+    groupVideos: VideoWithFormat[],
+    niche: string
+): Promise<TrendingFormat | null> {
+    const nicheName = NICHE_NAMES[niche] || niche;
+
+    // Pick up to 3 representatives from this group
+    const representatives = groupVideos.slice(0, 3);
+    const imageContent = representatives.map(cv => ({
+        type: "image_url" as const,
+        image_url: { url: cv.thumbnail, detail: "low" as const }
+    }));
+
+    const videoContext = representatives.map((cv, i) =>
+        `Video ${i + 1}: "${cv.video.description?.substring(0, 80) || 'No desc'}" - ${cv.video.views?.toLocaleString() || '?'} views`
+    ).join("\n");
+
+    // Calculate actual stats from videos
+    const avgViews = Math.round(representatives.reduce((sum, cv) => sum + (cv.video.views || 0), 0) / representatives.length);
+    const avgLikes = Math.round(avgViews * 0.1);
+    const avgShares = Math.round(avgViews * 0.01);
+
+    const templatePrompt = `These ${representatives.length} videos are ALL the same format type: "${formatType}"
+
+${videoContext}
+
+Niche: ${nicheName}
+
+Create a SINGLE template that describes how to recreate this format.
+
+RULES:
+- Write natural, clear instructions (NOT "[PLACEHOLDER]" text)
+- The template must match what ALL these videos actually show
+- If they're all just people talking to camera, say exactly that
+- Be specific but not overcomplicated
+
+Return ONLY this JSON:
+{
+    "formatName": "<3-5 word name for this format>",
+    "formatDescription": "<Natural step-by-step instructions. Example: Record yourself looking at the camera. Add text overlay with your hook. Speak naturally about your topic for 30-60 seconds.>",
+    "whyItWorks": "<Why this format gets views>",
+    "howToApply": [
+        "<Specific example for ${nicheName}>",
+        "<Another example>",
+        "<Third example>"
+    ]
+}`;
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -517,37 +564,112 @@ CRITICAL:
                 messages: [{
                     role: "user",
                     content: [
-                        { type: "text", text: prompt },
+                        { type: "text", text: templatePrompt },
                         ...imageContent
                     ]
                 }],
-                max_tokens: 1500,
+                max_tokens: 500,
                 temperature: 0.3,
             }),
         });
 
-        if (!response.ok) {
-            console.error("GPT-4o Vision error:", response.status);
-            return extractFormatsWithGemini(videos, niche);
+        if (response.ok) {
+            const result = await response.json();
+            const text = result.choices?.[0]?.message?.content || "";
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                const template = JSON.parse(jsonMatch[0]);
+                return {
+                    id: `fmt_${formatType}_${Date.now()}`,
+                    formatName: template.formatName || formatType,
+                    formatDescription: template.formatDescription || "",
+                    whyItWorks: template.whyItWorks || "",
+                    howToApply: template.howToApply || [],
+                    halalAudioSuggestions: ["Voiceover", "Natural sounds", "Trending audio"],
+                    engagementPotential: "High" as const,
+                    avgStats: {
+                        views: avgViews.toLocaleString(),
+                        likes: avgLikes.toLocaleString(),
+                        shares: avgShares.toLocaleString(),
+                    },
+                    sourceVideos: representatives.map(cv => ({
+                        id: cv.video.id,
+                        url: `https://www.tiktok.com/@${cv.video.author}/video/${cv.video.id}`,
+                        thumbnail: cv.video.coverUrl || "",
+                        views: cv.video.views || 0,
+                        author: `@${cv.video.author}`,
+                        description: (cv.video.description || "").substring(0, 100),
+                    })),
+                };
+            }
         }
-
-        const result = await response.json();
-        const text = result.choices?.[0]?.message?.content || "";
-        console.log("GPT-4o Vision response:", text.substring(0, 300));
-
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
-        if (!jsonMatch) {
-            console.error("No JSON found in Vision response");
-            return extractFormatsWithGemini(videos, niche);
-        }
-
-        const formats: TrendingFormat[] = JSON.parse(jsonMatch[0]);
-        console.log(`Vision extracted ${formats.length} REAL formats`);
-        return formats;
     } catch (error) {
-        console.error("Vision extraction error:", error);
+        console.error("Error generating template:", error);
+    }
+
+    return null;
+}
+
+// MAIN FUNCTION: New Algorithm - Classify → Group → Generate
+async function extractFormatsWithVision(videos: any[], niche: string): Promise<TrendingFormat[]> {
+    console.log(`NEW ALGORITHM: Extracting formats from ${videos.length} videos for niche: ${niche}`);
+
+    if (videos.length === 0) {
+        return getDefaultFormats(niche);
+    }
+
+    if (!OPENAI_API_KEY) {
+        console.log("No OpenAI key, falling back to Gemini");
         return extractFormatsWithGemini(videos, niche);
     }
+
+    // STEP 1: Classify each video individually
+    console.log("Step 1: Classifying each video...");
+    const classifiedVideos = await classifyVideos(videos, niche);
+
+    if (classifiedVideos.length === 0) {
+        console.log("No videos classified, falling back to Gemini");
+        return extractFormatsWithGemini(videos, niche);
+    }
+
+    // STEP 2: Group by format type
+    console.log("Step 2: Grouping by format type...");
+    const groups = groupByFormat(classifiedVideos);
+
+    // Sort groups by size (largest first) and take top 3
+    const sortedGroups = Array.from(groups.entries())
+        .filter(([type, _]) => type !== "other") // Skip "other" category
+        .sort(([, a], [, b]) => b.length - a.length)
+        .slice(0, 3);
+
+    // STEP 3: Generate template for each group
+    console.log("Step 3: Generating templates for top 3 format groups...");
+    const formats: TrendingFormat[] = [];
+
+    for (const [formatType, groupVideos] of sortedGroups) {
+        console.log(`Generating template for "${formatType}" (${groupVideos.length} videos)...`);
+        const template = await generateTemplateForGroup(formatType, groupVideos, niche);
+        if (template) {
+            formats.push(template);
+        }
+    }
+
+    // If we didn't get 3 formats, try "other" category
+    if (formats.length < 3 && groups.has("other")) {
+        const otherGroup = groups.get("other")!;
+        if (otherGroup.length > 0) {
+            const template = await generateTemplateForGroup("other", otherGroup, niche);
+            if (template) formats.push(template);
+        }
+    }
+
+    console.log(`NEW ALGORITHM: Generated ${formats.length} formats with matched videos`);
+
+    if (formats.length === 0) {
+        return extractFormatsWithGemini(videos, niche);
+    }
+
+    return formats;
 }
 
 // Fallback: Use Gemini with text-only (less reliable)
@@ -815,53 +937,38 @@ export async function GET(request: Request) {
 
         console.log(`Step 2 success: Extracted ${formats.length} formats for ${niche}`);
 
-        // Step 3: Build source video list
-        const rawSourceVideos: SourceVideo[] = trendingVideos.slice(0, 15).map(v => ({
-            id: v.id,
-            url: `https://www.tiktok.com/@${v.author}/video/${v.id}`,
-            thumbnail: v.coverUrl || "",
-            views: v.views || 0,
-            author: `@${v.author}`,
-            description: (v.description || "").substring(0, 100),
-        }));
+        // NEW ALGORITHM: formats already include sourceVideos from generateTemplateForGroup
+        // Now validate those source videos to filter out unavailable ones
+        console.log("Step 3: Validating source videos in each format...");
+        const formatsWithValidatedVideos = await Promise.all(
+            formats.map(async (format) => {
+                if (!format.sourceVideos || format.sourceVideos.length === 0) {
+                    return format;
+                }
 
-        // Step 4: VALIDATE video URLs (filter out unavailable/deleted videos)
-        console.log("Step 4: Validating video URLs...");
-        const validatedVideos = await validateVideos(rawSourceVideos);
-
-        // Use validated videos, or fallback to raw if validation filtered too many
-        const allSourceVideos = validatedVideos.length >= 6
-            ? validatedVideos
-            : rawSourceVideos; // Fallback if validation was too strict
-
-        console.log(`Using ${allSourceVideos.length} validated videos for distribution`);
-
-        // Step 5: NON-OVERLAPPING distribution (each format gets UNIQUE videos)
-        // Format 0: videos 0,1 | Format 1: videos 2,3 | Format 2: videos 4,5
-        const formatsWithProof = formats.map((format, i) => {
-            const startIdx = i * 2;  // Non-overlapping: 0,2,4
-            const endIdx = startIdx + 2;  // Max 2 videos per format
-            const uniqueVideos = allSourceVideos.slice(startIdx, endIdx).filter(v => v.id);
-
-            return {
-                ...format,
-                sourceVideos: uniqueVideos,
-            };
-        });
+                const validatedVideos = await validateVideos(format.sourceVideos);
+                return {
+                    ...format,
+                    sourceVideos: validatedVideos.length > 0 ? validatedVideos : format.sourceVideos.slice(0, 2),
+                };
+            })
+        );
 
         // Record usage on success
         await recordFormatSearchUsage(session.user.id);
 
+        // Collect all source videos for debug
+        const allSourceVideos = formatsWithValidatedVideos.flatMap(f => f.sourceVideos || []);
+
         return NextResponse.json({
             success: true,
             data: {
-                formats: formatsWithProof,
+                formats: formatsWithValidatedVideos,
                 niche,
                 videosAnalyzed: trendingVideos.length,
                 generatedAt: new Date().toISOString(),
                 source: "live",
-                // Also return all source videos for full verification
-                allSourceVideos: allSourceVideos,
+                allSourceVideos,
             }
         });
     } catch (error) {
