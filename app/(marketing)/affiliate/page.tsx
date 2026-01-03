@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
     DollarSign,
     Users,
@@ -16,12 +16,25 @@ import {
     CheckCircle2,
     Calculator,
     HelpCircle,
-    Sparkles
+    Sparkles,
+    Loader2,
+    Check
 } from "lucide-react";
 
 export default function AffiliatePage() {
     const [referrals, setReferrals] = useState(10);
     const [plan, setPlan] = useState<"creator" | "pro">("creator");
+
+    // Application form state
+    const [applying, setApplying] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [email, setEmail] = useState("");
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [dateOfBirth, setDateOfBirth] = useState("");
+    const [hasSocialFollowing, setHasSocialFollowing] = useState(false);
+    const [socialHandle, setSocialHandle] = useState("");
 
     // Calculate earnings based on plan
     // Creator: $15/month, Pro: $35/month
@@ -32,6 +45,42 @@ export default function AffiliatePage() {
     // Cumulative yearly earnings: 12x + 11x + 10x + ... + 1x = 78x total commission months
     // This represents building up referrals each month over a year
     const yearlyEarnings = referrals * commission * 78;
+
+    const scrollToApply = () => {
+        document.getElementById("apply")?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    const handleSubmit = async () => {
+        setApplying(true);
+        setError(null);
+
+        try {
+            const res = await fetch("/api/public/affiliate/apply", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email,
+                    firstName,
+                    lastName,
+                    dateOfBirth,
+                    hasSocialFollowing,
+                    socialHandle: hasSocialFollowing ? socialHandle : null,
+                }),
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setSubmitted(true);
+            } else {
+                setError(data.error);
+            }
+        } catch (err) {
+            console.error("Error applying:", err);
+            setError("Failed to submit application. Please try again.");
+        } finally {
+            setApplying(false);
+        }
+    };
 
     return (
         <>
@@ -51,16 +100,14 @@ export default function AffiliatePage() {
                             Get paid every month for as long as your referrals stay subscribed.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                            <Button size="lg" className="h-14 px-8 text-lg" asChild>
-                                <Link href="/dashboard/affiliate">
-                                    Become an Affiliate
-                                    <ArrowRight className="ml-2 h-5 w-5" />
-                                </Link>
+                            <Button size="lg" className="h-14 px-8 text-lg" onClick={scrollToApply}>
+                                Become an Affiliate
+                                <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>
                             <Button size="lg" variant="outline" className="h-14 px-8 text-lg" asChild>
-                                <Link href="#how-it-works">
+                                <a href="#how-it-works">
                                     Learn More
-                                </Link>
+                                </a>
                             </Button>
                         </div>
                     </div>
@@ -109,9 +156,9 @@ export default function AffiliatePage() {
                             </div>
                             <CardHeader className="pt-8">
                                 <Users className="h-10 w-10 text-violet-600 mb-4" />
-                                <CardTitle>Sign Up</CardTitle>
+                                <CardTitle>Apply Below</CardTitle>
                                 <CardDescription>
-                                    Create your free Progressly account and apply for the affiliate program.
+                                    Fill out the quick application form below. No account needed!
                                     We&apos;ll review your application within 24 hours.
                                 </CardDescription>
                             </CardHeader>
@@ -225,6 +272,164 @@ export default function AffiliatePage() {
                 </div>
             </section>
 
+            {/* Application Form Section */}
+            <section id="apply" className="py-20 bg-gradient-to-br from-violet-100 via-purple-50 to-pink-100 dark:from-violet-950/50 dark:via-purple-950/30 dark:to-pink-950/50">
+                <div className="container px-4 md:px-6">
+                    <div className="max-w-2xl mx-auto">
+                        <div className="text-center mb-8">
+                            <h2 className="text-3xl md:text-4xl font-bold mb-4">Apply Now</h2>
+                            <p className="text-muted-foreground">
+                                No account required. Fill out the form below and we&apos;ll review your application within 24 hours.
+                            </p>
+                        </div>
+
+                        {submitted ? (
+                            <Card className="border-green-500/50 bg-green-50/50 dark:bg-green-950/10">
+                                <CardContent className="pt-6 text-center">
+                                    <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mx-auto mb-4">
+                                        <Check className="h-8 w-8 text-white" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold mb-2">Application Submitted!</h3>
+                                    <p className="text-muted-foreground">
+                                        Thank you for applying! We&apos;ll review your application and get back to you within 24 hours at <strong>{email}</strong>.
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Affiliate Application</CardTitle>
+                                    <CardDescription>
+                                        Tell us a bit about yourself to get started
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="firstName">First Name *</Label>
+                                            <Input
+                                                id="firstName"
+                                                type="text"
+                                                placeholder="John"
+                                                value={firstName}
+                                                onChange={(e) => setFirstName(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="lastName">Last Name *</Label>
+                                            <Input
+                                                id="lastName"
+                                                type="text"
+                                                placeholder="Doe"
+                                                value={lastName}
+                                                onChange={(e) => setLastName(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email">Email Address *</Label>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            placeholder="you@example.com"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            required
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            We&apos;ll send your affiliate link and updates to this email
+                                        </p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="dob">Date of Birth</Label>
+                                        <Input
+                                            id="dob"
+                                            type="date"
+                                            value={dateOfBirth}
+                                            onChange={(e) => setDateOfBirth(e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-4 pt-4 border-t">
+                                        <div className="flex items-center space-x-3">
+                                            <input
+                                                id="hasSocial"
+                                                type="checkbox"
+                                                checked={hasSocialFollowing}
+                                                onChange={(e) => setHasSocialFollowing(e.target.checked)}
+                                                className="h-4 w-4 rounded border-gray-300"
+                                            />
+                                            <Label htmlFor="hasSocial" className="cursor-pointer">
+                                                I have a following on TikTok or Instagram
+                                            </Label>
+                                        </div>
+
+                                        {hasSocialFollowing && (
+                                            <div className="space-y-2 ml-7">
+                                                <Label htmlFor="socialHandle">TikTok/Instagram Handle</Label>
+                                                <Input
+                                                    id="socialHandle"
+                                                    type="text"
+                                                    placeholder="@yourusername"
+                                                    value={socialHandle}
+                                                    onChange={(e) => setSocialHandle(e.target.value)}
+                                                />
+                                                <p className="text-xs text-muted-foreground">
+                                                    This helps us prioritize your application
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {error && (
+                                        <p className="text-sm text-red-500">{error}</p>
+                                    )}
+                                    <Button
+                                        onClick={handleSubmit}
+                                        disabled={applying || !firstName || !lastName || !email}
+                                        className="w-full h-12 text-lg"
+                                    >
+                                        {applying ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                Submitting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Submit Application
+                                                <ArrowRight className="ml-2 h-4 w-4" />
+                                            </>
+                                        )}
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        <Card className="bg-muted/50 mt-6">
+                            <CardContent className="pt-6">
+                                <h3 className="font-semibold mb-4">What you&apos;ll get:</h3>
+                                <ul className="space-y-2 text-sm text-muted-foreground">
+                                    <li className="flex items-center gap-2">
+                                        <Check className="h-4 w-4 text-green-500" /> 25% recurring commission on all payments
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <Check className="h-4 w-4 text-green-500" /> Unique referral link with 30-day cookie
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <Check className="h-4 w-4 text-green-500" /> Real-time tracking dashboard
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <Check className="h-4 w-4 text-green-500" /> Monthly PayPal payouts ($50 minimum)
+                                    </li>
+                                </ul>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </section>
+
             {/* Benefits */}
             <section className="py-20">
                 <div className="container px-4 md:px-6">
@@ -291,7 +496,7 @@ export default function AffiliatePage() {
                         {[
                             {
                                 q: "Who can join the affiliate program?",
-                                a: "Anyone with a Progressly account can apply! We especially welcome content creators, marketers, and anyone with an audience interested in content creation tools."
+                                a: "Anyone can apply! We especially welcome content creators, marketers, and anyone with an audience interested in content creation tools. No account required to apply."
                             },
                             {
                                 q: "How much can I earn?",
@@ -332,11 +537,9 @@ export default function AffiliatePage() {
                     <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
                         Join our affiliate program today and start earning 25% recurring commission on every referral.
                     </p>
-                    <Button size="lg" variant="secondary" className="h-14 px-8 text-lg" asChild>
-                        <Link href="/dashboard/affiliate">
-                            Apply Now
-                            <ArrowRight className="ml-2 h-5 w-5" />
-                        </Link>
+                    <Button size="lg" variant="secondary" className="h-14 px-8 text-lg" onClick={scrollToApply}>
+                        Apply Now
+                        <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                 </div>
             </section>

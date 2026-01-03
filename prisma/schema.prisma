@@ -427,8 +427,11 @@ model TicketMessage {
 
 model Affiliate {
   id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String?  @unique
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // For standalone affiliates (no user account required)
+  email           String?  @unique
   
   affiliateCode   String   @unique  // e.g., "CREATOR123"
   status          String   @default("pending")  // pending, approved, suspended

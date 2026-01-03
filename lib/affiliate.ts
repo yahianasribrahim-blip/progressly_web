@@ -47,7 +47,7 @@ export const getAffiliateByCode = async (code: string) => {
     });
 };
 
-// Create affiliate application
+// Create affiliate application (for logged-in users)
 export const createAffiliateApplication = async (
     userId: string,
     paypalEmail?: string,
@@ -71,6 +71,42 @@ export const createAffiliateApplication = async (
             userId,
             affiliateCode: generateAffiliateCode(),
             paypalEmail,
+            firstName,
+            lastName,
+            dateOfBirth,
+            hasSocialFollowing: hasSocialFollowing || false,
+            socialHandle,
+            status: "pending",
+        },
+    });
+
+    return { success: true, affiliate };
+};
+
+// Create public affiliate application (no user account required)
+export const createPublicAffiliateApplication = async (
+    email: string,
+    firstName: string,
+    lastName: string,
+    dateOfBirth?: Date,
+    hasSocialFollowing?: boolean,
+    socialHandle?: string,
+    paypalEmail?: string
+) => {
+    // Check if email already has an affiliate application
+    const existingByEmail = await prisma.affiliate.findUnique({
+        where: { email },
+    });
+
+    if (existingByEmail) {
+        return { success: false, error: "An application with this email already exists" };
+    }
+
+    const affiliate = await prisma.affiliate.create({
+        data: {
+            email,
+            affiliateCode: generateAffiliateCode(),
+            paypalEmail: paypalEmail || email, // Default to application email
             firstName,
             lastName,
             dateOfBirth,
