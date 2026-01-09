@@ -164,11 +164,6 @@ async function analyzeUploadedVideoWithGemini(
     description: string,
     creatorSetup: CreatorSetup | null
 ): Promise<VideoAnalysis> {
-    const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash-exp",
-        safetySettings,
-    });
-
     const videoPart: Part = {
         inlineData: {
             mimeType: mimeType as "video/mp4" | "video/webm" | "video/quicktime",
@@ -217,8 +212,41 @@ Respond with ONLY valid JSON (no markdown, no code blocks):
     "replicabilityRequirements": ["what would someone need to make this video"]
 }`;
 
-    const result = await model.generateContent([videoPart, prompt]);
+    // Try multiple model names - different accounts may have different models available
+    const modelsToTry = [
+        "gemini-2.5-flash",
+        "gemini-2.5-pro",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+    ];
+
+    let result;
+    let successfulModel = "";
+
+    for (const modelName of modelsToTry) {
+        try {
+            console.log(`Trying Gemini model for upload: ${modelName}...`);
+            const model = genAI.getGenerativeModel({
+                model: modelName,
+                safetySettings,
+            });
+            result = await model.generateContent([videoPart, prompt]);
+            successfulModel = modelName;
+            console.log(`Success with model: ${modelName}`);
+            break;
+        } catch (modelError: unknown) {
+            const error = modelError as Error;
+            console.log(`Model ${modelName} failed:`, error.message?.substring(0, 100));
+            // Continue to next model
+        }
+    }
+
+    if (!result) {
+        throw new Error("All Gemini models failed to analyze the video");
+    }
+
     const responseText = result.response.text();
+    console.log(`Gemini response received from ${successfulModel}, parsing...`);
 
     // Clean and parse JSON
     let cleanedText = responseText.trim();

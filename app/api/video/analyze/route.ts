@@ -170,26 +170,9 @@ export async function POST(request: Request) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let videoData: any = null;
 
-        const response1 = await fetch(
-            `https://${RAPIDAPI_HOST}/video/info?video_id=${videoId}`,
-            {
-                method: "GET",
-                headers: {
-                    "x-rapidapi-key": RAPIDAPI_KEY,
-                    "x-rapidapi-host": RAPIDAPI_HOST,
-                },
-            }
-        );
-
-        if (response1.ok) {
-            videoData = await response1.json();
-        }
-
-        // Try backup endpoint
-        if (!videoData?.itemInfo?.itemStruct?.stats?.playCount) {
-            const encodedUrl = encodeURIComponent(videoUrl);
-            const response2 = await fetch(
-                `https://${RAPIDAPI_HOST}/video/info_v2?video_url=${encodedUrl}`,
+        try {
+            const response1 = await fetch(
+                `https://${RAPIDAPI_HOST}/video/info?video_id=${videoId}`,
                 {
                     method: "GET",
                     headers: {
@@ -199,11 +182,63 @@ export async function POST(request: Request) {
                 }
             );
 
-            if (response2.ok) {
-                const data2 = await response2.json();
-                if (data2?.itemInfo?.itemStruct?.stats?.playCount) {
-                    videoData = data2;
+            if (response1.ok) {
+                const text = await response1.text();
+                if (text && text.trim()) {
+                    try {
+                        videoData = JSON.parse(text);
+                        console.log("RapidAPI response1 parsed successfully");
+                    } catch (parseError) {
+                        console.log("RapidAPI response1 JSON parse failed:", text.substring(0, 100));
+                    }
+                } else {
+                    console.log("RapidAPI response1 returned empty body");
                 }
+            } else {
+                console.log("RapidAPI response1 status:", response1.status);
+            }
+        } catch (fetchError) {
+            console.log("RapidAPI response1 fetch error:", fetchError);
+        }
+
+        // Try backup endpoint
+        if (!videoData?.itemInfo?.itemStruct?.stats?.playCount) {
+            try {
+                const encodedUrl = encodeURIComponent(videoUrl);
+                const response2 = await fetch(
+                    `https://${RAPIDAPI_HOST}/video/info_v2?video_url=${encodedUrl}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            "x-rapidapi-key": RAPIDAPI_KEY,
+                            "x-rapidapi-host": RAPIDAPI_HOST,
+                        },
+                    }
+                );
+
+                if (response2.ok) {
+                    const text = await response2.text();
+                    if (text && text.trim()) {
+                        try {
+                            const data2 = JSON.parse(text);
+                            console.log("RapidAPI response2 parsed successfully");
+                            if (data2?.itemInfo?.itemStruct?.stats?.playCount) {
+                                videoData = data2;
+                            } else if (!videoData) {
+                                // Use this data if we have nothing else
+                                videoData = data2;
+                            }
+                        } catch (parseError) {
+                            console.log("RapidAPI response2 JSON parse failed:", text.substring(0, 100));
+                        }
+                    } else {
+                        console.log("RapidAPI response2 returned empty body");
+                    }
+                } else {
+                    console.log("RapidAPI response2 status:", response2.status);
+                }
+            } catch (fetchError) {
+                console.log("RapidAPI response2 fetch error:", fetchError);
             }
         }
 
