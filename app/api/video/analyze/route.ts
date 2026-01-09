@@ -2,13 +2,142 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { canUseAnalysis, recordAnalysisUsage, getUserSubscription } from "@/lib/user";
-import { GoogleGenAI, createUserContent, createPartFromUri } from "@google/genai";
-import { writeFile, unlink, mkdir } from "fs/promises";
-import { join } from "path";
-import { tmpdir } from "os";
 
-// Initialize the new Gemini SDK
-const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY || "" });
+const GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY || "";
+
+// =====================
+// REST API FILE UPLOAD (works on Vercel serverless)
+// =====================
+
+interface GeminiFileResponse {
+    name: string;
+    uri: string;
+    mimeType: string;
+    state: string;
+}
+
+async function uploadVideoToGeminiREST(videoBuffer: ArrayBuffer, mimeType: string): Promise<GeminiFileResponse> {
+    const numBytes = videoBuffer.byteLength;
+    console.log(`Uploading ${Math.round(numBytes / 1024)}KB video via REST API...`);
+
+    // Step 1: Start resumable upload
+    const startResponse = await fetch("https://generativelanguage.googleapis.com/upload/v1beta/files", {
+        method: "POST",
+        headers: {
+            "x-goog-api-key": GEMINI_API_KEY,
+            "X-Goog-Upload-Protocol": "resumable",
+            "X-Goog-Upload-Command": "start",
+            "X-Goog-Upload-Header-Content-Length": numBytes.toString(),
+            "X-Goog-Upload-Header-Content-Type": mimeType,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            file: { display_name: `video_${Date.now()}` }
+        }),
+    });
+
+    if (!startResponse.ok) {
+        const errorText = await startResponse.text();
+        console.error("Failed to start upload:", errorText);
+        throw new Error(`Failed to start upload: ${startResponse.status}`);
+    }
+
+    const uploadUrl = startResponse.headers.get("X-Goog-Upload-URL");
+    if (!uploadUrl) {
+        throw new Error("No upload URL received from Gemini");
+    }
+
+    console.log("Got upload URL, uploading video bytes...");
+
+    // Step 2: Upload the actual bytes
+    const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+            "Content-Length": numBytes.toString(),
+            "X-Goog-Upload-Offset": "0",
+            "X-Goog-Upload-Command": "upload, finalize",
+        },
+        body: videoBuffer,
+    });
+
+    if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        console.error("Failed to upload video:", errorText);
+        throw new Error(`Failed to upload video: ${uploadResponse.status}`);
+    }
+
+    const fileInfo = await uploadResponse.json();
+    console.log("Video uploaded:", fileInfo.file?.name, "State:", fileInfo.file?.state);
+
+    return {
+        name: fileInfo.file.name,
+        uri: fileInfo.file.uri,
+        mimeType: fileInfo.file.mimeType,
+        state: fileInfo.file.state,
+    };
+}
+
+async function waitForFileProcessing(fileName: string): Promise<GeminiFileResponse> {
+    let attempts = 0;
+    const maxAttempts = 60; // 60 seconds max
+
+    while (attempts < maxAttempts) {
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/files/${fileName}?key=${GEMINI_API_KEY}`
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to get file status: ${response.status}`);
+        }
+
+        const fileInfo = await response.json();
+
+        if (fileInfo.state === "ACTIVE") {
+            console.log("File is ready for analysis");
+            return fileInfo;
+        }
+
+        if (fileInfo.state === "FAILED") {
+            throw new Error("Video processing failed on Gemini's servers");
+        }
+
+        attempts++;
+        if (attempts % 5 === 0) {
+            console.log(`Still processing... (${attempts}s)`);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    throw new Error(`File not ready after ${maxAttempts}s`);
+}
+
+async function generateContentWithVideo(fileUri: string, fileMimeType: string, prompt: string): Promise<string> {
+    const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [
+                        { file_data: { mime_type: fileMimeType, file_uri: fileUri } },
+                        { text: prompt }
+                    ]
+                }]
+            }),
+        }
+    );
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Gemini generate error:", errorText);
+        throw new Error(`Gemini generation failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+}
 
 // Duration limits per plan (in seconds)
 const DURATION_LIMITS = {
@@ -622,66 +751,34 @@ async function analyzeVideoWithGemini(
         throw new Error("Invalid video format - content appears to be corrupted or not a video");
     }
 
-    // Write video to temp file for Files API upload
-    const tempDir = join(tmpdir(), 'progressly-videos');
-    await mkdir(tempDir, { recursive: true });
-    const tempFilePath = join(tempDir, `video_${Date.now()}.mp4`);
+    // Upload to Gemini Files API using REST (works on serverless)
+    const uploadedFile = await uploadVideoToGeminiREST(videoBuffer, "video/mp4");
 
-    try {
-        await writeFile(tempFilePath, Buffer.from(videoBuffer));
-        console.log(`Video saved to temp file: ${tempFilePath}`);
+    // Wait for processing if needed
+    let file = uploadedFile;
+    if (file.state !== "ACTIVE") {
+        const fileName = file.name.replace("files/", "");
+        file = await waitForFileProcessing(fileName);
+    }
 
-        // Upload to Gemini Files API
-        console.log("Uploading to Gemini Files API...");
-        const uploadedFile = await ai.files.upload({
-            file: tempFilePath,
-            config: { mimeType: "video/mp4" },
-        });
+    // Build prompt context
+    const intentionContext = videoIntention
+        ? `\n- Creator's Intended Purpose: "${videoIntention}" (IMPORTANT: Suggestions should align with this intent. Do NOT suggest things that contradict the video's purpose. For example, if it's ASMR/Satisfying content, don't suggest adding educational explanations.)`
+        : "";
 
-        console.log(`File uploaded: ${uploadedFile.name}, state: ${uploadedFile.state}`);
-
-        // Wait for file to be processed (Gemini needs to process the video)
-        let file = uploadedFile;
-        let attempts = 0;
-        const maxAttempts = 30; // Max 30 seconds wait
-
-        while (file.state === "PROCESSING" && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            file = await ai.files.get({ name: file.name! });
-            attempts++;
-            if (attempts % 5 === 0) {
-                console.log(`Still processing... (${attempts}s)`);
-            }
+    let userNicheDescription = "";
+    if (creatorSetup) {
+        if (creatorSetup.contentNiche && creatorSetup.contentNiche.trim()) {
+            userNicheDescription = creatorSetup.contentNiche;
+        } else if (creatorSetup.contentActivity) {
+            userNicheDescription = creatorSetup.contentActivity;
         }
+    }
+    const nicheContext = userNicheDescription
+        ? `\n- ANALYZING USER'S CONTENT TYPE: ${userNicheDescription}`
+        : "";
 
-        if (file.state === "FAILED") {
-            throw new Error("Video processing failed on Gemini's servers");
-        }
-
-        if (file.state !== "ACTIVE") {
-            throw new Error(`File not ready after ${maxAttempts}s. State: ${file.state}`);
-        }
-
-        console.log("File processed and ready for analysis");
-
-        // Build prompt context
-        const intentionContext = videoIntention
-            ? `\n- Creator's Intended Purpose: "${videoIntention}" (IMPORTANT: Suggestions should align with this intent. Do NOT suggest things that contradict the video's purpose. For example, if it's ASMR/Satisfying content, don't suggest adding educational explanations.)`
-            : "";
-
-        let userNicheDescription = "";
-        if (creatorSetup) {
-            if (creatorSetup.contentNiche && creatorSetup.contentNiche.trim()) {
-                userNicheDescription = creatorSetup.contentNiche;
-            } else if (creatorSetup.contentActivity) {
-                userNicheDescription = creatorSetup.contentActivity;
-            }
-        }
-        const nicheContext = userNicheDescription
-            ? `\n- ANALYZING USER'S CONTENT TYPE: ${userNicheDescription}`
-            : "";
-
-        const prompt = `You are a TikTok video analyst. Watch this entire video carefully and provide a detailed analysis.
+    const prompt = `You are a TikTok video analyst. Watch this entire video carefully and provide a detailed analysis.
 
 VIDEO INFO:
 - Caption: "${caption}"
@@ -709,7 +806,6 @@ Respond with JSON (no markdown code blocks):
     "contentDescription": "<2-3 sentences describing what happens in the video>",
     "sceneBySceneBreakdown": [
         {"timestamp": "0:00-0:03", "description": "Opening Hook", "whatsHappening": "<what specifically happens>"},
-        {"timestamp": "0:03-0:15", "description": "First Topic", "whatsHappening": "<what happens in this section>"},
         {"timestamp": "0:03-0:15", "description": "First Topic", "whatsHappening": "<what happens in this section>"},
         {"timestamp": "0:15-0:30", "description": "Second Topic", "whatsHappening": "<what happens>"},
         {"timestamp": "0:30-end", "description": "Conclusion", "whatsHappening": "<how video ends>"}
@@ -740,66 +836,49 @@ Respond with JSON (no markdown code blocks):
     "whyItFlopped": "<ONLY fill this if the video has low views/engagement. Explain honestly: What went wrong? If video performed well, set to null>"
 }`;
 
-        // Generate content using the uploaded file
-        console.log("Sending to Gemini for analysis...");
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: createUserContent([
-                createPartFromUri(file.uri!, file.mimeType!),
-                prompt,
-            ]),
-        });
+    // Generate content using the uploaded file via REST API
+    console.log("Sending to Gemini for analysis...");
+    const text = await generateContentWithVideo(file.uri, file.mimeType, prompt);
+    console.log("Gemini response received, parsing...");
 
-        const text = response.text;
-        console.log("Gemini response received, parsing...");
-
-        // Extract JSON from response
-        const jsonMatch = text?.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            throw new Error("No JSON found in Gemini response");
-        }
-
-        const parsed = JSON.parse(jsonMatch[0]);
-
-        // Check content moderation - reject inappropriate videos
-        if (parsed.contentModeration && parsed.contentModeration.isSafe === false) {
-            throw new Error(`INAPPROPRIATE_CONTENT: ${parsed.contentModeration.reason || "This video contains inappropriate content"}`);
-        }
-
-        // Filter out music suggestions (though prompt should prevent them now)
-        const filterMusic = (arr: string[]) => arr.filter((s: string) =>
-            !s.toLowerCase().includes("music") &&
-            !s.toLowerCase().includes("audio track") &&
-            !s.toLowerCase().includes("sound effect")
-        );
-
-        return {
-            contentType: parsed.contentType || "Video content",
-            contentFormat: parsed.contentFormat || "original_content",
-            celebritiesDetected: parsed.celebritiesDetected || "none",
-            contentDescription: parsed.contentDescription || "Unable to analyze",
-            sceneBySceneBreakdown: parsed.sceneBySceneBreakdown || [],
-            peopleCount: parsed.peopleCount || "Unknown",
-            settingType: parsed.settingType || "Unknown",
-            audioType: parsed.audioType || "Unknown",
-            cameraStyle: parsed.cameraStyle || "Unknown",
-            productionQuality: parsed.productionQuality || "Unknown",
-            lessonsToApply: filterMusic(parsed.lessonsToApply || []),
-            mistakesToAvoid: filterMusic(parsed.mistakesToAvoid || []),
-            hookAnalysis: parsed.hookAnalysis || { hookType: "Unknown", effectiveness: "Unknown", score: 5 },
-            replicabilityRequirements: parsed.replicabilityRequirements || [],
-            analysisMethod: "full_video",
-            whyItFlopped: parsed.whyItFlopped || null,
-        };
-    } finally {
-        // Clean up temp file
-        try {
-            await unlink(tempFilePath);
-            console.log("Temp file cleaned up");
-        } catch {
-            // Ignore cleanup errors
-        }
+    // Extract JSON from response
+    const jsonMatch = text?.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+        throw new Error("No JSON found in Gemini response");
     }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    // Check content moderation - reject inappropriate videos
+    if (parsed.contentModeration && parsed.contentModeration.isSafe === false) {
+        throw new Error(`INAPPROPRIATE_CONTENT: ${parsed.contentModeration.reason || "This video contains inappropriate content"}`);
+    }
+
+    // Filter out music suggestions
+    const filterMusic = (arr: string[]) => arr.filter((s: string) =>
+        !s.toLowerCase().includes("music") &&
+        !s.toLowerCase().includes("audio track") &&
+        !s.toLowerCase().includes("sound effect")
+    );
+
+    return {
+        contentType: parsed.contentType || "Video content",
+        contentFormat: parsed.contentFormat || "original_content",
+        celebritiesDetected: parsed.celebritiesDetected || "none",
+        contentDescription: parsed.contentDescription || "Unable to analyze",
+        sceneBySceneBreakdown: parsed.sceneBySceneBreakdown || [],
+        peopleCount: parsed.peopleCount || "Unknown",
+        settingType: parsed.settingType || "Unknown",
+        audioType: parsed.audioType || "Unknown",
+        cameraStyle: parsed.cameraStyle || "Unknown",
+        productionQuality: parsed.productionQuality || "Unknown",
+        lessonsToApply: filterMusic(parsed.lessonsToApply || []),
+        mistakesToAvoid: filterMusic(parsed.mistakesToAvoid || []),
+        hookAnalysis: parsed.hookAnalysis || { hookType: "Unknown", effectiveness: "Unknown", score: 5 },
+        replicabilityRequirements: parsed.replicabilityRequirements || [],
+        analysisMethod: "full_video",
+        whyItFlopped: parsed.whyItFlopped || null,
+    };
 }
 
 // Fallback: analyze cover image with Gemini
