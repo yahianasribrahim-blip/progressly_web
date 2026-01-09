@@ -212,11 +212,9 @@ Respond with ONLY valid JSON (no markdown, no code blocks):
     "replicabilityRequirements": ["what would someone need to make this video"]
 }`;
 
-    // Try multiple model names - different accounts may have different models available
     const modelsToTry = [
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
+        "gemini-2.5-flash",
+        "gemini-2.5-pro",
     ];
 
     let result;
