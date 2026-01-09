@@ -711,10 +711,9 @@ Return a JSON object with this EXACT structure:
     try {
         // Try multiple model names - different accounts may have different models available
         const modelsToTry = [
-            "gemini-2.5-flash",
-            "gemini-2.5-pro",
             "gemini-2.0-flash",
             "gemini-1.5-flash",
+            "gemini-1.5-pro",
         ];
 
         let result;
