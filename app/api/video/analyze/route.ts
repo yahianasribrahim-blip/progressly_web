@@ -1,32 +1,22 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
-import { canUseAnalysis, recordAnalysisUsage } from "@/lib/user";
-import { GoogleGenerativeAI, Part, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+import { canUseAnalysis, recordAnalysisUsage, getUserSubscription } from "@/lib/user";
+import { GoogleGenAI, createUserContent, createPartFromUri } from "@google/genai";
+import { writeFile, unlink, mkdir } from "fs/promises";
+import { join } from "path";
+import { tmpdir } from "os";
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
+// Initialize the new Gemini SDK
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY || "" });
 
-// Safety settings - BLOCK_NONE for ALL to avoid false positives on family/kid content
-// We rely on our detailed custom prompt moderation which has nuanced exceptions
-const safetySettings = [
-    {
-        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-    },
-    {
-        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-    },
-    {
-        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-        threshold: HarmBlockThreshold.BLOCK_NONE, // Custom prompt handles with nuanced rules + child exception
-    },
-    {
-        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-    },
-];
+// Duration limits per plan (in seconds)
+const DURATION_LIMITS = {
+    free: 30,      // 30 seconds max for free users
+    starter: 60,   // 1 minute for starter
+    creator: 180,  // 3 minutes for creator/pro
+    pro: 180,      // 3 minutes for pro
+};
 
 // Analyze a single video from TikTok URL
 export async function POST(request: Request) {
@@ -569,7 +559,7 @@ async function analyzeVideoWithGemini(
     viewCount: number,
     videoIntention?: string
 ): Promise<VideoAnalysis> {
-    console.log("Downloading video for Gemini analysis...");
+    console.log("Downloading video for Gemini Files API analysis...");
 
     // Download the video
     const videoResponse = await fetch(videoUrl, {
@@ -585,41 +575,85 @@ async function analyzeVideoWithGemini(
     }
 
     const videoBuffer = await videoResponse.arrayBuffer();
-    const videoBase64 = Buffer.from(videoBuffer).toString('base64');
     const fileSizeKB = Math.round(videoBuffer.byteLength / 1024);
+    const fileSizeMB = Math.round(fileSizeKB / 1024 * 10) / 10;
 
-    console.log(`Video downloaded: ${fileSizeKB}KB`);
+    console.log(`Video downloaded: ${fileSizeMB}MB (${fileSizeKB}KB)`);
 
     if (videoBuffer.byteLength < 10000) {
-        throw new Error("Downloaded file too small");
+        throw new Error("Downloaded file too small - may be an error page");
     }
 
-    // Prepare video for Gemini
-    const videoPart: Part = {
-        inlineData: {
-            mimeType: "video/mp4",
-            data: videoBase64,
-        },
-    };
+    // Validate video content by checking magic bytes (MP4 files have 'ftyp' at offset 4)
+    const bytes = new Uint8Array(videoBuffer.slice(0, 12));
+    const hexSignature = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    const isMP4 = hexSignature.includes('66747970'); // "ftyp" in hex
 
-    const intentionContext = videoIntention
-        ? `\n- Creator's Intended Purpose: "${videoIntention}" (IMPORTANT: Suggestions should align with this intent. Do NOT suggest things that contradict the video's purpose. For example, if it's ASMR/Satisfying content, don't suggest adding educational explanations.)`
-        : "";
+    if (!isMP4) {
+        console.log("Downloaded content is not a valid MP4 file. Hex signature:", hexSignature.substring(0, 24));
+        throw new Error("Invalid video format - content appears to be corrupted or not a video");
+    }
 
-    // Extract user's actual niche for personalized "what you need to replicate"
-    let userNicheDescription = "";
-    if (creatorSetup) {
-        if (creatorSetup.contentNiche && creatorSetup.contentNiche.trim()) {
-            userNicheDescription = creatorSetup.contentNiche;
-        } else if (creatorSetup.contentActivity) {
-            userNicheDescription = creatorSetup.contentActivity;
+    // Write video to temp file for Files API upload
+    const tempDir = join(tmpdir(), 'progressly-videos');
+    await mkdir(tempDir, { recursive: true });
+    const tempFilePath = join(tempDir, `video_${Date.now()}.mp4`);
+
+    try {
+        await writeFile(tempFilePath, Buffer.from(videoBuffer));
+        console.log(`Video saved to temp file: ${tempFilePath}`);
+
+        // Upload to Gemini Files API
+        console.log("Uploading to Gemini Files API...");
+        const uploadedFile = await ai.files.upload({
+            file: tempFilePath,
+            config: { mimeType: "video/mp4" },
+        });
+
+        console.log(`File uploaded: ${uploadedFile.name}, state: ${uploadedFile.state}`);
+
+        // Wait for file to be processed (Gemini needs to process the video)
+        let file = uploadedFile;
+        let attempts = 0;
+        const maxAttempts = 30; // Max 30 seconds wait
+
+        while (file.state === "PROCESSING" && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            file = await ai.files.get({ name: file.name! });
+            attempts++;
+            if (attempts % 5 === 0) {
+                console.log(`Still processing... (${attempts}s)`);
+            }
         }
-    }
-    const nicheContext = userNicheDescription
-        ? `\n- ANALYZING USER'S CONTENT TYPE: ${userNicheDescription}`
-        : "";
 
-    const prompt = `You are a TikTok video analyst. Watch this entire video carefully and provide a detailed analysis.
+        if (file.state === "FAILED") {
+            throw new Error("Video processing failed on Gemini's servers");
+        }
+
+        if (file.state !== "ACTIVE") {
+            throw new Error(`File not ready after ${maxAttempts}s. State: ${file.state}`);
+        }
+
+        console.log("File processed and ready for analysis");
+
+        // Build prompt context
+        const intentionContext = videoIntention
+            ? `\n- Creator's Intended Purpose: "${videoIntention}" (IMPORTANT: Suggestions should align with this intent. Do NOT suggest things that contradict the video's purpose. For example, if it's ASMR/Satisfying content, don't suggest adding educational explanations.)`
+            : "";
+
+        let userNicheDescription = "";
+        if (creatorSetup) {
+            if (creatorSetup.contentNiche && creatorSetup.contentNiche.trim()) {
+                userNicheDescription = creatorSetup.contentNiche;
+            } else if (creatorSetup.contentActivity) {
+                userNicheDescription = creatorSetup.contentActivity;
+            }
+        }
+        const nicheContext = userNicheDescription
+            ? `\n- ANALYZING USER'S CONTENT TYPE: ${userNicheDescription}`
+            : "";
+
+        const prompt = `You are a TikTok video analyst. Watch this entire video carefully and provide a detailed analysis.
 
 VIDEO INFO:
 - Caption: "${caption}"
@@ -628,125 +662,71 @@ VIDEO INFO:
 
 RULES:
 1. Describe EXACTLY what happens in the video - you are WATCHING the actual video
-2. Provide accurate timestamps for each scene
-3. Be SPECIFIC about what you see and hear
-4. NEVER use uncertainty words like "possibly", "likely", "appears to" - you are watching the video
-5. NEVER mention music at all - don't suggest it, don't praise it, don't talk about it
-6. NEVER recommend specific editing tools or software (CapCut, Premiere, etc.)
-7. For improvements, only suggest things the video is NOT already doing
-8. If a video intention is specified, RESPECT IT when giving suggestions. For example:
-   - ASMR/Satisfying content: Focus on visual and audio quality, pacing, not educational value
-   - Educational: Focus on clarity, information delivery, structure
-   - Comedy: Focus on timing, punchlines, relatability
-9. Focus on MEANINGFUL details that affect the video's effectiveness. Skip trivial observations (e.g., minor clothing adjustments, tiny movements). Only describe what matters to the content.
-10. USE SIMPLE LANGUAGE - write like you're explaining to a 10 year old. No fancy words. Short sentences.
+2. Be specific about locations, objects, actions visible
+3. NEVER mention or comment on any audio/music - focus ONLY on visuals and spoken content
+4. The "lessonsToApply" and "mistakesToAvoid" should NEVER reference adding music, sound effects, or audio tracks
+5. Focus on: visual hooks, pacing, camera work, editing, text overlays, and spoken content if any
 
-CRITICAL: You MUST watch and analyze the ENTIRE video from start to finish. Do not just analyze the thumbnail or first frame.
+CONTENT MODERATION:
+- If this video contains sexually explicit content, nudity, or inappropriate material involving minors, respond ONLY with: {"contentModeration": {"isSafe": false, "reason": "Contains inappropriate content"}}
+- Exception: Hijab-related, modest fashion, or covered-up content is PERFECTLY FINE and should be analyzed normally
+- Exception: Family/parenting content showing children in normal contexts is fine
 
-CONTENT MODERATION - ONLY block truly explicit content:
-Flag as INAPPROPRIATE ONLY if ANY of these appear:
-- Actual nudity (exposed breasts, buttocks, genitals)
-- Intentional body jiggling/bouncing for sexual attention (not normal movement)
-- Explicit sexual acts or simulations
-- Same-sex romantic content (two men or two women kissing, romantic embrace)
-- Sexual props near private areas (measuring tape near groin, etc.)
-- OnlyFans or adult content promotion
-
-Do NOT flag - these are ALLOWED:
-- Dancing (even if someone finds it suggestive, as long as no explicit nudity/jiggling)
-- Outfits, costumes, fashion content
-- Beauty content, makeup
-- Fitness content showing body
-- Family/kid content
-- Pregnancy content
-- Most normal social media content
-
-Return a JSON object with this EXACT structure:
+Respond with JSON (no markdown code blocks):
 {
-    "contentModeration": {
-        "isSafe": <true or false>,
-        "reason": "<if not safe, explain why. If safe, leave empty string>"
-    },
-    "contentType": "<specific type like 'car modification tips', 'comedy skit', 'cooking tutorial'>",
-    "contentFormat": "<IMPORTANT: 'original_content' if creator filmed themselves/their own content. 'edit_compilation' if video uses footage of CELEBRITIES, ATHLETES, MOVIES, TV SHOWS, or other people's content (like soccer player edits, boxing highlights, movie clips). 'repost' if it's just reposted content with no editing>",
-    "celebritiesDetected": "<if contentFormat is 'edit_compilation', list who: e.g., 'Mbappe, Ronaldo'. If original content, say 'none'>",
-    "contentDescription": "<MINIMUM 50 CHARACTERS. Write 4-6 sentences describing what happens in the video. Use SIMPLE, casual words like you're texting a friend. Cover the beginning, middle, and end of the video. If you write less than 50 characters, you have failed.>",
+    "contentModeration": {"isSafe": true},
+    "contentType": "<type like 'Comedy Skit', 'Educational', 'Lifestyle Vlog', 'Product Review', 'Trend/Challenge'>",
+    "contentFormat": "<'original_content' if creator made it, 'edit_compilation' if clips/movie edits, 'repost' if clearly stolen>",
+    "celebritiesDetected": "<list celebrities/influencers if recognized, otherwise 'none'>",
+    "contentDescription": "<2-3 sentences describing what happens in the video>",
     "sceneBySceneBreakdown": [
-        {"timestamp": "0:00-0:03", "description": "Opening/Hook", "whatsHappening": "<exact description of opening>"},
+        {"timestamp": "0:00-0:03", "description": "Opening Hook", "whatsHappening": "<what specifically happens>"},
+        {"timestamp": "0:03-0:15", "description": "First Topic", "whatsHappening": "<what happens in this section>"},
         {"timestamp": "0:03-0:15", "description": "First Topic", "whatsHappening": "<what happens in this section>"},
         {"timestamp": "0:15-0:30", "description": "Second Topic", "whatsHappening": "<what happens>"},
         {"timestamp": "0:30-end", "description": "Conclusion", "whatsHappening": "<how video ends>"}
     ],
-    "peopleCount": "<BE ACCURATE: 'no people visible' if ZERO humans appear, 'solo creator' if 1, '2 people' if 2, etc. COUNT CAREFULLY - do not guess>",
-    "subjectInfo": {
-        "mainSubject": "<who is the MAIN focus? e.g., 'the creator', 'man in blue shirt', 'no main subject - product focused'>",
-        "backgroundPeople": "<describe any people NOT the main subject, or 'none' if solo or no people>",
-        "relationship": "<if 2+ people: 'working together' / 'against each other (prank/competition)' / 'acting individually' / 'crowd/audience'. If solo or no people: 'n/a'>"
-    },
-    "settingType": "<specific: 'parking lot with Infiniti G37', 'home kitchen', 'bedroom with ring light'>",
+    "peopleCount": "<BE ACCURATE: 'no people visible' if ZERO humans appear, 'solo creator' if 1, '2 people' if 2, etc.>",
+    "settingType": "<specific: 'parking lot with car', 'home kitchen', 'bedroom with ring light'>",
     "audioType": "<'talking/voiceover', 'original audio with talking', 'background music only', 'mixed'>",
     "productionQuality": "<'basic phone filming', 'good lighting and angles', 'professional production'>",
     "lessonsToApply": [
-        "<First, describe SPECIFICALLY what THIS video does well. Then add: 'In general, [why this technique works for any niche].' For example: 'The video uses tight close-ups to show texture. In general, close-ups make content more immersive and keep viewers watching longer.'>",
-        "<Second specific thing this video does. Then: 'This works because...' with a general principle. Focus on hooks, editing, pacing, audio - NOT appearance>",
-        "<Third specific thing. Then the general takeaway that applies to ANY niche>"
+        "<First, describe SPECIFICALLY what THIS video does well. Focus on hooks, editing, pacing - NOT music>",
+        "<Second specific thing this video does. Focus on content not appearance>",
+        "<Third specific thing. General takeaway that applies to ANY niche>"
     ],
     "mistakesToAvoid": [
-        "<What could be done better? Focus on editing, pacing, audio, hooks, captions - NOT on showing more body or outfit>",
+        "<What could be done better? Focus on editing, pacing, hooks, captions - NOT on music or appearance>",
         "<Second tip - keep it helpful and specific, about content not appearance>"
     ],
     "hookAnalysis": {
         "hookType": "<type: 'text overlay', 'verbal hook', 'visual hook', 'curiosity hook'>",
-        "effectiveness": "<First describe exactly how THIS video's hook works. Then END with: 'The general principle: [1 sentence explaining why this type of hook works for ANY content].' Example: 'The video opens with a close-up of sizzling food which triggers curiosity. The general principle: starting with an intriguing visual or sound immediately captures attention before viewers scroll away.'>",
+        "effectiveness": "<Describe exactly how THIS video's hook works>",
         "score": <1-10>
     },
     "replicabilityRequirements": [
-        "<IMPORTANT: If 'ANALYZING USER'S CONTENT TYPE' is shown in VIDEO INFO above, tailor these requirements to THEIR content type. Example: If user does 'luxury car content', say 'Access to a luxury car with interesting features' - NOT 'kitchen ingredients'. If their content type is shown, use it!>",
-        "<Second requirement - related to equipment/locations for the USER'S content type (if specified), not the inspiration video's specific subject. If no user content type specified, keep it general>",
-        "<Third requirement - technical/production needs like 'Good close-up camera', 'Clear audio recording' that match the style of video being analyzed>"
+        "<What equipment/props would be needed to make similar content>",
+        "<Second requirement>",
+        "<Third requirement - technical/production needs>"
     ],
-    "whyItFlopped": "<ONLY fill this if the video has low views/engagement. Explain honestly: What went wrong? Algorithm issues? Hook failure? Wrong timing? Content problems? If video performed well, set to null>"
+    "whyItFlopped": "<ONLY fill this if the video has low views/engagement. Explain honestly: What went wrong? If video performed well, set to null>"
 }`;
 
-    try {
-        // Try multiple model names - different accounts may have different models available
-        const modelsToTry = [
-            "gemini-2.5-flash",
-            "gemini-2.5-pro",
-        ];
+        // Generate content using the uploaded file
+        console.log("Sending to Gemini for analysis...");
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: createUserContent([
+                createPartFromUri(file.uri!, file.mimeType!),
+                prompt,
+            ]),
+        });
 
-        let result;
-        let successfulModel = "";
-
-        for (const modelName of modelsToTry) {
-            try {
-                console.log(`Trying Gemini model: ${modelName}...`);
-                const model = genAI.getGenerativeModel({
-                    model: modelName,
-                    safetySettings, // Use our custom safety settings
-                });
-                result = await model.generateContent([prompt, videoPart]);
-                successfulModel = modelName;
-                console.log(`Success with model: ${modelName}`);
-                break;
-            } catch (modelError: unknown) {
-                const error = modelError as Error;
-                console.log(`Model ${modelName} failed:`, error.message?.substring(0, 100));
-                // Continue to next model
-            }
-        }
-
-        if (!result) {
-            throw new Error("All Gemini models failed");
-        }
-
-        const response = await result.response;
-        const text = response.text();
-
-        console.log(`Gemini response received from ${successfulModel}, parsing...`);
+        const text = response.text;
+        console.log("Gemini response received, parsing...");
 
         // Extract JSON from response
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        const jsonMatch = text?.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
             throw new Error("No JSON found in Gemini response");
         }
@@ -758,7 +738,7 @@ Return a JSON object with this EXACT structure:
             throw new Error(`INAPPROPRIATE_CONTENT: ${parsed.contentModeration.reason || "This video contains inappropriate content"}`);
         }
 
-        // Filter out music suggestions
+        // Filter out music suggestions (though prompt should prevent them now)
         const filterMusic = (arr: string[]) => arr.filter((s: string) =>
             !s.toLowerCase().includes("music") &&
             !s.toLowerCase().includes("audio track") &&
@@ -783,9 +763,14 @@ Return a JSON object with this EXACT structure:
             analysisMethod: "full_video",
             whyItFlopped: parsed.whyItFlopped || null,
         };
-    } catch (error) {
-        console.error("Gemini video analysis error:", error);
-        throw error;
+    } finally {
+        // Clean up temp file
+        try {
+            await unlink(tempFilePath);
+            console.log("Temp file cleaned up");
+        } catch {
+            // Ignore cleanup errors
+        }
     }
 }
 
@@ -810,13 +795,6 @@ async function analyzeCoverWithGemini(
         const imageBuffer = await imageResponse.arrayBuffer();
         const imageBase64 = Buffer.from(imageBuffer).toString('base64');
 
-        const imagePart: Part = {
-            inlineData: {
-                mimeType: "image/jpeg",
-                data: imageBase64,
-            },
-        };
-
         const prompt = `You are analyzing a TikTok video thumbnail. Be HONEST that you can only see the cover image.
 
 Caption: "${caption}"
@@ -832,44 +810,30 @@ Return JSON with this structure (acknowledge limitations - you only see the thum
     "settingType": "<visible setting>",
     "audioType": "Cannot determine from thumbnail",
     "productionQuality": "<visible quality>",
-    "whatWorked": ["<visible strength>"],
-    "whatToImprove": ["<suggestion based on what you see>"],
+    "lessonsToApply": ["<visible strength>"],
+    "mistakesToAvoid": ["<suggestion based on what you see>"],
     "hookAnalysis": {"hookType": "<type>", "effectiveness": "<analysis>", "score": <1-10>},
     "replicabilityRequirements": ["<visible requirements>"]
 }`;
 
-        // Try multiple model names
-        const modelsToTry = [
-            "gemini-2.5-flash",
-            "gemini-2.5-pro",
-            "gemini-2.0-flash",
-            "gemini-1.5-flash",
-        ];
+        console.log("Cover analysis: using gemini-2.5-flash...");
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [
+                {
+                    inlineData: {
+                        mimeType: "image/jpeg",
+                        data: imageBase64,
+                    },
+                },
+                prompt,
+            ],
+        });
 
-        let result;
-        for (const modelName of modelsToTry) {
-            try {
-                console.log(`Cover analysis: trying ${modelName}...`);
-                const model = genAI.getGenerativeModel({
-                    model: modelName,
-                    safetySettings,
-                });
-                result = await model.generateContent([prompt, imagePart]);
-                console.log(`Cover analysis: success with ${modelName}`);
-                break;
-            } catch {
-                console.log(`Cover analysis: ${modelName} failed`);
-            }
-        }
+        const text = response.text;
+        console.log("Cover analysis response received");
 
-        if (!result) {
-            throw new Error("All models failed for cover analysis");
-        }
-
-        const response = await result.response;
-        const text = response.text();
-
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        const jsonMatch = text?.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
             throw new Error("No JSON in response");
         }

@@ -1,19 +1,14 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { canUseReview, recordReviewUsage } from "@/lib/user";
-import { GoogleGenerativeAI, Part, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+import { GoogleGenAI, createUserContent, createPartFromUri } from "@google/genai";
 import { prisma } from "@/lib/db";
+import { writeFile, unlink, mkdir } from "fs/promises";
+import { join } from "path";
+import { tmpdir } from "os";
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
-
-// Safety settings
-const safetySettings = [
-    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-];
+// Initialize Gemini with new SDK
+const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY || "" });
 
 export async function POST(request: Request) {
     try {
@@ -77,14 +72,15 @@ export async function POST(request: Request) {
             console.log("Could not fetch creator setup:", e);
         }
 
-        // Convert file to base64
+        // Get file buffer for Files API upload
         const arrayBuffer = await videoFile.arrayBuffer();
-        const videoBase64 = Buffer.from(arrayBuffer).toString("base64");
+        const videoBuffer = Buffer.from(arrayBuffer);
+        const mimeType = videoFile.type || "video/mp4";
 
-        // Analyze with Gemini
+        // Analyze with Gemini Files API
         const videoAnalysis = await analyzeUploadedVideoWithGemini(
-            videoBase64,
-            videoFile.type || "video/mp4",
+            videoBuffer,
+            mimeType,
             description,
             creatorSetup
         );
@@ -159,26 +155,62 @@ interface VideoAnalysis {
 }
 
 async function analyzeUploadedVideoWithGemini(
-    videoBase64: string,
+    videoBuffer: Buffer,
     mimeType: string,
     description: string,
     creatorSetup: CreatorSetup | null
 ): Promise<VideoAnalysis> {
-    const videoPart: Part = {
-        inlineData: {
-            mimeType: mimeType as "video/mp4" | "video/webm" | "video/quicktime",
-            data: videoBase64,
-        },
-    };
+    // Write video to temp file for Files API upload
+    const tempDir = join(tmpdir(), 'progressly-videos');
+    await mkdir(tempDir, { recursive: true });
+    const fileExtension = mimeType.includes('webm') ? 'webm' : mimeType.includes('quicktime') ? 'mov' : 'mp4';
+    const tempFilePath = join(tempDir, `upload_${Date.now()}.${fileExtension}`);
 
-    // Context from creator setup
-    let nicheContext = "";
-    if (creatorSetup) {
-        if (creatorSetup.contentNiche) nicheContext = creatorSetup.contentNiche;
-        else if (creatorSetup.contentActivity) nicheContext = creatorSetup.contentActivity;
-    }
+    try {
+        await writeFile(tempFilePath, videoBuffer);
+        console.log(`Video saved to temp file: ${tempFilePath}`);
 
-    const prompt = `You are a video analyst helping a content creator improve their video BEFORE posting.
+        // Upload to Gemini Files API
+        console.log("Uploading to Gemini Files API...");
+        const uploadedFile = await ai.files.upload({
+            file: tempFilePath,
+            config: { mimeType: mimeType as "video/mp4" | "video/webm" | "video/quicktime" },
+        });
+
+        console.log(`File uploaded: ${uploadedFile.name}, state: ${uploadedFile.state}`);
+
+        // Wait for file to be processed
+        let file = uploadedFile;
+        let attempts = 0;
+        const maxAttempts = 30;
+
+        while (file.state === "PROCESSING" && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            file = await ai.files.get({ name: file.name! });
+            attempts++;
+            if (attempts % 5 === 0) {
+                console.log(`Still processing... (${attempts}s)`);
+            }
+        }
+
+        if (file.state === "FAILED") {
+            throw new Error("Video processing failed on Gemini's servers");
+        }
+
+        if (file.state !== "ACTIVE") {
+            throw new Error(`File not ready after ${maxAttempts}s. State: ${file.state}`);
+        }
+
+        console.log("File processed and ready for analysis");
+
+        // Context from creator setup
+        let nicheContext = "";
+        if (creatorSetup) {
+            if (creatorSetup.contentNiche) nicheContext = creatorSetup.contentNiche;
+            else if (creatorSetup.contentActivity) nicheContext = creatorSetup.contentActivity;
+        }
+
+        const prompt = `You are a video analyst helping a content creator improve their video BEFORE posting.
 
 VIDEO INFO:
 - This is the creator's own video (not yet posted)
@@ -212,54 +244,43 @@ Respond with ONLY valid JSON (no markdown, no code blocks):
     "replicabilityRequirements": ["what would someone need to make this video"]
 }`;
 
-    const modelsToTry = [
-        "gemini-2.5-flash",
-        "gemini-2.5-pro",
-    ];
+        // Generate content using the uploaded file
+        console.log("Sending to Gemini for analysis...");
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: createUserContent([
+                createPartFromUri(file.uri!, file.mimeType!),
+                prompt,
+            ]),
+        });
 
-    let result;
-    let successfulModel = "";
+        const responseText = response.text;
+        console.log("Gemini response received, parsing...");
 
-    for (const modelName of modelsToTry) {
-        try {
-            console.log(`Trying Gemini model for upload: ${modelName}...`);
-            const model = genAI.getGenerativeModel({
-                model: modelName,
-                safetySettings,
-            });
-            result = await model.generateContent([videoPart, prompt]);
-            successfulModel = modelName;
-            console.log(`Success with model: ${modelName}`);
-            break;
-        } catch (modelError: unknown) {
-            const error = modelError as Error;
-            console.log(`Model ${modelName} failed:`, error.message?.substring(0, 100));
-            // Continue to next model
+        // Clean and parse JSON
+        let cleanedText = responseText?.trim() || "";
+        if (cleanedText.startsWith("```")) {
+            cleanedText = cleanedText.replace(/```json?\n?/g, "").replace(/```$/g, "").trim();
         }
-    }
 
-    if (!result) {
-        throw new Error("All Gemini models failed to analyze the video");
-    }
-
-    const responseText = result.response.text();
-    console.log(`Gemini response received from ${successfulModel}, parsing...`);
-
-    // Clean and parse JSON
-    let cleanedText = responseText.trim();
-    if (cleanedText.startsWith("```")) {
-        cleanedText = cleanedText.replace(/```json?\n?/g, "").replace(/```$/g, "").trim();
-    }
-
-    try {
-        const parsed = JSON.parse(cleanedText);
-        return {
-            ...parsed,
-            analysisMethod: "uploaded_video",
-        };
-    } catch {
-        console.error("Failed to parse Gemini response:", cleanedText.substring(0, 200));
-        throw new Error("Failed to parse video analysis");
+        try {
+            const parsed = JSON.parse(cleanedText);
+            return {
+                ...parsed,
+                analysisMethod: "uploaded_video",
+            };
+        } catch {
+            console.error("Failed to parse Gemini response:", cleanedText.substring(0, 200));
+            throw new Error("Failed to parse video analysis");
+        }
+    } finally {
+        // Clean up temp file
+        try {
+            await unlink(tempFilePath);
+            console.log("Temp file cleaned up");
+        } catch {
+            // Ignore cleanup errors
+        }
     }
 }
 
