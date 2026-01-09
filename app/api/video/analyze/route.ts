@@ -268,6 +268,35 @@ export async function POST(request: Request) {
         const desc = videoInfo.desc || videoInfo.description || "";
         const duration = videoInfo.video?.duration || videoInfo.duration || 0;
 
+        // === DURATION LIMIT ENFORCEMENT ===
+        const ADMIN_EMAIL = "yahianasribrahim@gmail.com";
+        const isAdmin = session.user.email === ADMIN_EMAIL;
+
+        if (!isAdmin) {
+            const subscription = await getUserSubscription(session.user.id);
+            const planType = subscription?.stripePriceId ?
+                (subscription.stripePriceId.includes('pro') ? 'pro' :
+                    subscription.stripePriceId.includes('creator') ? 'creator' :
+                        subscription.stripePriceId.includes('starter') ? 'starter' : 'free') : 'free';
+
+            const maxDuration = DURATION_LIMITS[planType as keyof typeof DURATION_LIMITS] || DURATION_LIMITS.free;
+
+            if (duration > maxDuration) {
+                const planUpgrade = planType === 'free' ? 'Starter' : planType === 'starter' ? 'Creator' : 'Pro';
+                return NextResponse.json({
+                    error: `Video too long for your plan. Maximum: ${maxDuration}s, Video: ${duration}s. Upgrade to ${planUpgrade} for longer videos!`,
+                    durationLimitReached: true,
+                    maxDuration,
+                    videoDuration: duration,
+                    currentPlan: planType,
+                }, { status: 400 });
+            }
+
+            console.log(`Duration check passed: ${duration}s <= ${maxDuration}s (${planType} plan)`);
+        } else {
+            console.log(`Admin bypass: skipping duration limit for ${ADMIN_EMAIL}`);
+        }
+
         // Use cover from API if we don't have one
         if (!coverUrl) {
             coverUrl = videoInfo.video?.cover || videoInfo.video?.originCover || "";
@@ -282,7 +311,6 @@ export async function POST(request: Request) {
 
         console.log("Creator:", creatorName);
         console.log("Views:", views, "Duration:", duration);
-        console.log("Video download URL:", videoDownloadUrl ? "Found" : "Not found");
 
         // Calculate engagement
         const engagementMetrics = calculateEngagementWithViews(views, likes, comments, shares);
