@@ -148,9 +148,9 @@ export default function AffiliatePage() {
                         </p>
                     </div>
                     <div className="grid md:grid-cols-3 gap-8">
-                        <Card className="relative border-2 hover:border-violet-500/50 transition-colors">
-                            <div className="absolute -top-4 left-6">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 flex items-center justify-center text-white font-bold">
+                        <Card className="relative border-2 hover:border-violet-500/50 transition-colors overflow-visible">
+                            <div className="absolute -top-4 left-6 z-10">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
                                     1
                                 </div>
                             </div>
@@ -163,9 +163,9 @@ export default function AffiliatePage() {
                                 </CardDescription>
                             </CardHeader>
                         </Card>
-                        <Card className="relative border-2 hover:border-violet-500/50 transition-colors">
-                            <div className="absolute -top-4 left-6">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 flex items-center justify-center text-white font-bold">
+                        <Card className="relative border-2 hover:border-violet-500/50 transition-colors overflow-visible">
+                            <div className="absolute -top-4 left-6 z-10">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
                                     2
                                 </div>
                             </div>
@@ -178,9 +178,9 @@ export default function AffiliatePage() {
                                 </CardDescription>
                             </CardHeader>
                         </Card>
-                        <Card className="relative border-2 hover:border-violet-500/50 transition-colors">
-                            <div className="absolute -top-4 left-6">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 flex items-center justify-center text-white font-bold">
+                        <Card className="relative border-2 hover:border-violet-500/50 transition-colors overflow-visible">
+                            <div className="absolute -top-4 left-6 z-10">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
                                     3
                                 </div>
                             </div>

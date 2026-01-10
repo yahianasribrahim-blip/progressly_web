@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Copy,
   CreditCard,
+  DollarSign,
   File,
   FileText,
   Folder,
@@ -193,4 +194,5 @@ export const Icons = {
   folder: Folder,
   mail: Mail,
   upload: Upload,
+  dollarSign: DollarSign,
 };
