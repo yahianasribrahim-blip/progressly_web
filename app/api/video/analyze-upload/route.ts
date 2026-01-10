@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db";
 const GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY || "";
 
 // =====================
-// REST API FILE UPLOAD (avoids SDK pattern validation issues)
+// REST API FILE UPLOAD
 // =====================
 
 interface GeminiFileResponse {
@@ -19,153 +19,258 @@ interface GeminiFileResponse {
 
 async function uploadVideoToGeminiREST(videoBuffer: ArrayBuffer, mimeType: string): Promise<GeminiFileResponse> {
     const numBytes = videoBuffer.byteLength;
-    console.log(`Uploading ${Math.round(numBytes / 1024)}KB video via REST API...`);
+    console.log(`[UPLOAD] Starting upload: ${Math.round(numBytes / 1024)}KB, MIME: ${mimeType}`);
 
-    // Step 1: Start resumable upload
-    const startResponse = await fetch("https://generativelanguage.googleapis.com/upload/v1beta/files", {
-        method: "POST",
-        headers: {
-            "x-goog-api-key": GEMINI_API_KEY,
-            "X-Goog-Upload-Protocol": "resumable",
-            "X-Goog-Upload-Command": "start",
-            "X-Goog-Upload-Header-Content-Length": numBytes.toString(),
-            "X-Goog-Upload-Header-Content-Type": mimeType,
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            file: { display_name: `video_upload_${Date.now()}` }
-        }),
-    });
-
-    if (!startResponse.ok) {
-        const errorText = await startResponse.text();
-        console.error("Failed to start upload:", errorText);
-        throw new Error(`Failed to start upload: ${startResponse.status}`);
+    // Validate inputs
+    if (!videoBuffer || numBytes === 0) {
+        throw new Error("Empty video buffer");
+    }
+    if (!mimeType || !mimeType.startsWith("video/")) {
+        throw new Error(`Invalid MIME type: ${mimeType}`);
+    }
+    if (!GEMINI_API_KEY) {
+        throw new Error("Gemini API key not configured");
     }
 
-    const uploadUrl = startResponse.headers.get("X-Goog-Upload-URL");
-    if (!uploadUrl) {
-        throw new Error("No upload URL received from Gemini");
+    // Use simple alphanumeric display name to avoid pattern issues
+    const displayName = `video${Date.now()}`;
+
+    try {
+        // Step 1: Start resumable upload
+        console.log("[UPLOAD] Step 1: Initiating resumable upload...");
+        const startResponse = await fetch("https://generativelanguage.googleapis.com/upload/v1beta/files", {
+            method: "POST",
+            headers: {
+                "x-goog-api-key": GEMINI_API_KEY,
+                "X-Goog-Upload-Protocol": "resumable",
+                "X-Goog-Upload-Command": "start",
+                "X-Goog-Upload-Header-Content-Length": numBytes.toString(),
+                "X-Goog-Upload-Header-Content-Type": mimeType,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                file: { display_name: displayName }
+            }),
+        });
+
+        if (!startResponse.ok) {
+            const errorText = await startResponse.text();
+            console.error("[UPLOAD] Failed to start:", startResponse.status, errorText);
+            throw new Error(`Upload init failed: ${startResponse.status} - ${errorText.substring(0, 200)}`);
+        }
+
+        const uploadUrl = startResponse.headers.get("X-Goog-Upload-URL");
+        if (!uploadUrl) {
+            throw new Error("No upload URL in response headers");
+        }
+        console.log("[UPLOAD] Step 1 complete. Got upload URL.");
+
+        // Step 2: Upload the actual bytes
+        console.log("[UPLOAD] Step 2: Uploading video bytes...");
+        const uploadResponse = await fetch(uploadUrl, {
+            method: "PUT",
+            headers: {
+                "Content-Length": numBytes.toString(),
+                "X-Goog-Upload-Offset": "0",
+                "X-Goog-Upload-Command": "upload, finalize",
+            },
+            body: new Uint8Array(videoBuffer),
+        });
+
+        if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text();
+            console.error("[UPLOAD] Failed to upload bytes:", uploadResponse.status, errorText);
+            throw new Error(`Byte upload failed: ${uploadResponse.status} - ${errorText.substring(0, 200)}`);
+        }
+
+        const responseData = await uploadResponse.json();
+        console.log("[UPLOAD] Step 2 complete. Response:", JSON.stringify(responseData, null, 2));
+
+        // Validate response structure
+        if (!responseData.file) {
+            console.error("[UPLOAD] Unexpected response structure:", responseData);
+            throw new Error("Invalid response: missing 'file' object");
+        }
+
+        const fileInfo = responseData.file;
+        if (!fileInfo.name || !fileInfo.uri) {
+            console.error("[UPLOAD] Missing required fields:", fileInfo);
+            throw new Error("Invalid response: missing name or uri");
+        }
+
+        console.log(`[UPLOAD] Success! Name: ${fileInfo.name}, URI: ${fileInfo.uri}, State: ${fileInfo.state}`);
+
+        return {
+            name: fileInfo.name,
+            uri: fileInfo.uri,
+            mimeType: fileInfo.mimeType || mimeType,
+            state: fileInfo.state || "PROCESSING",
+        };
+    } catch (error) {
+        console.error("[UPLOAD] Upload error:", error);
+        throw error;
     }
-
-    console.log("Got upload URL, uploading video bytes...");
-
-    // Step 2: Upload the actual bytes
-    const uploadResponse = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: {
-            "Content-Length": numBytes.toString(),
-            "X-Goog-Upload-Offset": "0",
-            "X-Goog-Upload-Command": "upload, finalize",
-        },
-        body: videoBuffer,
-    });
-
-    if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        console.error("Failed to upload video:", errorText);
-        throw new Error(`Failed to upload video: ${uploadResponse.status}`);
-    }
-
-    const fileInfo = await uploadResponse.json();
-    console.log("Video uploaded:", fileInfo.file?.name, "State:", fileInfo.file?.state);
-
-    return {
-        name: fileInfo.file.name,
-        uri: fileInfo.file.uri,
-        mimeType: fileInfo.file.mimeType,
-        state: fileInfo.file.state,
-    };
 }
 
 async function waitForFileProcessing(fileName: string): Promise<GeminiFileResponse> {
+    console.log(`[WAIT] Waiting for file to process: ${fileName}`);
+
+    // Ensure fileName is properly formatted for the API
+    // The API expects just the file ID without "files/" prefix
+    const fileId = fileName.replace(/^files\//, "");
+    console.log(`[WAIT] Using file ID: ${fileId}`);
+
     let attempts = 0;
-    const maxAttempts = 60; // 60 seconds max
+    const maxAttempts = 120; // 2 minutes max
 
     while (attempts < maxAttempts) {
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/files/${fileName}?key=${GEMINI_API_KEY}`
-        );
+        try {
+            // URL encode the file ID in case it has special characters
+            const encodedFileId = encodeURIComponent(fileId);
+            const url = `https://generativelanguage.googleapis.com/v1beta/files/${encodedFileId}?key=${GEMINI_API_KEY}`;
 
-        if (!response.ok) {
-            throw new Error(`Failed to get file status: ${response.status}`);
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`[WAIT] Status check failed (attempt ${attempts + 1}):`, response.status, errorText);
+
+                // If 404, the file might not exist yet - wait and retry
+                if (response.status === 404 && attempts < 10) {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    attempts++;
+                    continue;
+                }
+                throw new Error(`File status check failed: ${response.status}`);
+            }
+
+            const fileInfo = await response.json();
+            console.log(`[WAIT] Attempt ${attempts + 1}: State = ${fileInfo.state}`);
+
+            if (fileInfo.state === "ACTIVE") {
+                console.log("[WAIT] File is ready!");
+                return {
+                    name: fileInfo.name,
+                    uri: fileInfo.uri,
+                    mimeType: fileInfo.mimeType,
+                    state: fileInfo.state,
+                };
+            }
+
+            if (fileInfo.state === "FAILED") {
+                throw new Error("Video processing failed on Gemini's servers");
+            }
+
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+        } catch (error) {
+            console.error(`[WAIT] Error on attempt ${attempts + 1}:`, error);
+            if (attempts >= maxAttempts - 1) throw error;
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 2000));
         }
-
-        const fileInfo = await response.json();
-
-        if (fileInfo.state === "ACTIVE") {
-            console.log("File is ready for analysis");
-            return fileInfo;
-        }
-
-        if (fileInfo.state === "FAILED") {
-            throw new Error("Video processing failed on Gemini's servers");
-        }
-
-        attempts++;
-        if (attempts % 5 === 0) {
-            console.log(`Still processing... (${attempts}s)`);
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    throw new Error(`File not ready after ${maxAttempts}s`);
+    throw new Error(`File not ready after ${maxAttempts} seconds`);
 }
 
 async function generateContentWithVideo(fileUri: string, fileMimeType: string, prompt: string): Promise<string> {
-    console.log("Generating content with video...");
-    console.log("File URI:", fileUri);
-    console.log("MIME Type:", fileMimeType);
+    console.log("[GENERATE] Starting content generation...");
+    console.log("[GENERATE] File URI:", fileUri);
+    console.log("[GENERATE] MIME Type:", fileMimeType);
 
-    // Validate file URI format
-    if (!fileUri || !fileUri.startsWith("https://")) {
-        throw new Error(`Invalid file URI format: ${fileUri}`);
+    // Validate inputs
+    if (!fileUri) {
+        throw new Error("File URI is required");
+    }
+    if (!fileMimeType) {
+        throw new Error("MIME type is required");
     }
 
-    const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
-        {
+    // The model name - using 2.5 flash
+    const model = "gemini-2.5-flash";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+
+    const requestBody = {
+        contents: [{
+            parts: [
+                {
+                    file_data: {
+                        mime_type: fileMimeType,
+                        file_uri: fileUri
+                    }
+                },
+                { text: prompt }
+            ]
+        }]
+    };
+
+    console.log("[GENERATE] Request body:", JSON.stringify(requestBody, null, 2).substring(0, 500));
+
+    try {
+        const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [
-                        { file_data: { mime_type: fileMimeType, file_uri: fileUri } },
-                        { text: prompt }
-                    ]
-                }]
-            }),
+            body: JSON.stringify(requestBody),
+        });
+
+        const responseText = await response.text();
+
+        if (!response.ok) {
+            console.error("[GENERATE] API Error:", response.status, responseText);
+
+            // Check for specific error types
+            if (responseText.includes("PROHIBITED_CONTENT") || responseText.includes("SAFETY")) {
+                throw new Error("INAPPROPRIATE_CONTENT");
+            }
+            if (responseText.includes("pattern") || responseText.includes("Pattern")) {
+                console.error("[GENERATE] Pattern error! Full response:", responseText);
+                throw new Error("Video format issue: The video file could not be processed. Please try a different video.");
+            }
+            if (responseText.includes("not found") || responseText.includes("NOT_FOUND")) {
+                throw new Error("Video file expired or not found. Please upload again.");
+            }
+            if (responseText.includes("INVALID_ARGUMENT")) {
+                console.error("[GENERATE] Invalid argument error:", responseText);
+                throw new Error("Invalid video format. Please try MP4 format.");
+            }
+
+            throw new Error(`Generation failed (${response.status}): ${responseText.substring(0, 300)}`);
         }
-    );
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Gemini generate error:", errorText);
-
-        // Check for content moderation blocks
-        if (errorText.includes("PROHIBITED_CONTENT") || errorText.includes("SAFETY")) {
-            throw new Error("INAPPROPRIATE_CONTENT");
+        // Parse response
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error("[GENERATE] Failed to parse response:", responseText.substring(0, 500));
+            throw new Error("Failed to parse API response");
         }
 
-        // Check for pattern matching errors
-        if (errorText.includes("pattern") || errorText.includes("Pattern")) {
-            console.error("Pattern error detected. File URI:", fileUri);
-            throw new Error(`Video file format issue. Please try a different video file.`);
+        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!text) {
+            console.error("[GENERATE] No text in response:", JSON.stringify(result, null, 2));
+
+            // Check for block reasons
+            if (result.candidates?.[0]?.finishReason === "SAFETY") {
+                throw new Error("INAPPROPRIATE_CONTENT");
+            }
+            if (result.promptFeedback?.blockReason) {
+                throw new Error(`Content blocked: ${result.promptFeedback.blockReason}`);
+            }
+
+            throw new Error("No analysis generated. The video might be too short or unclear.");
         }
 
-        throw new Error(`Gemini generation failed: ${response.status} - ${errorText.substring(0, 200)}`);
+        console.log("[GENERATE] Success! Response length:", text.length);
+        return text;
+
+    } catch (error) {
+        console.error("[GENERATE] Error:", error);
+        throw error;
     }
-
-    const result = await response.json();
-    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-    if (!text) {
-        console.error("Empty response from Gemini:", JSON.stringify(result, null, 2));
-        throw new Error("No analysis generated. Please try again.");
-    }
-
-    return text;
 }
 
 // =====================
@@ -173,6 +278,8 @@ async function generateContentWithVideo(fileUri: string, fileMimeType: string, p
 // =====================
 
 export async function POST(request: Request) {
+    console.log("\n========== VIDEO UPLOAD ANALYSIS REQUEST ==========\n");
+
     try {
         const session = await auth();
 
@@ -180,7 +287,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Check usage limits for video reviews
+        // Check usage limits
         const usageCheck = await canUseReview(session.user.id);
         if (!usageCheck.allowed) {
             return NextResponse.json({
@@ -190,56 +297,57 @@ export async function POST(request: Request) {
             }, { status: 429 });
         }
 
+        // Parse form data
         const formData = await request.formData();
         const videoFile = formData.get("video") as File | null;
         const description = formData.get("description") as string || "";
 
         if (!videoFile) {
-            return NextResponse.json(
-                { error: "Video file is required" },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: "Video file is required" }, { status: 400 });
         }
 
-        // Validate file type - normalize mimeType
-        let mimeType = videoFile.type;
+        console.log("[MAIN] File received:", videoFile.name, "Size:", videoFile.size, "Type:", videoFile.type);
+
+        // Normalize MIME type
+        let mimeType = videoFile.type || "";
         const fileName = videoFile.name.toLowerCase();
 
-        // Handle various MIME type edge cases
+        // Handle missing or generic MIME types
         if (!mimeType || mimeType === "" || mimeType === "application/octet-stream") {
             if (fileName.endsWith(".mp4")) mimeType = "video/mp4";
-            else if (fileName.endsWith(".mov")) mimeType = "video/mp4"; // Gemini treats MOV as MP4
+            else if (fileName.endsWith(".mov")) mimeType = "video/mp4";
             else if (fileName.endsWith(".webm")) mimeType = "video/webm";
-            else mimeType = "video/mp4"; // Default to MP4
+            else if (fileName.endsWith(".avi")) mimeType = "video/mp4";
+            else if (fileName.endsWith(".mkv")) mimeType = "video/mp4";
+            else mimeType = "video/mp4";
         }
 
-        // Convert quicktime to mp4 for Gemini compatibility
-        if (mimeType === "video/quicktime" || mimeType === "video/mov") {
+        // Convert QuickTime to MP4 (Gemini doesn't recognize quicktime)
+        if (mimeType === "video/quicktime" || mimeType === "video/mov" || mimeType === "video/x-m4v") {
             mimeType = "video/mp4";
         }
 
-        const validTypes = ["video/mp4", "video/webm"];
-        if (!validTypes.includes(mimeType) && !fileName.match(/\.(mp4|mov|webm)$/i)) {
-            return NextResponse.json(
-                { error: "Invalid video format. Please upload MP4, MOV, or WebM." },
-                { status: 400 }
-            );
+        // Validate MIME type
+        const validTypes = ["video/mp4", "video/webm", "video/mpeg", "video/3gpp"];
+        if (!validTypes.includes(mimeType) && !fileName.match(/\.(mp4|mov|webm|avi|mkv|m4v)$/i)) {
+            return NextResponse.json({
+                error: `Unsupported format: ${mimeType || videoFile.type || "unknown"}. Please use MP4, MOV, or WebM.`
+            }, { status: 400 });
         }
 
-        // Max 100MB
+        // Size limit
         const maxSize = 100 * 1024 * 1024;
         if (videoFile.size > maxSize) {
-            return NextResponse.json(
-                { error: "Video too large. Maximum size is 100MB." },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: "Video too large. Maximum size is 100MB." }, { status: 400 });
         }
 
-        console.log("=== VIDEO UPLOAD ANALYSIS ===");
-        console.log("File:", videoFile.name, "Size:", Math.round(videoFile.size / 1024), "KB");
-        console.log("MIME Type (normalized):", mimeType);
+        if (videoFile.size < 1000) {
+            return NextResponse.json({ error: "Video file appears to be empty or corrupted." }, { status: 400 });
+        }
 
-        // Fetch creator setup for personalized recommendations
+        console.log("[MAIN] Normalized MIME type:", mimeType);
+
+        // Get creator setup for context
         let creatorSetup: CreatorSetup | null = null;
         try {
             const profile = await prisma.userProfile.findUnique({
@@ -248,13 +356,14 @@ export async function POST(request: Request) {
             });
             creatorSetup = profile?.creatorSetup ?? null;
         } catch (e) {
-            console.log("Could not fetch creator setup:", e);
+            console.log("[MAIN] Could not fetch creator setup:", e);
         }
 
-        // Get file buffer directly (no temp file needed!)
+        // Convert to ArrayBuffer
         const arrayBuffer = await videoFile.arrayBuffer();
+        console.log("[MAIN] ArrayBuffer size:", arrayBuffer.byteLength);
 
-        // Analyze with Gemini Files API using REST
+        // Analyze video
         const videoAnalysis = await analyzeUploadedVideoWithGemini(
             arrayBuffer,
             mimeType,
@@ -262,8 +371,10 @@ export async function POST(request: Request) {
             creatorSetup
         );
 
-        // Record usage for video reviews
+        // Record usage
         await recordReviewUsage(session.user.id);
+
+        console.log("[MAIN] Analysis complete! Score:", videoAnalysis.score);
 
         return NextResponse.json({
             success: true,
@@ -282,22 +393,22 @@ export async function POST(request: Request) {
             hasCreatorContext: !!creatorSetup,
             isUpload: true,
         });
+
     } catch (error) {
-        console.error("Error analyzing uploaded video:", error);
+        console.error("[MAIN] Error:", error);
         const errorMessage = error instanceof Error ? error.message : String(error);
 
         if (errorMessage.includes("INAPPROPRIATE_CONTENT")) {
-            return NextResponse.json(
-                { error: "This video contains inappropriate content and cannot be analyzed." },
-                { status: 400 }
-            );
+            return NextResponse.json({
+                error: "This video contains inappropriate content and cannot be analyzed."
+            }, { status: 400 });
         }
 
-        // Return the actual error message for debugging
-        return NextResponse.json(
-            { error: `Failed to analyze video: ${errorMessage}` },
-            { status: 500 }
-        );
+        return NextResponse.json({
+            error: errorMessage.startsWith("Failed to analyze")
+                ? errorMessage
+                : `Analysis failed: ${errorMessage}`
+        }, { status: 500 });
     }
 }
 
@@ -336,7 +447,7 @@ interface VideoAnalysis {
 }
 
 // =====================
-// VIDEO ANALYSIS WITH REST API
+// VIDEO ANALYSIS
 // =====================
 
 async function analyzeUploadedVideoWithGemini(
@@ -345,25 +456,24 @@ async function analyzeUploadedVideoWithGemini(
     description: string,
     creatorSetup: CreatorSetup | null
 ): Promise<VideoAnalysis> {
-    console.log("Starting REST API upload to Gemini Files API...");
+    console.log("[ANALYZE] Starting video analysis pipeline...");
 
-    // Upload to Gemini Files API using REST (no SDK, no temp files, no pattern issues)
+    // Step 1: Upload
     const uploadedFile = await uploadVideoToGeminiREST(videoBuffer, mimeType);
 
-    // Wait for processing if needed
+    // Step 2: Wait for processing
     let file = uploadedFile;
     if (file.state !== "ACTIVE") {
-        const fileName = file.name.replace("files/", "");
-        file = await waitForFileProcessing(fileName);
+        console.log("[ANALYZE] File still processing, waiting...");
+        file = await waitForFileProcessing(file.name);
     }
 
-    console.log("File ready. URI:", file.uri, "MIME:", file.mimeType);
+    console.log("[ANALYZE] File ready:", file.uri);
 
-    // Context from creator setup
+    // Step 3: Build context
     let nicheContext = "";
     if (creatorSetup) {
-        if (creatorSetup.contentNiche) nicheContext = creatorSetup.contentNiche;
-        else if (creatorSetup.contentActivity) nicheContext = creatorSetup.contentActivity;
+        nicheContext = creatorSetup.contentNiche || creatorSetup.contentActivity || "";
     }
 
     const prompt = `You are a video analyst helping a content creator improve their video BEFORE posting.
@@ -400,26 +510,32 @@ Respond with ONLY valid JSON (no markdown, no code blocks):
     "replicabilityRequirements": ["what would someone need to make this video"]
 }`;
 
-    // Generate content using REST API
-    console.log("Sending to Gemini for analysis via REST API...");
+    // Step 4: Generate analysis
+    console.log("[ANALYZE] Sending to Gemini...");
     const responseText = await generateContentWithVideo(file.uri, file.mimeType, prompt);
-    console.log("Gemini response received, parsing...");
+    console.log("[ANALYZE] Got response, parsing JSON...");
 
-    // Clean and parse JSON
-    let cleanedText = responseText?.trim() || "";
+    // Step 5: Parse response
+    let cleanedText = responseText.trim();
+
+    // Remove markdown code blocks if present
     if (cleanedText.startsWith("```")) {
-        cleanedText = cleanedText.replace(/```json?\n?/g, "").replace(/```$/g, "").trim();
+        cleanedText = cleanedText
+            .replace(/^```(?:json)?\s*\n?/i, "")
+            .replace(/\n?```\s*$/i, "")
+            .trim();
     }
 
     try {
         const parsed = JSON.parse(cleanedText);
+        console.log("[ANALYZE] Parsed successfully!");
         return {
             ...parsed,
             analysisMethod: "uploaded_video",
         };
-    } catch {
-        console.error("Failed to parse Gemini response:", cleanedText.substring(0, 500));
-        throw new Error("Failed to parse video analysis response");
+    } catch (parseError) {
+        console.error("[ANALYZE] JSON parse error. Raw text:", cleanedText.substring(0, 1000));
+        throw new Error("Failed to parse video analysis. Please try again.");
     }
 }
 
