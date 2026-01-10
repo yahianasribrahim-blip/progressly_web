@@ -114,8 +114,17 @@ async function waitForFileProcessing(fileName: string): Promise<GeminiFileRespon
 }
 
 async function generateContentWithVideo(fileUri: string, fileMimeType: string, prompt: string): Promise<string> {
+    console.log("Generating content with video...");
+    console.log("File URI:", fileUri);
+    console.log("MIME Type:", fileMimeType);
+
+    // Validate file URI format
+    if (!fileUri || !fileUri.startsWith("https://")) {
+        throw new Error(`Invalid file URI format: ${fileUri}`);
+    }
+
     const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
         {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -139,11 +148,24 @@ async function generateContentWithVideo(fileUri: string, fileMimeType: string, p
             throw new Error("INAPPROPRIATE_CONTENT");
         }
 
-        throw new Error(`Gemini generation failed: ${response.status}`);
+        // Check for pattern matching errors
+        if (errorText.includes("pattern") || errorText.includes("Pattern")) {
+            console.error("Pattern error detected. File URI:", fileUri);
+            throw new Error(`Video file format issue. Please try a different video file.`);
+        }
+
+        throw new Error(`Gemini generation failed: ${response.status} - ${errorText.substring(0, 200)}`);
     }
 
     const result = await response.json();
-    return result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    if (!text) {
+        console.error("Empty response from Gemini:", JSON.stringify(result, null, 2));
+        throw new Error("No analysis generated. Please try again.");
+    }
+
+    return text;
 }
 
 // =====================
