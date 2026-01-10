@@ -56,11 +56,8 @@ export default function AffiliateLoginPage() {
                         </div>
                         <h2 className="text-2xl font-bold">Check Your Email</h2>
                         <p className="text-muted-foreground">
-                            We've sent a login link to <strong>{email}</strong>.
+                            We&apos;ve sent a login link to <strong>{email}</strong>.
                             Click it to access your affiliate dashboard.
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            Check your spam folder if you don't see it within a few minutes.
                         </p>
                         <Button
                             variant="outline"
@@ -78,7 +75,6 @@ export default function AffiliateLoginPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 dark:from-violet-950/30 dark:via-purple-950/30 dark:to-pink-950/30 p-4">
             <div className="max-w-md w-full space-y-6">
-                {/* Header */}
                 <div className="text-center">
                     <Link href="/" className="inline-flex items-center gap-2 mb-6">
                         <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center">
@@ -93,7 +89,6 @@ export default function AffiliateLoginPage() {
                     </p>
                 </div>
 
-                {/* Login Form */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Affiliate Sign In</CardTitle>
@@ -115,9 +110,7 @@ export default function AffiliateLoginPage() {
                                 />
                             </div>
 
-                            {error && (
-                                <p className="text-sm text-red-500">{error}</p>
-                            )}
+                            {error && <p className="text-sm text-red-500">{error}</p>}
 
                             <Button
                                 type="submit"
@@ -140,9 +133,8 @@ export default function AffiliateLoginPage() {
                     </CardContent>
                 </Card>
 
-                {/* Register Link */}
                 <p className="text-center text-sm text-muted-foreground">
-                    Don't have an affiliate account?{" "}
+                    Don&apos;t have an affiliate account?{" "}
                     <Link href="/affiliate/register" className="text-violet-600 hover:underline font-medium">
                         Create one
                     </Link>

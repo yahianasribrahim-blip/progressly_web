@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Link2, Copy, Check, ExternalLink, Share2 } from "lucide-react";
+import { Link2, Copy, Check, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ReferralLinkPage() {
@@ -61,7 +61,6 @@ export default function ReferralLinkPage() {
 
     return (
         <div className="p-6 md:p-8 max-w-4xl mx-auto space-y-6">
-            {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold">Your Referral Link</h1>
                 <p className="text-muted-foreground">
@@ -69,7 +68,6 @@ export default function ReferralLinkPage() {
                 </p>
             </div>
 
-            {/* Main Link Card */}
             <Card className="border-violet-500/50">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -85,11 +83,7 @@ export default function ReferralLinkPage() {
                         <div className="flex-1 p-4 bg-muted rounded-lg font-mono text-sm break-all">
                             {referralLink}
                         </div>
-                        <Button
-                            onClick={handleCopy}
-                            size="lg"
-                            className="shrink-0"
-                        >
+                        <Button onClick={handleCopy} size="lg" className="shrink-0">
                             {copied ? (
                                 <>
                                     <Check className="h-4 w-4 mr-2" />
@@ -115,7 +109,6 @@ export default function ReferralLinkPage() {
                 </CardContent>
             </Card>
 
-            {/* How to Use */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -123,7 +116,7 @@ export default function ReferralLinkPage() {
                         How to Share
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent>
                     <div className="grid md:grid-cols-2 gap-4">
                         <div className="p-4 border rounded-lg">
                             <h3 className="font-semibold mb-2">In Your Bio</h3>
@@ -134,11 +127,11 @@ export default function ReferralLinkPage() {
                         <div className="p-4 border rounded-lg">
                             <h3 className="font-semibold mb-2">In Content</h3>
                             <p className="text-sm text-muted-foreground">
-                                Mention it in your videos with a call to action like "Link in bio".
+                                Mention it in your videos with a call to action like &quot;Link in bio&quot;.
                             </p>
                         </div>
                         <div className="p-4 border rounded-lg">
-                            <h3 className="font-semibold mb-2">DMs & Groups</h3>
+                            <h3 className="font-semibold mb-2">DMs &amp; Groups</h3>
                             <p className="text-sm text-muted-foreground">
                                 Share with creator friends who might benefit from Progressly.
                             </p>
@@ -153,7 +146,6 @@ export default function ReferralLinkPage() {
                 </CardContent>
             </Card>
 
-            {/* Commission Info */}
             <Card className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20">
                 <CardContent className="pt-6">
                     <div className="text-center space-y-2">
@@ -161,7 +153,6 @@ export default function ReferralLinkPage() {
                         <p className="font-semibold">Recurring Commission</p>
                         <p className="text-sm text-muted-foreground max-w-md mx-auto">
                             You earn 25% of every payment your referrals make, for as long as they stay subscribed.
-                            Payouts are processed monthly via PayPal.
                         </p>
                     </div>
                 </CardContent>

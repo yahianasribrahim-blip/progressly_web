@@ -11,15 +11,13 @@ export const metadata = {
 export default function AffiliateContactPage() {
     return (
         <div className="p-6 md:p-8 max-w-4xl mx-auto space-y-6">
-            {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold">Contact Us</h1>
                 <p className="text-muted-foreground">
-                    Have questions about the affiliate program? We're here to help.
+                    Have questions about the affiliate program? We&apos;re here to help.
                 </p>
             </div>
 
-            {/* Contact Options */}
             <div className="grid md:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>
@@ -62,7 +60,6 @@ export default function AffiliateContactPage() {
                 </Card>
             </div>
 
-            {/* FAQ */}
             <Card>
                 <CardHeader>
                     <CardTitle>Common Questions</CardTitle>
@@ -83,7 +80,7 @@ export default function AffiliateContactPage() {
                     <div className="space-y-2">
                         <h3 className="font-semibold">Can I change my PayPal email?</h3>
                         <p className="text-sm text-muted-foreground">
-                            Yes, contact us via email with your new PayPal address and we'll update it.
+                            Yes, contact us via email with your new PayPal address and we&apos;ll update it.
                         </p>
                     </div>
                 </CardContent>

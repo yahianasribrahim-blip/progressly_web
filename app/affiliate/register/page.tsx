@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,11 +11,9 @@ import { Loader2, Check, DollarSign, ArrowRight } from "lucide-react";
 import { signIn } from "next-auth/react";
 
 export default function AffiliateRegisterPage() {
-    const router = useRouter();
     const [step, setStep] = useState<"form" | "creating-account" | "success">("form");
     const [error, setError] = useState<string | null>(null);
 
-    // Form state
     const [email, setEmail] = useState("");
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
@@ -59,7 +56,6 @@ export default function AffiliateRegisterPage() {
 
             setStep("success");
 
-            // Auto sign-in - send magic link
             await signIn("email", {
                 email,
                 callbackUrl: "/affiliate/dashboard",
@@ -80,13 +76,10 @@ export default function AffiliateRegisterPage() {
                         <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mx-auto">
                             <Check className="h-8 w-8 text-white" />
                         </div>
-                        <h2 className="text-2xl font-bold">You're In!</h2>
+                        <h2 className="text-2xl font-bold">You&apos;re In!</h2>
                         <p className="text-muted-foreground">
-                            We've sent a login link to <strong>{email}</strong>.
+                            We&apos;ve sent a login link to <strong>{email}</strong>.
                             Click it to access your affiliate dashboard.
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            Check your spam folder if you don't see it within a few minutes.
                         </p>
                     </CardContent>
                 </Card>
@@ -97,7 +90,6 @@ export default function AffiliateRegisterPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-purple-50 to-pink-50 dark:from-violet-950/30 dark:via-purple-950/30 dark:to-pink-950/30 p-4">
             <div className="max-w-md w-full space-y-6">
-                {/* Header */}
                 <div className="text-center">
                     <Link href="/" className="inline-flex items-center gap-2 mb-6">
                         <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center">
@@ -112,12 +104,11 @@ export default function AffiliateRegisterPage() {
                     </p>
                 </div>
 
-                {/* Form */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Create Your Affiliate Account</CardTitle>
                         <CardDescription>
-                            Fill out the form below. This is a separate account for affiliate purposes only.
+                            Fill out the form below to get started.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -167,7 +158,6 @@ export default function AffiliateRegisterPage() {
                             />
                         </div>
 
-                        {/* Social Following Section */}
                         <div className="pt-4 border-t space-y-4">
                             <p className="text-sm font-medium">
                                 Do you have a social media following?
@@ -176,7 +166,6 @@ export default function AffiliateRegisterPage() {
                                 </span>
                             </p>
 
-                            {/* TikTok */}
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
@@ -199,7 +188,6 @@ export default function AffiliateRegisterPage() {
                                 )}
                             </div>
 
-                            {/* Instagram */}
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
@@ -223,9 +211,7 @@ export default function AffiliateRegisterPage() {
                             </div>
                         </div>
 
-                        {error && (
-                            <p className="text-sm text-red-500">{error}</p>
-                        )}
+                        {error && <p className="text-sm text-red-500">{error}</p>}
 
                         <Button
                             onClick={handleSubmit}
@@ -247,7 +233,6 @@ export default function AffiliateRegisterPage() {
                     </CardContent>
                 </Card>
 
-                {/* Login Link */}
                 <p className="text-center text-sm text-muted-foreground">
                     Already have an affiliate account?{" "}
                     <Link href="/affiliate/login" className="text-violet-600 hover:underline font-medium">
@@ -255,10 +240,9 @@ export default function AffiliateRegisterPage() {
                     </Link>
                 </p>
 
-                {/* Benefits */}
                 <Card className="bg-muted/50">
                     <CardContent className="pt-6">
-                        <h3 className="font-semibold mb-3">What you'll get:</h3>
+                        <h3 className="font-semibold mb-3">What you&apos;ll get:</h3>
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li className="flex items-center gap-2">
                                 <Check className="h-4 w-4 text-green-500" />

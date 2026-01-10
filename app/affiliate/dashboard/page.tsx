@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Users, DollarSign, MousePointerClick, Copy, Check } from "lucide-react";
+import { BarChart3, Users, DollarSign, MousePointerClick, Check } from "lucide-react";
 
 export const metadata = {
     title: "Affiliate Dashboard – Progressly",
@@ -113,7 +113,7 @@ export default async function AffiliateDashboardPage() {
                 </Card>
             </div>
 
-            {/* Quick Referral Link Card */}
+            {/* Referral Link */}
             <Card className="border-violet-500/50 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20">
                 <CardHeader>
                     <CardTitle className="text-lg">Your Referral Link</CardTitle>
@@ -130,7 +130,7 @@ export default async function AffiliateDashboardPage() {
                 </CardContent>
             </Card>
 
-            {/* Earnings Breakdown */}
+            {/* Earnings */}
             <div className="grid md:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>

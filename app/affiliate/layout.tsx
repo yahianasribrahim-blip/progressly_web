@@ -10,24 +10,12 @@ interface AffiliateLayoutProps {
 export default async function AffiliateLayout({ children }: AffiliateLayoutProps) {
     const session = await auth();
 
-    if (!session?.user?.id) {
-        redirect("/affiliate/login");
-    }
-
-    // Check if user is an approved affiliate
-    const affiliate = await prisma.affiliate.findUnique({
-        where: { userId: session.user.id },
-        select: { status: true },
-    });
-
-    if (!affiliate || affiliate.status !== "approved") {
-        // If not an affiliate or not approved, redirect to register
-        redirect("/affiliate/register");
-    }
+    // Check session in nested pages, not here (to allow public register/login)
+    // Dashboard pages will check individually
 
     return (
         <div className="flex min-h-screen bg-background">
-            <AffiliateSidebar />
+            {session?.user?.id && <AffiliateSidebar />}
             <main className="flex-1 overflow-auto">
                 {children}
             </main>
