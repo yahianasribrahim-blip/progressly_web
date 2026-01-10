@@ -27,13 +27,30 @@ export default async function AdminAffiliatesPage() {
 
     // Fetch all affiliates with their stats
     const affiliates = await prisma.affiliate.findMany({
-        include: {
+        select: {
+            id: true,
+            userId: true,
+            affiliateCode: true,
+            status: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            paypalEmail: true,
+            totalEarnings: true,
+            pendingEarnings: true,
+            paidEarnings: true,
+            createdAt: true,
             user: {
                 select: { name: true, email: true, image: true },
             },
-            referrals: true,
-            commissions: true,
+            referrals: {
+                select: { id: true, status: true },
+            },
+            commissions: {
+                select: { id: true, amount: true, status: true },
+            },
             payouts: {
+                select: { id: true, amount: true, status: true },
                 orderBy: { requestedAt: "desc" },
             },
         },
@@ -43,9 +60,17 @@ export default async function AdminAffiliatesPage() {
     // Fetch pending payouts
     const pendingPayouts = await prisma.payout.findMany({
         where: { status: "requested" },
-        include: {
+        select: {
+            id: true,
+            amount: true,
+            status: true,
+            paypalEmail: true,
+            requestedAt: true,
             affiliate: {
-                include: {
+                select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
                     user: { select: { name: true, email: true } },
                 },
             },

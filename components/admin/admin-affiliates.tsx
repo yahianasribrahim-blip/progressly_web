@@ -20,19 +20,22 @@ import {
 
 interface Affiliate {
     id: string;
-    userId: string;
+    userId: string | null;
     affiliateCode: string;
     status: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string | null;
     paypalEmail: string | null;
     totalEarnings: number;
     pendingEarnings: number;
     paidEarnings: number;
-    createdAt: string;
+    createdAt: Date;
     user: {
         name: string | null;
         email: string | null;
         image: string | null;
-    };
+    } | null;
     referrals: { id: string; status: string }[];
     commissions: { id: string; amount: number; status: string }[];
     payouts: { id: string; amount: number; status: string }[];
@@ -43,9 +46,12 @@ interface Payout {
     amount: number;
     status: string;
     paypalEmail: string;
-    requestedAt: string;
+    requestedAt: Date;
     affiliate: {
-        user: { name: string | null; email: string | null };
+        firstName: string | null;
+        lastName: string | null;
+        email: string | null;
+        user: { name: string | null; email: string | null } | null;
     };
 }
 
@@ -167,7 +173,7 @@ export function AdminAffiliates({ affiliates: initialAffiliates, pendingPayouts:
                             {pendingPayouts.map((payout) => (
                                 <div key={payout.id} className="flex items-center justify-between p-4 bg-muted rounded-lg">
                                     <div>
-                                        <p className="font-semibold">{payout.affiliate.user.name}</p>
+                                        <p className="font-semibold">{payout.affiliate.user?.name || payout.affiliate.firstName || "Anonymous"}</p>
                                         <p className="text-sm text-muted-foreground">{payout.paypalEmail}</p>
                                         <p className="text-xs text-muted-foreground">
                                             Requested: {new Date(payout.requestedAt).toLocaleDateString()}
@@ -238,7 +244,7 @@ export function AdminAffiliates({ affiliates: initialAffiliates, pendingPayouts:
                             filteredAffiliates.map((affiliate) => (
                                 <div key={affiliate.id} className="flex items-center justify-between p-4 bg-muted rounded-lg">
                                     <div className="flex items-center gap-4">
-                                        {affiliate.user.image && (
+                                        {affiliate.user?.image && (
                                             <img
                                                 src={affiliate.user.image}
                                                 alt=""
@@ -246,8 +252,8 @@ export function AdminAffiliates({ affiliates: initialAffiliates, pendingPayouts:
                                             />
                                         )}
                                         <div>
-                                            <p className="font-semibold">{affiliate.user.name}</p>
-                                            <p className="text-sm text-muted-foreground">{affiliate.user.email}</p>
+                                            <p className="font-semibold">{affiliate.user?.name || affiliate.firstName || "Anonymous"}</p>
+                                            <p className="text-sm text-muted-foreground">{affiliate.user?.email || affiliate.email || "No email"}</p>
                                             <p className="text-xs font-mono text-violet-600">{affiliate.affiliateCode}</p>
                                         </div>
                                     </div>
