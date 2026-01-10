@@ -27,6 +27,8 @@ interface Affiliate {
     lastName: string | null;
     email: string | null;
     paypalEmail: string | null;
+    socialHandle: string | null;
+    hasSocialFollowing: boolean;
     totalEarnings: number;
     pendingEarnings: number;
     paidEarnings: number;
@@ -255,6 +257,12 @@ export function AdminAffiliates({ affiliates: initialAffiliates, pendingPayouts:
                                             <p className="font-semibold">{affiliate.user?.name || affiliate.firstName || "Anonymous"}</p>
                                             <p className="text-sm text-muted-foreground">{affiliate.user?.email || affiliate.email || "No email"}</p>
                                             <p className="text-xs font-mono text-violet-600">{affiliate.affiliateCode}</p>
+                                            {affiliate.socialHandle && (
+                                                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                                    <ExternalLink className="h-3 w-3" />
+                                                    {affiliate.socialHandle}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-6">

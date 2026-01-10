@@ -44,9 +44,17 @@ export const sidebarLinks: SidebarNavItem[] = [
       { href: "/dashboard/contact", icon: "mail", title: "Contact Us" },
     ],
   },
+  {
+    title: "ADMIN",
+    items: [
+      { href: "/admin", icon: "settings", title: "Admin Dashboard", authorizeOnly: "ADMIN" },
+      { href: "/admin/affiliates", icon: "users", title: "Affiliates", authorizeOnly: "ADMIN" },
+      { href: "/admin/forms", icon: "fileText", title: "Form Submissions", authorizeOnly: "ADMIN" },
+    ],
+  },
 ];
 
-// Admin-only links (shown separately based on user role)
+// Admin-only links (kept for backwards compatibility)
 export const adminLinks: SidebarNavItem[] = [
   {
     title: "ADMIN",
@@ -57,4 +65,5 @@ export const adminLinks: SidebarNavItem[] = [
     ],
   },
 ];
+
 

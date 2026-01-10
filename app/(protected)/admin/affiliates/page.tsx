@@ -36,6 +36,8 @@ export default async function AdminAffiliatesPage() {
             lastName: true,
             email: true,
             paypalEmail: true,
+            socialHandle: true,
+            hasSocialFollowing: true,
             totalEarnings: true,
             pendingEarnings: true,
             paidEarnings: true,
