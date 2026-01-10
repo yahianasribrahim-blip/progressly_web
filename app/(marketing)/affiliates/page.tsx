@@ -46,9 +46,9 @@ async function getLeaderboard() {
 
     return affiliates.map((affiliate, index) => ({
         rank: index + 1,
-        name: affiliate.firstName || affiliate.user.name || "Anonymous",
+        name: affiliate.firstName || affiliate.user?.name || "Anonymous",
         socialHandle: affiliate.socialHandle,
-        avatar: affiliate.user.image,
+        avatar: affiliate.user?.image ?? null,
         signups: affiliate._count.referrals,
         earningsLevel: getEarningsLevel(affiliate.totalEarnings),
         joinedAt: affiliate.createdAt,
@@ -133,9 +133,9 @@ export default async function AffiliatesPage() {
                                     >
                                         {/* Rank */}
                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${affiliate.rank === 1 ? "bg-yellow-500 text-white" :
-                                                affiliate.rank === 2 ? "bg-gray-400 text-white" :
-                                                    affiliate.rank === 3 ? "bg-orange-600 text-white" :
-                                                        "bg-muted text-muted-foreground"
+                                            affiliate.rank === 2 ? "bg-gray-400 text-white" :
+                                                affiliate.rank === 3 ? "bg-orange-600 text-white" :
+                                                    "bg-muted text-muted-foreground"
                                             }`}>
                                             {affiliate.rank}
                                         </div>
