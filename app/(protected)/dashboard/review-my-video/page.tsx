@@ -140,6 +140,13 @@ export default function ReviewMyVideoPage() {
                                 onChange={(e) => {
                                     const file = e.target.files?.[0];
                                     if (file) {
+                                        // Check file size (100MB limit)
+                                        const maxSize = 100 * 1024 * 1024;
+                                        if (file.size > maxSize) {
+                                            toast.error(`Video too large (${Math.round(file.size / 1024 / 1024)}MB). Maximum size is 100MB.`);
+                                            e.target.value = ""; // Clear the input
+                                            return;
+                                        }
                                         setUploadedFile(file);
                                     }
                                 }}
