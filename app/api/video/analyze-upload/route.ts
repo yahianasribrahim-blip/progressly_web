@@ -278,7 +278,8 @@ async function generateContentWithVideo(fileUri: string, fileMimeType: string, p
 // =====================
 
 export async function POST(request: Request) {
-    console.log("\n========== VIDEO UPLOAD ANALYSIS REQUEST ==========\n");
+    // Version marker to confirm deployment - v3 with timestamp
+    console.log(`\n========== VIDEO UPLOAD v3 - ${new Date().toISOString()} ==========\n`);
 
     try {
         const session = await auth();
