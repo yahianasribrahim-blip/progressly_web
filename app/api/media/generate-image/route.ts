@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
 const GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY || "";
-const MODEL = "gemini-2.5-flash-image";
+const MODEL = "gemini-2.0-flash-exp";
 
 export async function POST(request: Request) {
     try {
@@ -34,20 +34,30 @@ export async function POST(request: Request) {
         console.log("Prompt:", prompt.substring(0, 100));
         console.log("Aspect Ratio:", aspectRatio || "default");
 
-        // Build the request payload
-        const requestPayload: {
-            contents: Array<{ parts: Array<{ text: string }> }>;
-            generationConfig?: { aspectRatio?: string };
-        } = {
-            contents: [{
-                parts: [{ text: prompt }]
-            }]
-        };
-
-        // Add aspect ratio if specified
-        if (aspectRatio && ["1:1", "16:9", "9:16", "4:3", "3:4"].includes(aspectRatio)) {
-            requestPayload.generationConfig = { aspectRatio };
+        // Build prompt with aspect ratio hint
+        let enhancedPrompt = prompt;
+        if (aspectRatio) {
+            const aspectHints: Record<string, string> = {
+                "1:1": "Generate a square image.",
+                "16:9": "Generate a wide landscape image (16:9 aspect ratio).",
+                "9:16": "Generate a tall portrait image (9:16 aspect ratio).",
+                "4:3": "Generate a 4:3 aspect ratio image.",
+                "3:4": "Generate a 3:4 aspect ratio image.",
+            };
+            if (aspectHints[aspectRatio]) {
+                enhancedPrompt = `${aspectHints[aspectRatio]} ${prompt}`;
+            }
         }
+
+        // Build the request payload - no generationConfig for image generation
+        const requestPayload = {
+            contents: [{
+                parts: [{ text: `Generate an image: ${enhancedPrompt}` }]
+            }],
+            generationConfig: {
+                responseModalities: ["TEXT", "IMAGE"]
+            }
+        };
 
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
