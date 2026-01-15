@@ -11,7 +11,7 @@ export const sidebarLinks: SidebarNavItem[] = [
   {
     title: "TOOLS",
     items: [
-      { href: "/dashboard/ai-studio", icon: "sparkles", title: "AI Studio", authorizeOnly: "ADMIN" },
+      { href: "/dashboard/ai-studio", icon: "sparkles", title: "AI Studio" },
       { href: "/dashboard/analyze-video", icon: "video", title: "Video Breakdown" },
       { href: "/dashboard/review-my-video", icon: "upload", title: "Review My Video" },
       { href: "/dashboard/script-optimizer", icon: "fileText", title: "Script Optimizer" },

@@ -8,12 +8,13 @@ export const metadata: Metadata = {
     description: "Generate and edit images and videos using AI",
 };
 
+// Admin email - same as used in other API routes
 const ADMIN_EMAIL = "yahianasribrahim@gmail.com";
 
 export default async function AIStudioPage() {
     const session = await auth();
 
-    // Admin-only access
+    // Admin-only access by email check (not database role)
     if (!session?.user?.email || session.user.email !== ADMIN_EMAIL) {
         redirect("/dashboard");
     }
