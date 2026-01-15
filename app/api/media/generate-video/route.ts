@@ -37,12 +37,15 @@ export async function POST(request: Request) {
         console.log("Duration:", durationSeconds || "8");
 
         // Build the request payload for Veo using predictLongRunning endpoint
+        // Veo only supports 16:9 (landscape) or 9:16 (portrait)
+        const validAspectRatio = aspectRatio === "9:16" ? "9:16" : "16:9";
+
         const requestPayload = {
             instances: [{
                 prompt: prompt,
             }],
             parameters: {
-                aspectRatio: aspectRatio || "16:9",
+                aspectRatio: validAspectRatio,
                 durationSeconds: durationSeconds || 8,
                 generateAudio: true,
                 enhancePrompt: true,
