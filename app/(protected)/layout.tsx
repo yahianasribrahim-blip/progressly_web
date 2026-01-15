@@ -22,7 +22,8 @@ export default async function Dashboard({ children }: ProtectedLayoutProps) {
 
   if (!user) redirect("/login");
 
-  const isAdmin = user.email === ADMIN_EMAIL;
+  // Case-insensitive admin email check
+  const isAdmin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
   const filteredLinks = sidebarLinks.map((section) => ({
     ...section,
