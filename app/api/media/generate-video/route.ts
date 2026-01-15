@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
 const GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY || "";
-// Veo model for video generation
-const MODEL = "veo-2.0-generate-001";
+// Veo 3.1 model for video generation
+const MODEL = "veo-3.1-generate-preview";
 
 export async function POST(request: Request) {
     try {
@@ -34,37 +34,30 @@ export async function POST(request: Request) {
         console.log("User:", session.user.email);
         console.log("Prompt:", prompt.substring(0, 100));
         console.log("Aspect Ratio:", aspectRatio || "16:9");
-        console.log("Duration:", durationSeconds || "5");
+        console.log("Duration:", durationSeconds || "8");
 
-        // Build the request payload for Veo
+        // Build the request payload for Veo using predictLongRunning endpoint
         const requestPayload = {
             instances: [{
                 prompt: prompt,
             }],
             parameters: {
                 aspectRatio: aspectRatio || "16:9",
-                durationSeconds: durationSeconds || 5,
+                durationSeconds: durationSeconds || 8,
+                generateAudio: true,
+                enhancePrompt: true,
             }
         };
 
-        // Try the Veo endpoint
+        // Use the predictLongRunning endpoint for Veo
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+            `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:predictLongRunning?key=${GEMINI_API_KEY}`,
             {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "x-goog-api-key": GEMINI_API_KEY,
                 },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{ text: prompt }]
-                    }],
-                    generationConfig: {
-                        responseModalities: ["VIDEO"],
-                        ...(aspectRatio && { aspectRatio }),
-                    }
-                }),
+                body: JSON.stringify(requestPayload),
             }
         );
 
@@ -87,15 +80,15 @@ export async function POST(request: Request) {
                     status: response.status,
                     statusText: response.statusText,
                     model: MODEL,
-                    endpoint: `generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+                    endpoint: `generativelanguage.googleapis.com/v1beta/models/${MODEL}:predictLongRunning`,
                     requestPayload: requestPayload,
                     apiError: parsedError,
                     hint: response.status === 404
-                        ? "Model not found. Veo may not be available in your region or requires Vertex AI access."
+                        ? "Model not found. Veo may require Vertex AI access or a different API plan."
                         : response.status === 403
-                            ? "Access denied. Veo video generation may require paid API access or approval."
+                            ? "Access denied. Veo requires paid API access. You may need to enable it in Google AI Studio."
                             : response.status === 400
-                                ? "Bad request. Check if the prompt or parameters are valid."
+                                ? "Bad request. The API format might have changed."
                                 : "Unknown error. Check the apiError field for details.",
                 }
             }, { status: response.status });
@@ -104,82 +97,33 @@ export async function POST(request: Request) {
         const result = await response.json();
         console.log("Veo response received:", JSON.stringify(result).substring(0, 500));
 
-        // Check if this is a long-running operation (async)
-        if (result.name && result.name.includes("operations/")) {
-            // This is an async operation, we need to poll for completion
+        // Veo uses long-running operations - we get an operation name to poll
+        if (result.name) {
+            // Start polling for completion
+            const videoResult = await pollForVideoCompletion(result.name);
+
+            if (videoResult.error) {
+                return NextResponse.json({
+                    error: "Video generation failed during processing",
+                    details: videoResult,
+                }, { status: 500 });
+            }
+
             return NextResponse.json({
                 success: true,
-                async: true,
-                operationName: result.name,
-                message: "Video generation started. Poll the operation endpoint for completion.",
-                details: {
-                    model: MODEL,
-                    operationId: result.name,
-                }
+                video: videoResult.video,
+                textResponse: videoResult.textResponse,
             });
         }
 
-        // Extract video data from response
-        const parts = result.candidates?.[0]?.content?.parts;
-
-        if (!parts || parts.length === 0) {
-            return NextResponse.json({
-                error: "No content generated",
-                details: {
-                    model: MODEL,
-                    candidates: result.candidates?.length || 0,
-                    finishReason: result.candidates?.[0]?.finishReason || "unknown",
-                    safetyRatings: result.candidates?.[0]?.safetyRatings || [],
-                    fullResponse: result,
-                }
-            }, { status: 500 });
-        }
-
-        // Find video data
-        let videoData: { data?: string; fileUri?: string; mimeType: string } | null = null;
-        let textResponse: string | null = null;
-
-        for (const part of parts) {
-            if (part.inlineData) {
-                videoData = {
-                    data: part.inlineData.data,
-                    mimeType: part.inlineData.mimeType || "video/mp4",
-                };
-            } else if (part.fileData) {
-                videoData = {
-                    fileUri: part.fileData.fileUri,
-                    mimeType: part.fileData.mimeType || "video/mp4",
-                };
-            } else if (part.text) {
-                textResponse = part.text;
-            }
-        }
-
-        if (!videoData) {
-            return NextResponse.json({
-                error: "No video was generated",
-                details: {
-                    model: MODEL,
-                    textResponse: textResponse || "No text response",
-                    partsCount: parts.length,
-                    partTypes: parts.map((p: { text?: string; inlineData?: unknown; fileData?: unknown }) => {
-                        if (p.text) return "text";
-                        if (p.inlineData) return "inlineData";
-                        if (p.fileData) return "fileData";
-                        return "unknown";
-                    }),
-                    fullParts: parts,
-                }
-            }, { status: 500 });
-        }
-
-        console.log("Video generated successfully, type:", videoData.mimeType);
-
+        // Fallback: direct response (shouldn't happen with Veo)
         return NextResponse.json({
-            success: true,
-            video: videoData,
-            textResponse: textResponse,
-        });
+            error: "Unexpected response format",
+            details: {
+                model: MODEL,
+                fullResponse: result,
+            }
+        }, { status: 500 });
 
     } catch (error) {
         console.error("Error in video generation:", error);
@@ -195,4 +139,86 @@ export async function POST(request: Request) {
             }
         }, { status: 500 });
     }
+}
+
+// Poll for video generation completion
+async function pollForVideoCompletion(operationName: string): Promise<{
+    video?: { data?: string; uri?: string; mimeType: string };
+    textResponse?: string;
+    error?: string;
+    details?: unknown;
+}> {
+    const maxAttempts = 120; // 10 minutes max (5 seconds * 120)
+    const pollInterval = 5000; // 5 seconds
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/${operationName}?key=${GEMINI_API_KEY}`
+            );
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                return {
+                    error: "Failed to check operation status",
+                    details: { status: response.status, error: errorText },
+                };
+            }
+
+            const result = await response.json();
+
+            // Check if operation is done
+            if (result.done) {
+                if (result.error) {
+                    return {
+                        error: "Video generation failed",
+                        details: result.error,
+                    };
+                }
+
+                // Extract video from response
+                const response_data = result.response;
+                if (response_data?.generatedSamples?.[0]?.video) {
+                    const video = response_data.generatedSamples[0].video;
+                    return {
+                        video: {
+                            uri: video.uri,
+                            mimeType: video.mimeType || "video/mp4",
+                        },
+                    };
+                }
+
+                // Alternative response format
+                if (response_data?.predictions?.[0]) {
+                    const prediction = response_data.predictions[0];
+                    return {
+                        video: {
+                            uri: prediction.videoUri || prediction.video?.uri,
+                            data: prediction.videoBytes || prediction.video?.data,
+                            mimeType: "video/mp4",
+                        },
+                    };
+                }
+
+                return {
+                    error: "Video generated but no video data in response",
+                    details: result,
+                };
+            }
+
+            // Not done yet, wait and poll again
+            console.log(`Video generation in progress... (attempt ${attempt + 1}/${maxAttempts})`);
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+
+        } catch (err) {
+            return {
+                error: "Error polling for video completion",
+                details: err instanceof Error ? err.message : String(err),
+            };
+        }
+    }
+
+    return {
+        error: "Video generation timed out after 10 minutes",
+    };
 }
