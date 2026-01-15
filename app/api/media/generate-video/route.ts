@@ -47,7 +47,6 @@ export async function POST(request: Request) {
             parameters: {
                 aspectRatio: validAspectRatio,
                 durationSeconds: durationSeconds || 8,
-                generateAudio: true,
                 enhancePrompt: true,
             }
         };
