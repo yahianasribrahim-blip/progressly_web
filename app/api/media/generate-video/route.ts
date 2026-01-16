@@ -213,29 +213,27 @@ async function pollForVideoCompletion(operationName: string): Promise<{
                         },
                     };
                 }
-            },
-        };
-    }
 
-    return {
-        error: "Video generated but no video data in response",
-        details: result,
-    };
-}
+                return {
+                    error: "Video generated but no video data in response",
+                    details: result,
+                };
+            }
 
-// Not done yet, wait and poll again
-console.log(`Video generation in progress... (attempt ${attempt + 1}/${maxAttempts})`);
-await new Promise(resolve => setTimeout(resolve, pollInterval));
+            // Not done yet, wait and poll again
+            console.log(`Video generation in progress... (attempt ${attempt + 1}/${maxAttempts})`);
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
 
         } catch (err) {
-    return {
-        error: "Error polling for video completion",
-        details: err instanceof Error ? err.message : String(err),
-    };
-}
+            return {
+                error: "Error polling for video completion",
+                details: err instanceof Error ? err.message : String(err),
+            };
+        }
     }
 
-return {
-    error: "Video generation timed out after 10 minutes",
-};
+    return {
+        error: "Video generation timed out after 10 minutes",
+    };
 }
+
