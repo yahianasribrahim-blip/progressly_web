@@ -188,7 +188,7 @@ export default function OutlierResearchPage() {
                                 </TabsTrigger>
                             </TabsList>
                         </Tabs>
-                        <Button onClick={addCreator}>
+                        <Button type="button" onClick={addCreator}>
                             <Plus className="h-4 w-4 mr-1" />
                             Add
                         </Button>
