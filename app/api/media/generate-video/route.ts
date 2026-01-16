@@ -5,6 +5,31 @@ const GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY || "";
 // Veo 3.1 model for video generation
 const MODEL = "veo-3.1-generate-preview";
 
+// Helper function to download video with API key authentication
+async function downloadVideoWithAuth(uri: string): Promise<string | null> {
+    try {
+        // Append API key to the URI
+        const separator = uri.includes("?") ? "&" : "?";
+        const authenticatedUrl = `${uri}${separator}key=${GEMINI_API_KEY}`;
+
+        const response = await fetch(authenticatedUrl);
+
+        if (!response.ok) {
+            console.error("Failed to download video:", response.status, response.statusText);
+            return null;
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString("base64");
+
+        console.log("Video downloaded successfully, size:", arrayBuffer.byteLength, "bytes");
+        return base64;
+    } catch (error) {
+        console.error("Error downloading video:", error);
+        return null;
+    }
+}
+
 export async function POST(request: Request) {
     try {
         const session = await auth();
@@ -183,6 +208,21 @@ async function pollForVideoCompletion(operationName: string): Promise<{
                 // Check generateVideoResponse format (Veo 3.1)
                 if (response_data?.generateVideoResponse?.generatedSamples?.[0]?.video) {
                     const video = response_data.generateVideoResponse.generatedSamples[0].video;
+
+                    // Download the video with API key authentication
+                    if (video.uri) {
+                        const videoData = await downloadVideoWithAuth(video.uri);
+                        if (videoData) {
+                            return {
+                                video: {
+                                    data: videoData,
+                                    mimeType: video.mimeType || "video/mp4",
+                                },
+                            };
+                        }
+                    }
+
+                    // Fallback to returning URI if download fails
                     return {
                         video: {
                             uri: video.uri,
