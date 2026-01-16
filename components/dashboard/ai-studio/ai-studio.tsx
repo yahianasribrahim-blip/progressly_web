@@ -146,8 +146,8 @@ export function AIStudio() {
                 } else if (data.video) {
                     setGeneratedMedia({
                         type: "video",
-                        data: data.video.data || data.video.fileUri,
-                        mimeType: data.video.mimeType,
+                        data: data.video.uri || data.video.data || "",
+                        mimeType: data.video.mimeType || "video/mp4",
                         textResponse: data.textResponse,
                     });
                     toast.success("Video generated!");
