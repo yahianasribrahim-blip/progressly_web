@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
 const GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY || "";
-// Veo 3.1 model for video generation
-const MODEL = "veo-3.1-generate-preview";
+// Veo 2 model for video generation (cheaper than Veo 3.1)
+const MODEL = "veo-2.0-generate-001";
 
 // Helper function to download video with API key authentication
 async function downloadVideoWithAuth(uri: string): Promise<string | null> {
