@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
-import { LayoutDashboard, MessageCircle, Users, ArrowLeft, Sparkles } from "lucide-react";
+import { LayoutDashboard, MessageCircle, Users, ArrowLeft, Sparkles, TrendingUp } from "lucide-react";
 
 export default async function AdminLayout({
   children,
@@ -27,6 +27,7 @@ export default async function AdminLayout({
 
   const adminLinks = [
     { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+    { href: "/admin/outliers", icon: TrendingUp, label: "Outlier Research" },
     { href: "/admin/tickets", icon: MessageCircle, label: "Tickets" },
     { href: "/admin/users", icon: Users, label: "Users" },
     { href: "/admin/affiliates", icon: Sparkles, label: "Affiliates" },
