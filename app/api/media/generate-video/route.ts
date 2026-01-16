@@ -179,6 +179,19 @@ async function pollForVideoCompletion(operationName: string): Promise<{
 
                 // Extract video from response
                 const response_data = result.response;
+
+                // Check generateVideoResponse format (Veo 3.1)
+                if (response_data?.generateVideoResponse?.generatedSamples?.[0]?.video) {
+                    const video = response_data.generateVideoResponse.generatedSamples[0].video;
+                    return {
+                        video: {
+                            uri: video.uri,
+                            mimeType: video.mimeType || "video/mp4",
+                        },
+                    };
+                }
+
+                // Fallback: check generatedSamples directly
                 if (response_data?.generatedSamples?.[0]?.video) {
                     const video = response_data.generatedSamples[0].video;
                     return {
@@ -200,26 +213,29 @@ async function pollForVideoCompletion(operationName: string): Promise<{
                         },
                     };
                 }
-
-                return {
-                    error: "Video generated but no video data in response",
-                    details: result,
-                };
-            }
-
-            // Not done yet, wait and poll again
-            console.log(`Video generation in progress... (attempt ${attempt + 1}/${maxAttempts})`);
-            await new Promise(resolve => setTimeout(resolve, pollInterval));
-
-        } catch (err) {
-            return {
-                error: "Error polling for video completion",
-                details: err instanceof Error ? err.message : String(err),
-            };
-        }
+            },
+        };
     }
 
     return {
-        error: "Video generation timed out after 10 minutes",
+        error: "Video generated but no video data in response",
+        details: result,
     };
+}
+
+// Not done yet, wait and poll again
+console.log(`Video generation in progress... (attempt ${attempt + 1}/${maxAttempts})`);
+await new Promise(resolve => setTimeout(resolve, pollInterval));
+
+        } catch (err) {
+    return {
+        error: "Error polling for video completion",
+        details: err instanceof Error ? err.message : String(err),
+    };
+}
+    }
+
+return {
+    error: "Video generation timed out after 10 minutes",
+};
 }
